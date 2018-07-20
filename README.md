@@ -1,10 +1,9 @@
 # nanostream: Small-scale streaming data
 
-Streaming data tools such as Storm, Flink, and Sparq allow you to set up a data
+Streaming data tools such as Storm, Flink, and Spark allow you to set up a data
 processing pipeline in a clear, intuitive manner. You work on creating each
 processor in the pipeline, and then stitch those together into a directed
-graph, with appropriate data sources and sinks. This is a very clear and practical
-design pattern.
+graph, with appropriate data sources and sinks. This is a very clear and practical design pattern.
 
 That workflow isn't just useful for processing huge amounts of data. It can be
 just as useful for smaller problems. But the smaller data sets
@@ -18,16 +17,6 @@ your pipeline steps in pure Python, and connect them in a directed graph
 topology. Your pipeline will have a `start` method that will run everything
 asynchronously. It'll use back-pressure to prevent any queues from becoming
 overrun. Everything runs in-memory, making it pretty fast.
-
-This framework supports multithreading and multiprocessing transparently. By
-default, your pipeline will execute each of your classes in its own thread.
-But if you want to utilize more than one CPU on your machine, just set
-`multiprocess=True`, and leave everything else the same. The classes will run
-in their own forked processes (via the `multiprocessing` module). In order to
-create multiple copies of a class for parallel processing, simply specify
-`workers=n`, where `n` is the number of processes you want the pipeline to
-create. Each piece of data sent through the pipeline will be received and
-processed by exactly one of the `n` workers.
 
 # Basic example
 
@@ -106,25 +95,8 @@ to servers, no fancy configuration files, and without adding any more work to
 your devops team. You write in pure Python, and you can pass any pickle-able
 object through the pipeline.
 
-The package includes classes for reading from and writing to Kafka. This allows
-you to (e.g.) listen to several Kafka topics at the same time, process the
-messages however you like (asynchronously, so your throughput will be pretty
-quick), and if you like, emit the results back to Kafka.
-
-We (at Trunk Club) use this tool for a lot of ETL work. It listens to lots of
-Kafka topics simultaneously, aggregates the messages, transforms them, and
-finally pushes the results into databases or publishes them to other Kafka
-topics. We've found that we can process a few thousand events per second using
-`nanostream`, while requiring nothing more than a `pip install` to get running.
-
 # This is an alpha release
 
-This package has all the flaws you'd expect from an alpha release. I'm working
-on documentation now, writing unit tests, cleaning up code, and so on. Although
-we use it in production, it's not the kind of package you'd want to blithely
-install and use. That being said, if you are very brave, you can `pip install
-nanostream` to get it.
+'nuff said.
 
-Expect this repo to be under very active development.
-
-`zernst@trunkclub.com`
+zac.ernst@gmail.com
