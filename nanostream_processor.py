@@ -20,8 +20,10 @@ import queue
 import multiprocessing as mp
 import threading
 import types
+import json
 import time
 import uuid
+from batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 
 
@@ -174,20 +176,78 @@ class PrinterOfThings(NanoStreamListener):
     def process_item(self, message):
         print(message)
 
+
+class HttpGetRequest(NanoStreamProcessor):
+    '''
+    This is the object that holds all configuration information to actually
+    hitting the API and doing something to the results.
+    '''
+    def __init__(self, url=None, endpoint=None, json_output=False):
+        '''
+        Keep the functionality of this module very minimal.
+        '''
+        self.url = url
+        self.endpoint = endpoint
+        super(HttpGetRequest, self).__init__()
+
+    def process_item(self, message):
+        '''
+        The input to this function will be a dictionary-like object with
+        parameters to be substituted into the endpoint string and a dictionary
+        with keys and values to be passed in the GET request.
+
+        ```
+        {'url': 'http://www.foobar.com/{param}',
+         'param': 1}
+        '''
+
+        # Hit the parameterized endpoint and yield back the results
+        self.current_endpoint_dict = endpoint_dict
+        get_response = self.pipeline.session.get(
+            self.url.format(**endpoint_dict),
+            cookies=self.pipeline.cookies)
+        self.key_value.update(endpoint_dict)
+        return get_response.text
+
+
+class ConstantEmitter(NanoStreamSender):
+    '''
+    Send a thing every n seconds
+    '''
+    def __init__(self, thing=None, delay=None, from_json=False):
+        if from_json:
+            thing = json.loads(thing)
+
+        self.thing = json.loads(thing) if from_json else thing
+        self.delay = delay or 0
+        super(ConstantEmitter, self).__init__()
+
+    def start(self):
+        while 1:
+            time.sleep(self.delay)
+            self.queue_output(self.thing)
+
+
 if __name__ == '__main__':
     import nanostream_pipeline
 
     c = CounterOfThings()
     p = PrinterOfThings()
+    e = ConstantEmitter(thing='foobar', delay=2)
     divisible_by_three = DivisibleByThreeFilter()
     divisible_by_seven = DivisibleBySevenFilter()
     pipeline = nanostream_pipeline.NanoStreamGraph()
+    pipeline.add_node(e)
+    pipeline.add_node(p)
+    pipeline.add_edge(e, p)
+
+    '''
     pipeline.add_node(c)
     pipeline.add_node(divisible_by_three)
     pipeline.add_node(p)
     pipeline.add_node(divisible_by_seven)
-
     pipeline.add_edge(c, divisible_by_three)
     pipeline.add_edge(c, divisible_by_seven)
     pipeline.add_edge(divisible_by_seven, p)
     pipeline.add_edge(divisible_by_three, p)
+    '''
