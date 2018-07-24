@@ -1,34 +1,54 @@
+import time
+import logging
+import re
+from nanostream_pipeline import NanoStreamGraph
 from nanostream_processor import (
     NanoStreamProcessor, NanoStreamSender)
-from watchdog.observers import Observer
-from watchdog.events import (
-    LoggingEventHandler, FileModifiedEvent,
-    RegexMatchingEventHandler, FileCreatedEvent)
+from bowerbird.filesystem import LocalFileSystem
 
 
-class WatchdogDirectoryListener(NanoStreamSender):
+logging.basicConfig(level=logging.INFO)
+
+
+class FileSystemWatchdog(NanoStreamSender):
     def __init__(
-        self, regexes=None, ignore_directories=False,
-            case_sensitive=True, watchdog_path='.', ignore_regexes=None):
-
-        self.event_handler = RegexMatchingEventHandler(
-            regexes=regexes or ['.*'],
-            ignore_regexes=ignore_regexes or [],
-            ignore_directories=ignore_directories,
-            case_sensitive=case_sensitive)
-
-        self.event_handler.on_modified = self.file_modified
-        self.observer = Observer()
-        self.observer.schedule(self.event_handler, watchdog_path, recursive=False)
-
-        super(WatchdogDirectoryListener, self).__init__()
+        self, regexes=None, recurse=False,
+            bowerbird_filesystem=None, poll_frequency=5):
+        self.regexes = regexes or ['.*']
+        self.have_seen = set()
+        self.poll_frequency = poll_frequency
+        self.bowerbird_filesystem = bowerbird_filesystem
+        super(FileSystemWatchdog, self).__init__()
 
     def file_modified(self, *args, **kwargs):
-        print('file modified...')
-        if not isinstance(args[0], FileModifiedEvent):
-            return None  # NoneType is automatically ignored
         modified_file = args[0].src_path
         self.queue_message(modified_file)
 
     def start(self):
-        self.observer.start()
+        while 1:
+            time.sleep(self.poll_frequency)
+            seen = self.bowerbird_filesystem.ls('.')
+            for filename in seen:
+                # logging.info('checking:' + filename)
+                if filename in self.have_seen:
+                    continue
+                for regex in self.regexes:
+                    match = re.match(regex, filename)
+                    if match is not None:
+                        self.have_seen.add(filename)
+                        logging.info(
+                            'See new object: {filename}'.format(
+                                filename=filename))
+                        self.queue_output(filename)
+
+
+if __name__ == '__main__':
+    # This watches your home directory for new CSV files and sends the
+    # filename(s) to the next process in the pipeline.
+    bowerbird_filesystem = LocalFileSystem()
+    pipeline = NanoStreamGraph()
+    watchdog = FileSystemWatchdog(
+        regexes=['.*.csv$'],
+        bowerbird_filesystem=bowerbird_filesystem)
+    pipeline.add_node(watchdog)
+    pipeline.start()

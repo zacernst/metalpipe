@@ -6,3 +6,4 @@ sphinxcontrib-napoleon
 networkx
 watchdog==0.8.3
 PyYAML
+git+ssh://git@github.com/civisanalytics/bowerbird.git

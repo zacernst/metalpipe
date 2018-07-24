@@ -25,6 +25,7 @@ import time
 import uuid
 from batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
+import bowerbird
 
 
 class NanoStreamSender:
@@ -160,10 +161,12 @@ class CounterOfThings(NanoStreamSender):
             self.queue_output(counter)
             counter += 1
 
+
 class DivisibleByThreeFilter(NanoStreamProcessor):
     def process_item(self, message):
         if message % 3 == 0:
             return message
+
 
 class DivisibleBySevenFilter(NanoStreamProcessor):
     def process_item(self, message):
@@ -172,7 +175,6 @@ class DivisibleBySevenFilter(NanoStreamProcessor):
 
 
 class PrinterOfThings(NanoStreamListener):
-
     def process_item(self, message):
         print(message)
 
@@ -210,6 +212,48 @@ class HttpGetRequest(NanoStreamProcessor):
         return get_response.text
 
 
+class Serializer(NanoStreamProcessor):
+    '''
+    Takes an iterable and sends out a series of messages while iterating
+    over it.
+    '''
+    def __init__(self, include_batch_markers=False):
+        self.include_batch_markers = include_batch_markers
+        super(Serializer, self).__init__()
+
+    def process_item(self, message):
+        if self.include_batch_markers:
+            self.queue_output(BatchStart())
+        for item in message:
+            self.queue_output(item)
+        if self.include_batch_markers:
+            self.queue_output(BatchEnd())
+
+
+class Bundler(NanoStreamProcessor):
+    '''
+    For taking a series of things and putting them into some kind of single
+    structure. Listens for `Batch` objects to tell it when to start and stop.
+    '''
+    def __init__(self):
+        self.batch = []
+        self.accepting_items = False
+        super(Bundler, self).__init__()
+
+    def process_item(self, message):
+        if isinstance(message, BatchStart):
+            self.accepting_items = True
+            self.batch = []
+        elif isinstance(message, BatchEnd):
+            self.accepting_items = False
+            return self.batch
+        else:
+            if self.accepting_items:
+                self.batch.append(message)
+            else:
+                pass
+
+
 class ConstantEmitter(NanoStreamSender):
     '''
     Send a thing every n seconds
@@ -226,6 +270,7 @@ class ConstantEmitter(NanoStreamSender):
         while 1:
             time.sleep(self.delay)
             self.queue_output(self.thing)
+
 
 
 if __name__ == '__main__':

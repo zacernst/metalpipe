@@ -41,10 +41,12 @@ class NanoStreamGraph(object):
         self.worker_interval = None
         self.queue_constructor = NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
+        self.global_dict = {}  # For sharing and storing output from steps
 
     def add_node(self, node):
         self.node_list.append(node)
         self.graph.add_node(node)
+        node.global_dict = self.global_dict
         node.parent = self
 
     def add_edge(self, source, target, **kwargs):
