@@ -1,3 +1,11 @@
+'''
+Experiment using `bowerbird` to set up a flexible watchdog job that
+looks for new files to appear and sends their names downstream. Goal is
+to have a single, configurable job that can watch files systems, sftp,
+S3, GCP, etc.
+
+'''
+
 import time
 import logging
 import re
@@ -29,7 +37,7 @@ class FileSystemWatchdog(NanoStreamSender):
             time.sleep(self.poll_frequency)
             seen = self.bowerbird_filesystem.ls('.')
             for filename in seen:
-                # logging.info('checking:' + filename)
+                logging.debug('checking:' + filename)
                 if filename in self.have_seen:
                     continue
                 for regex in self.regexes:
