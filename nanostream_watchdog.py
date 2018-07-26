@@ -18,7 +18,7 @@ from bowerbird.filesystem import LocalFileSystem
 logging.basicConfig(level=logging.INFO)
 
 
-class FileSystemWatchdog(NanoStreamSender):
+class FileSystemWatchdog(NanoStreamProcessor):
     def __init__(
         self, regexes=None, recurse=False,
             bowerbird_filesystem=None, poll_frequency=5):
@@ -32,22 +32,20 @@ class FileSystemWatchdog(NanoStreamSender):
         modified_file = args[0].src_path
         self.queue_message(modified_file)
 
-    def start(self):
-        while 1:
-            time.sleep(self.poll_frequency)
-            seen = self.bowerbird_filesystem.ls('.')
-            for filename in seen:
-                logging.debug('checking:' + filename)
-                if filename in self.have_seen:
-                    continue
-                for regex in self.regexes:
-                    match = re.match(regex, filename)
-                    if match is not None:
-                        self.have_seen.add(filename)
-                        logging.info(
-                            'See new object: {filename}'.format(
-                                filename=filename))
-                        self.queue_output(filename)
+    def process_item(self, tigger):
+        seen = self.bowerbird_filesystem.ls('.')
+        for filename in seen:
+            logging.debug('checking:' + filename)
+            if filename in self.have_seen:
+                continue
+            for regex in self.regexes:
+                match = re.match(regex, filename)
+                if match is not None:
+                    self.have_seen.add(filename)
+                    logging.info(
+                        'See new object: {filename}'.format(
+                            filename=filename))
+                    self.queue_output(filename)
 
 
 if __name__ == '__main__':

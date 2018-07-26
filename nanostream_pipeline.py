@@ -23,6 +23,7 @@ from nanostream_processor import (
     NanoStreamProcessor, NanoStreamListener,
     NanoStreamSender,
     NanoStreamQueue)
+import inspect
 
 
 DEFAULT_MAX_QUEUE_SIZE = 128
@@ -42,12 +43,22 @@ class NanoStreamGraph(object):
         self.queue_constructor = NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
         self.global_dict = {}  # For sharing and storing output from steps
+        self.node_dict = {}
 
     def add_node(self, node):
         self.node_list.append(node)
         self.graph.add_node(node)
         node.global_dict = self.global_dict
         node.parent = self
+        node_name, node_obj = [
+            (i, j,) for i, j in
+            inspect.getouterframes(inspect.currentframe())[
+                -1].frame.f_globals.items() if j is node][0]
+        self.node_dict[node_name] = node_obj
+
+    def __add__(self, other):
+        self.add_node(other)
+        return self
 
     def add_edge(self, source, target, **kwargs):
         """

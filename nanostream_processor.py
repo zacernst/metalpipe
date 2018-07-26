@@ -26,9 +26,20 @@ import uuid
 from batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 import bowerbird
+import inspect
 
 
-class NanoStreamSender:
+class NanoAncestor:
+
+    def __init__(self):
+        self.signature = inspect.signature(self.__class__.__init__)
+
+    def __gt__(self, other):
+        parent = self.parent
+        parent.add_edge(self, other)
+        return other
+
+class NanoStreamSender(NanoAncestor):
     """
     Anything with an output queue.
     """
@@ -36,6 +47,7 @@ class NanoStreamSender:
         self.output_queue_list = []
         self.message_counter = 0
         self.uuid = uuid.uuid4().hex
+        super(NanoStreamSender, self).__init__()
 
     def queue_output(self, message, output_queue_list=None):
         self.message_counter += 1
@@ -70,7 +82,7 @@ class NanoStreamQueue:
             self.queue.put(message)
 
 
-class NanoStreamListener:
+class NanoStreamListener(NanoAncestor):
     """
     Anything that reads from an input queue.
     """
@@ -80,6 +92,7 @@ class NanoStreamListener:
         self.child_class = child_class
         self.message_counter = 0
         self.input_queue_list = []
+        super(NanoStreamListener, self).__init__()
 
     def _process_item(self, message):
         """
