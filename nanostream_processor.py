@@ -1,6 +1,6 @@
 """
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,17 +17,56 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import queue
-import multiprocessing as mp
+import hashlib
 import threading
 import types
 import json
 import time
 import uuid
+from functools import partialmethod
 from batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
+import bowerbird
+import inspect
 
 
-class NanoStreamSender:
+def exception(message=None):
+    raise Exception(message)
+
+
+class NanoAncestor:
+
+    def __init__(self):
+        self.signature = inspect.signature(self.__class__.__init__)
+
+    def __gt__(self, other):
+        parent = self.parent
+        parent.add_edge(self, other)
+        return other
+
+    @property
+    def is_source(self):
+        return (not hasattr(self, 'input_queue_list') or
+            len(self.input_queue_list) == 0)
+
+    @property
+    def is_sink(self):
+        return (not hasattr(self, 'output_queue_list')
+            or len(self.output_queue_list) == 0)
+
+    def partial(self, **kwargs):
+        '''
+        Return a version of `self` with some parameters filled-in.
+        '''
+        partial_class = type(
+            self.__class__.__name__ + '_partial_' + hashlib.md5(
+                bytes(str(kwargs), 'utf8')).hexdigest()[:5],
+            (self.__class__,), {'__init__': partialmethod(self.__init__, **kwargs)})
+        import pdb; pdb.set_trace()
+        return partial_class
+
+
+class NanoStreamSender(NanoAncestor):
     """
     Anything with an output queue.
     """
@@ -35,15 +74,12 @@ class NanoStreamSender:
         self.output_queue_list = []
         self.message_counter = 0
         self.uuid = uuid.uuid4().hex
+        super(NanoStreamSender, self).__init__()
 
     def queue_output(self, message, output_queue_list=None):
         self.message_counter += 1
         for output_queue in self.output_queue_list:
             output_queue.put(message, block=True, timeout=None)
-
-    @property
-    def is_source(self):
-        return not hasattr(self, 'input_queue_list')
 
 
 class NanoStreamQueue:
@@ -69,7 +105,7 @@ class NanoStreamQueue:
             self.queue.put(message)
 
 
-class NanoStreamListener:
+class NanoStreamListener(NanoAncestor):
     """
     Anything that reads from an input queue.
     """
@@ -79,6 +115,7 @@ class NanoStreamListener:
         self.child_class = child_class
         self.message_counter = 0
         self.input_queue_list = []
+        super(NanoStreamListener, self).__init__()
 
     def _process_item(self, message):
         """
@@ -120,15 +157,17 @@ class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
         return not hasattr(self, 'input_queue')
 
     def process_item(self, *args, **kwargs):
-        raise Exception("process_item needs to be overridden in child class.")
+        raise Exception(
+            "process_item needs to be overridden in child class.")
 
 
-class DirectoryWatchdog(NanoStreamSender):
-    """
-    Watches a directory for new or modified files, reads them, sends them
-    downstream.
-    """
-    pass
+class DoNothing(NanoStreamProcessor):
+    '''
+    Just a pass-through for testing and stuff.
+    '''
+    def process_item(self, item):
+        logging.info('Saw an item.')
+        return item
 
 
 class PrintStreamProcessor(NanoStreamProcessor):
@@ -160,21 +199,50 @@ class CounterOfThings(NanoStreamSender):
             self.queue_output(counter)
             counter += 1
 
+
+class SendEnvironmentVariables(NanoStreamProcessor):
+
+    def __init__(self, variable_list=None):
+        if variable_list = variable_list or exception(
+            message='Need a list of variables.')
+        self.variable_list = variable_list
+        super(SendEnvironmentVariables, self).__init__()
+
+    def process_item(self, message):
+        variables = {
+            key: os.environ[key] for key in self.variable_list}
+        return variables
+
+
+class Kickoff(NanoStreamSender):
+
+    def start(self):
+        self.queue_output(NanoStreamTrigger())
+
+
 class DivisibleByThreeFilter(NanoStreamProcessor):
+
     def process_item(self, message):
         if message % 3 == 0:
             return message
 
+
 class DivisibleBySevenFilter(NanoStreamProcessor):
+
     def process_item(self, message):
         if message % 7 == 0:
             return message
 
 
-class PrinterOfThings(NanoStreamListener):
+class PrinterOfThings(NanoStreamProcessor):
+
+    def __init__(self, prepend=''):
+        self.prepend = prepend
+        super(PrinterOfThings, self).__init__()
 
     def process_item(self, message):
-        print(message)
+        print(self.prepend + str(message))
+        return message
 
 
 class HttpGetRequest(NanoStreamProcessor):
@@ -210,6 +278,48 @@ class HttpGetRequest(NanoStreamProcessor):
         return get_response.text
 
 
+class Serializer(NanoStreamProcessor):
+    '''
+    Takes an iterable and sends out a series of messages while iterating
+    over it.
+    '''
+    def __init__(self, include_batch_markers=False):
+        self.include_batch_markers = include_batch_markers
+        super(Serializer, self).__init__()
+
+    def process_item(self, message):
+        if self.include_batch_markers:
+            self.queue_output(BatchStart())
+        for item in message:
+            self.queue_output(item)
+        if self.include_batch_markers:
+            self.queue_output(BatchEnd())
+
+
+class Bundler(NanoStreamProcessor):
+    '''
+    For taking a series of things and putting them into some kind of single
+    structure. Listens for `Batch` objects to tell it when to start and stop.
+    '''
+    def __init__(self):
+        self.batch = []
+        self.accepting_items = False
+        super(Bundler, self).__init__()
+
+    def process_item(self, message):
+        if isinstance(message, BatchStart):
+            self.accepting_items = True
+            self.batch = []
+        elif isinstance(message, BatchEnd):
+            self.accepting_items = False
+            return self.batch
+        else:
+            if self.accepting_items:
+                self.batch.append(message)
+            else:
+                pass
+
+
 class ConstantEmitter(NanoStreamSender):
     '''
     Send a thing every n seconds
@@ -226,6 +336,18 @@ class ConstantEmitter(NanoStreamSender):
         while 1:
             time.sleep(self.delay)
             self.queue_output(self.thing)
+
+
+class Throttle(NanoStreamProcessor):
+    '''
+    Insert a delay into the pipeline.
+    '''
+    def __init__(self, delay=1):
+        self.delay = delay
+
+    def process_item(self, message):
+        time.sleep(self.delay)
+        return message
 
 
 if __name__ == '__main__':

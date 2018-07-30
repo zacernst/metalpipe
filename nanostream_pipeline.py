@@ -1,6 +1,6 @@
 """
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ from nanostream_processor import (
     NanoStreamProcessor, NanoStreamListener,
     NanoStreamSender,
     NanoStreamQueue)
+import inspect
 
 
 DEFAULT_MAX_QUEUE_SIZE = 128
@@ -41,18 +42,55 @@ class NanoStreamGraph(object):
         self.worker_interval = None
         self.queue_constructor = NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
+        self.global_dict = {}  # For sharing and storing output from steps
+        self.node_dict = {}
 
     def add_node(self, node):
         self.node_list.append(node)
         self.graph.add_node(node)
+        node.global_dict = self.global_dict
         node.parent = self
+        node_name, node_obj = [
+            (i, j,) for i, j in
+            inspect.getouterframes(inspect.currentframe())[
+                -1].frame.f_globals.items() if j is node][0]
+        if node_name not in self.node_dict:
+            self.node_dict[node_name] = node_obj
+        else:
+            logging.warning('same name used for two nodes.')
+
+    def __getattribute__(self, attr):
+        '''
+        Allow us to access `NanoStreamProcessor` nodes as attributes.
+        '''
+        if attr in super(
+                NanoStreamGraph, self).__getattribute__('node_dict'):
+            return super(
+                NanoStreamGraph, self).\
+                __getattribute__('node_dict')[attr]
+        else:
+            return super(NanoStreamGraph, self).__getattribute__(attr)
+
+    def __add__(self, other):
+        self.add_node(other)
+        return self
+
+    def __gt__(self, other):
+        self.add_edge(self, other)
+
 
     def add_edge(self, source, target, **kwargs):
         """
         Create an edge connecting `source` to `target`. The edge
         is really just a queue
         """
-        max_queue_size = kwargs.get('max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
+        # No rails here --> no check for number of sources and sinks
+        if isinstance(source, NanoStreamGraph):
+            source = source.sinks[0]
+        if isinstance(target, NanoStreamGraph):
+            target = target.sources[0]
+        max_queue_size = kwargs.get(
+            'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = self.queue_constructor(max_queue_size)
         # Following is for NetworkX, cuz why not?
         self.graph.add_edge(
@@ -63,6 +101,22 @@ class NanoStreamGraph(object):
     def add_worker(self, worker_object, interval=3):
         self.workers.append((worker_object, interval,))
         worker_object.parent = self
+
+    @property
+    def sources(self):
+        return [node for node in self.node_list if node.is_source]
+
+    @property
+    def sinks(self):
+        return [node for node in self.node_list if node.is_sink]
+
+    @property
+    def number_of_sources(self):
+        return len(self.sources)
+
+    @property
+    def number_of_sinks(self):
+        return len(number_of_sinks)
 
     def start(self, block=False):
         """
@@ -108,33 +162,7 @@ class NanoGraphWorker(object):
 class NanoPrinter(NanoStreamProcessor):
     def process_item(self, message):
         print(message)
-        pass
-        # print message
 
-
-
-def bar():
-    class NanoPrinter(NanoStreamProcessor):
-        def process_item(self, message):
-            pass
-
-    class PrintFooWorker(NanoGraphWorker):
-        def worker(self):
-            print('foo')
-
-    my_printer = NanoPrinter()
-    my_foo_printer = PrintFooWorker()
-    three_filter = DivisibleByThreeFilter()
-    seven_filter = DivisibleBySevenFilter()
-
-    pipeline = NanoStreamGraph()
-    pipeline.add_node(three_filter)
-    pipeline.add_node(seven_filter)
-    pipeline.add_edge(my_printer, three_filter)
-    pipeline.add_node(my_foo_printer)
-    pipeline.add_edge(three_filter, my_foo_printer)
-
-    #false pipeline.start()
 
 if __name__ == '__main__':
-    bar()
+    pass

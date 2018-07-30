@@ -1,6 +1,6 @@
 """
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

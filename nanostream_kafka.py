@@ -2,7 +2,7 @@
 Class for plugging Kafka topics into the nanograph.
 
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ class NanoKafkaListener(NanoStreamSender):
                 "NanoKafkaProducer with kwarg `bootstrap_servers` set to a comma-"
                 "delimited list or set the environment variable "
                 "BOOTSTRAP_SERVERS.")
-        
+
         self.listener = kafka.KafkaConsumer(
             group_id=group_id,
             fetch_min_bytes=0,

@@ -1,0 +1,44 @@
+from nanostream_watchdog import FileSystemWatchdog
+from nanostream_trigger import ScheduledTrigger
+from nanostream_processor import PrinterOfThings, CounterOfThings
+from nanostream_pipeline import NanoStreamGraph
+from bowerbird.filesystem import LocalFileSystem
+from bowerbird_file_reader import BowerBirdFileReader
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+if __name__ == '__main__':
+    pipeline = NanoStreamGraph()
+
+    fs = LocalFileSystem()
+
+    trigger = ScheduledTrigger(seconds=5)
+    printer = PrinterOfThings(prepend='>>>')
+    printer_1 = PrinterOfThings()
+    watchdog = FileSystemWatchdog(
+        regexes=[r'.*.csv'],
+        bowerbird_filesystem=fs)
+    file_reader = BowerBirdFileReader(bowerbird_filesystem=fs)
+
+    # pipeline + trigger + printer + watchdog + file_reader + printer_1
+    # trigger > watchdog > printer
+    # watchdog > file_reader > printer_1
+    # pipeline.start()
+
+    # pipeline + trigger + printer
+    # trigger > printer
+
+    pipeline_2 = NanoStreamGraph()
+    counter = CounterOfThings()
+    pipeline + counter + printer
+    counter > printer
+
+    pipeline_2 + printer_1
+    pipeline > pipeline_2
+
+
+
+
