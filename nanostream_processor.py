@@ -203,7 +203,7 @@ class CounterOfThings(NanoStreamSender):
 class SendEnvironmentVariables(NanoStreamProcessor):
 
     def __init__(self, variable_list=None):
-        if variable_list = variable_list or exception(
+        variable_list = variable_list or exception(
             message='Need a list of variables.')
         self.variable_list = variable_list
         super(SendEnvironmentVariables, self).__init__()

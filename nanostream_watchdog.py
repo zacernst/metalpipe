@@ -9,7 +9,7 @@ S3, GCP, etc.
 import time
 import logging
 import re
-from nanostream_pipeline import NanoStreamGraph
+from nanostream_graph import NanoStreamGraph
 from nanostream_processor import (
     NanoStreamProcessor, NanoStreamSender)
 from bowerbird.filesystem import LocalFileSystem

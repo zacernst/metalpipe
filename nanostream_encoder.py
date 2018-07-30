@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import pickle as pickle
 import base64
 
@@ -25,12 +26,11 @@ def encode(something):
     later on, we want to persist them or send them to another system.
     This is extraneous for now.
     """
-
     return base64.b64encode(pickle.dumps(something))
+
 
 def decode(something):
     """
     Decodes from base-64 pickled object.
     """
-
     return pickle.loads(base64.b64decode(something))

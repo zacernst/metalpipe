@@ -1,7 +1,7 @@
 from nanostream_watchdog import FileSystemWatchdog
 from nanostream_trigger import ScheduledTrigger
 from nanostream_processor import PrinterOfThings, CounterOfThings
-from nanostream_pipeline import NanoStreamGraph
+from nanostream_graph import NanoStreamGraph
 from bowerbird.filesystem import LocalFileSystem
 from bowerbird_file_reader import BowerBirdFileReader
 import logging

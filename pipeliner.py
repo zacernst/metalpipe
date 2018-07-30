@@ -2,7 +2,7 @@ import sys
 import yaml
 import time
 from nanostream_processor import *
-from nanostream_pipeline import NanoStreamGraph
+from nanostream_graph import NanoStreamGraph
 from nanostream_file_handler import FileReader, FileWriter
 from nanostream_watchdog import WatchdogDirectoryListener
 

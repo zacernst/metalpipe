@@ -9,7 +9,7 @@ import logging
 import re
 import hashlib
 import schedule
-from nanostream_pipeline import NanoStreamGraph
+from nanostream_graph import NanoStreamGraph
 from nanostream_processor import (
     NanoStreamProcessor, NanoStreamSender)
 
