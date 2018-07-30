@@ -1,6 +1,6 @@
 """
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,12 +17,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import queue
-import multiprocessing as mp
+import hashlib
 import threading
 import types
 import json
 import time
 import uuid
+from functools import partialmethod
 from batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 import bowerbird
@@ -39,6 +40,27 @@ class NanoAncestor:
         parent.add_edge(self, other)
         return other
 
+    @property
+    def is_source(self):
+        return not hasattr(self, 'input_queue_list') or
+            len(self.input_queue_list) == 0
+
+    @property
+    def is_sink(self):
+        return not hasattr(self, 'output_queue_list')
+            or len(self.output_queue_list) == 0
+
+    def partial(self, **kwargs):
+        '''
+        Return a version of `self` with some parameters filled-in.
+        '''
+        partial_class = type(
+            self.__class__.__name__ + '_partial_' + hashlib.md5(
+                bytes(str(kwargs), 'utf8')).hexdigest()[:5],
+            (self.__class__,), {'__init__': partialmethod(self.__init__, **kwargs)})
+        import pdb; pdb.set_trace()
+        return partial_class
+
 class NanoStreamSender(NanoAncestor):
     """
     Anything with an output queue.
@@ -54,9 +76,7 @@ class NanoStreamSender(NanoAncestor):
         for output_queue in self.output_queue_list:
             output_queue.put(message, block=True, timeout=None)
 
-    @property
-    def is_source(self):
-        return not hasattr(self, 'input_queue_list')
+
 
 
 class NanoStreamQueue:
@@ -134,15 +154,18 @@ class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
         return not hasattr(self, 'input_queue')
 
     def process_item(self, *args, **kwargs):
-        raise Exception("process_item needs to be overridden in child class.")
+        raise Exception(
+            "process_item needs to be overridden in child class.")
 
 
-class DirectoryWatchdog(NanoStreamSender):
-    """
-    Watches a directory for new or modified files, reads them, sends them
-    downstream.
-    """
-    pass
+
+
+class DoNothing(NanoStreamProcessor):
+    '''
+    Just a pass-through for testing and stuff.
+    '''
+    def process_item(self, item):
+        return item
 
 
 class PrintStreamProcessor(NanoStreamProcessor):

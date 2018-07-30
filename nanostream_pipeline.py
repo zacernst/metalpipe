@@ -1,6 +1,6 @@
 """
 Copyright (C) 2016 Zachary Ernst
-zernst@trunkclub.com or zac.ernst@gmail.com
+zac.ernst@gmail.com
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,7 +54,22 @@ class NanoStreamGraph(object):
             (i, j,) for i, j in
             inspect.getouterframes(inspect.currentframe())[
                 -1].frame.f_globals.items() if j is node][0]
-        self.node_dict[node_name] = node_obj
+        if node_name not in self.node_dict:
+            self.node_dict[node_name] = node_obj
+        else:
+            logging.warning('same name used for two nodes.')
+
+    def __getattribute__(self, attr):
+        '''
+        Allow us to access `NanoStreamProcessor` nodes as attributes.
+        '''
+        if attr in super(
+                NanoStreamGraph, self).__getattribute__('node_dict'):
+            return super(
+                NanoStreamGraph, self).\
+                __getattribute__('node_dict')[attr]
+        else:
+            return super(NanoStreamGraph, self).__getattribute__(attr)
 
     def __add__(self, other):
         self.add_node(other)
@@ -65,7 +80,8 @@ class NanoStreamGraph(object):
         Create an edge connecting `source` to `target`. The edge
         is really just a queue
         """
-        max_queue_size = kwargs.get('max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
+        max_queue_size = kwargs.get(
+            'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = self.queue_constructor(max_queue_size)
         # Following is for NetworkX, cuz why not?
         self.graph.add_edge(
@@ -121,9 +137,6 @@ class NanoGraphWorker(object):
 class NanoPrinter(NanoStreamProcessor):
     def process_item(self, message):
         print(message)
-        pass
-        # print message
-
 
 
 def bar():

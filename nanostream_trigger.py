@@ -36,17 +36,11 @@ class ScheduledTrigger(NanoStreamSender):
     Sends a `Trigger` object periodically.
     '''
     def __init__(
-        self, day=None, at_time_string='00:00',
+        self, at_time_string='00:00',
             hours=None, minutes=None, seconds=None):
-        if not (day or hours or minutes or seconds):
-            raise Exception('Need a parameter for the trigger job')
-        if day and (hours or minutes or seconds):
-            raise Exception(
-                "Can't use `day` with `hours`, `minutes`, or `seconds`.")
 
         super(ScheduledTrigger, self).__init__()
 
-        self.day = day
         self.hours = hours
         self.minutes = minutes
         self.seconds = seconds
@@ -60,9 +54,8 @@ class ScheduledTrigger(NanoStreamSender):
             self.queue_output(TimedTrigger())
 
         numeric_interval = hours or minutes or seconds
-        if day:
-            interval_type = 'day'
-        elif hours:
+
+        if hours:
             interval_type = 'hours'
         elif minutes:
             interval_type = 'minutes'
@@ -70,8 +63,6 @@ class ScheduledTrigger(NanoStreamSender):
             interval_type = 'seconds'
         else:
             raise Exception('This should not happen')
-        if day:
-            getattr(schedule.every(), day).at(self.at_time_string).do(hello_world)
         if numeric_interval is not None:
             getattr(
                 schedule.every(numeric_interval),
@@ -86,7 +77,7 @@ class ScheduledTrigger(NanoStreamSender):
     def start(self):
         while 1:
             schedule.run_pending()
-            time.sleep(1)
+            time.sleep(.1)
 
 
 if __name__ == '__main__':
