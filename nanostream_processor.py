@@ -42,13 +42,13 @@ class NanoAncestor:
 
     @property
     def is_source(self):
-        return not hasattr(self, 'input_queue_list') or
-            len(self.input_queue_list) == 0
+        return (not hasattr(self, 'input_queue_list') or
+            len(self.input_queue_list) == 0)
 
     @property
     def is_sink(self):
-        return not hasattr(self, 'output_queue_list')
-            or len(self.output_queue_list) == 0
+        return (not hasattr(self, 'output_queue_list')
+            or len(self.output_queue_list) == 0)
 
     def partial(self, **kwargs):
         '''
@@ -60,6 +60,7 @@ class NanoAncestor:
             (self.__class__,), {'__init__': partialmethod(self.__init__, **kwargs)})
         import pdb; pdb.set_trace()
         return partial_class
+
 
 class NanoStreamSender(NanoAncestor):
     """
@@ -75,8 +76,6 @@ class NanoStreamSender(NanoAncestor):
         self.message_counter += 1
         for output_queue in self.output_queue_list:
             output_queue.put(message, block=True, timeout=None)
-
-
 
 
 class NanoStreamQueue:
@@ -165,6 +164,7 @@ class DoNothing(NanoStreamProcessor):
     Just a pass-through for testing and stuff.
     '''
     def process_item(self, item):
+        logging.info('Saw an item.')
         return item
 
 
@@ -210,9 +210,13 @@ class DivisibleBySevenFilter(NanoStreamProcessor):
             return message
 
 
-class PrinterOfThings(NanoStreamListener):
+class PrinterOfThings(NanoStreamProcessor):
+    def __init__(self, prepend=''):
+        self.prepend = prepend
+        super(PrinterOfThings, self).__init__()
     def process_item(self, message):
-        print(message)
+        print(self.prepend + str(message))
+        return message
 
 
 class HttpGetRequest(NanoStreamProcessor):

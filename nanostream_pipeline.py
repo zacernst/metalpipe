@@ -75,11 +75,20 @@ class NanoStreamGraph(object):
         self.add_node(other)
         return self
 
+    def __gt__(self, other):
+        self.add_edge(self, other)
+
+
     def add_edge(self, source, target, **kwargs):
         """
         Create an edge connecting `source` to `target`. The edge
         is really just a queue
         """
+        # No rails here --> no check for number of sources and sinks
+        if isinstance(source, NanoStreamGraph):
+            source = source.sinks[0]
+        if isinstance(target, NanoStreamGraph):
+            target = target.sources[0]
         max_queue_size = kwargs.get(
             'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = self.queue_constructor(max_queue_size)
@@ -92,6 +101,22 @@ class NanoStreamGraph(object):
     def add_worker(self, worker_object, interval=3):
         self.workers.append((worker_object, interval,))
         worker_object.parent = self
+
+    @property
+    def sources(self):
+        return [node for node in self.node_list if node.is_source]
+
+    @property
+    def sinks(self):
+        return [node for node in self.node_list if node.is_sink]
+
+    @property
+    def number_of_sources(self):
+        return len(self.sources)
+
+    @property
+    def number_of_sinks(self):
+        return len(number_of_sinks)
 
     def start(self, block=False):
         """
@@ -139,28 +164,5 @@ class NanoPrinter(NanoStreamProcessor):
         print(message)
 
 
-def bar():
-    class NanoPrinter(NanoStreamProcessor):
-        def process_item(self, message):
-            pass
-
-    class PrintFooWorker(NanoGraphWorker):
-        def worker(self):
-            print('foo')
-
-    my_printer = NanoPrinter()
-    my_foo_printer = PrintFooWorker()
-    three_filter = DivisibleByThreeFilter()
-    seven_filter = DivisibleBySevenFilter()
-
-    pipeline = NanoStreamGraph()
-    pipeline.add_node(three_filter)
-    pipeline.add_node(seven_filter)
-    pipeline.add_edge(my_printer, three_filter)
-    pipeline.add_node(my_foo_printer)
-    pipeline.add_edge(three_filter, my_foo_printer)
-
-    #false pipeline.start()
-
 if __name__ == '__main__':
-    bar()
+    pass
