@@ -30,6 +30,10 @@ import bowerbird
 import inspect
 
 
+def exception(message=None):
+    raise Exception(message)
+
+
 class NanoAncestor:
 
     def __init__(self):
@@ -157,8 +161,6 @@ class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
             "process_item needs to be overridden in child class.")
 
 
-
-
 class DoNothing(NanoStreamProcessor):
     '''
     Just a pass-through for testing and stuff.
@@ -198,22 +200,46 @@ class CounterOfThings(NanoStreamSender):
             counter += 1
 
 
+class SendEnvironmentVariables(NanoStreamProcessor):
+
+    def __init__(self, variable_list=None):
+        if variable_list = variable_list or exception(
+            message='Need a list of variables.')
+        self.variable_list = variable_list
+        super(SendEnvironmentVariables, self).__init__()
+
+    def process_item(self, message):
+        variables = {
+            key: os.environ[key] for key in self.variable_list}
+        return variables
+
+
+class Kickoff(NanoStreamSender):
+
+    def start(self):
+        self.queue_output(NanoStreamTrigger())
+
+
 class DivisibleByThreeFilter(NanoStreamProcessor):
+
     def process_item(self, message):
         if message % 3 == 0:
             return message
 
 
 class DivisibleBySevenFilter(NanoStreamProcessor):
+
     def process_item(self, message):
         if message % 7 == 0:
             return message
 
 
 class PrinterOfThings(NanoStreamProcessor):
+
     def __init__(self, prepend=''):
         self.prepend = prepend
         super(PrinterOfThings, self).__init__()
+
     def process_item(self, message):
         print(self.prepend + str(message))
         return message
@@ -311,6 +337,17 @@ class ConstantEmitter(NanoStreamSender):
             time.sleep(self.delay)
             self.queue_output(self.thing)
 
+
+class Throttle(NanoStreamProcessor):
+    '''
+    Insert a delay into the pipeline.
+    '''
+    def __init__(self, delay=1):
+        self.delay = delay
+
+    def process_item(self, message):
+        time.sleep(self.delay)
+        return message
 
 
 if __name__ == '__main__':

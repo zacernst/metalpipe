@@ -6,7 +6,9 @@ from bowerbird.filesystem import LocalFileSystem
 from bowerbird_file_reader import BowerBirdFileReader
 import logging
 
+
 logging.basicConfig(level=logging.INFO)
+
 
 if __name__ == '__main__':
     pipeline = NanoStreamGraph()

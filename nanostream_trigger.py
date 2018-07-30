@@ -21,7 +21,7 @@ def hello_world():
     print('hello, world!')
 
 
-class TimedTrigger:
+class Trigger:
     def __init__(self, previous_trigger_time=None, trigger_name=None):
         self.previous_trigger_time = None
         self.trigger_name = trigger_name or hashlib.md5(
@@ -51,7 +51,7 @@ class ScheduledTrigger(NanoStreamSender):
             We define this here so that we don't need to include arguments
             in the call to `schedule`'s `do()` function.
             '''
-            self.queue_output(TimedTrigger())
+            self.queue_output(Trigger())
 
         numeric_interval = hours or minutes or seconds
 
@@ -71,7 +71,7 @@ class ScheduledTrigger(NanoStreamSender):
 
     def send_trigger(self):
         logging.info('sending a trigger...')
-        self.queue_output(TimedTrigger())
+        self.queue_output(Trigger())
 
 
     def start(self):
