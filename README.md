@@ -8,7 +8,7 @@ graph, with appropriate data sources and sinks. This is a very clear and practic
 That workflow isn't just useful for processing huge amounts of data. It can be
 just as useful for smaller problems. But the smaller data sets
 don't justify installing, learning, configuring, and maintaining a heavyweight
-system like Storm, Flink, or Sparq. It would be nice to have a system that
+system like Storm, Flink, or Spark. It would be nice to have a system that
 combined the clarity of the stream-processing pattern with the simplicity and
 light footprint of a Python module. This is what `nanostream` is for.
 
