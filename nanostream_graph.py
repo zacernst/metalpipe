@@ -17,15 +17,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import networkx as nx
+import logging
 import threading
 import time
 import multiprocessing as mp
 from nanostream_processor import (
     NanoStreamProcessor, NanoStreamListener,
-    NanoStreamSender,
-    NanoStreamQueue)
+    NanoStreamSender, NanoStreamQueue)
 import inspect
 
+
+logging.basicConfig(level=logging.INFO)
 
 DEFAULT_MAX_QUEUE_SIZE = 128
 
@@ -39,8 +41,6 @@ class NanoStreamGraph(object):
         self.node_list = []  # nodes are listeners, processors, etc.
         self.edge_list = []  # edges are queues
         self.thread_list = []  # We'll add these when `start` is calledt
-        self.workers = []  # A list of functions to execute intermittantly
-        self.worker_interval = None
         self.queue_constructor = NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
         self.global_dict = {}  # For sharing and storing output from steps
@@ -79,7 +79,6 @@ class NanoStreamGraph(object):
     def __gt__(self, other):
         self.add_edge(self, other)
 
-
     def add_edge(self, source, target, **kwargs):
         """
         Create an edge connecting `source` to `target`. The edge
@@ -98,10 +97,6 @@ class NanoStreamGraph(object):
             source, target)
         target.input_queue_list.append(edge_queue)
         source.output_queue_list.append(edge_queue)
-
-    def add_worker(self, worker_object, interval=3):
-        self.workers.append((worker_object, interval,))
-        worker_object.parent = self
 
     @property
     def sources(self):
@@ -130,26 +125,26 @@ class NanoStreamGraph(object):
             worker = self.thread_constructor(target=node.start)
             self.thread_list.append(worker)
             worker.start()
-        for worker_tuple in self.workers:
-            if not isinstance(worker_tuple[0], NanoGraphWorker):
-                raise Exception("Needs to be a NanoGraphWorker")
-            worker_tuple[0].graph = self
+        monitor_thread = threading.Thread(
+            target=NanoStreamGraph.monitor_nodes, args=(self,))
+        monitor_thread.start()
 
-            def _thread_worker(self):
-                while 1:
-                    time.sleep(worker_tuple[1])
-                    worker_tuple[0].worker()
+    def monitor_nodes(self):
+        '''
+        Just logs dead threads. Need to do more.
+        '''
+        while 1:
+            for node_thread in self.thread_list:
+                if not node_thread.isAlive():
+                    logging.error('Dead thread')
+            time.sleep(1)
 
-            thread_worker = threading.Thread(
-                target=_thread_worker, args=(self,))
-            thread_worker.setDaemon(True)
-            thread_worker.start()
-            if block:
-                thread_worker.join()
 
 
 class NanoGraphWorker(object):
     """
+    Not so sure this is useful anymore.
+
     Subclass this, and override the `worker` method. Call `add_worker`
     on the `NanoStreamGraph` object.
     """
@@ -158,11 +153,6 @@ class NanoGraphWorker(object):
 
     def worker(self, *args, **kwargs):
         raise NotImplementedError("Need to override worker method")
-
-
-class NanoPrinter(NanoStreamProcessor):
-    def process_item(self, message):
-        print(message)
 
 
 if __name__ == '__main__':
