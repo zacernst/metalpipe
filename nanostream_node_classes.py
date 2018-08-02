@@ -1,6 +1,7 @@
 '''
 Location for specific types of nodes.
 '''
+
 import random
 from nanostream_processor import (
     NanoStreamListener, NanoStreamSender,
@@ -12,10 +13,30 @@ class ChaosMonkey(NanoStreamProcessor):
     '''
     With some probability, raise an Exception.
     '''
+    def __init__(self, probability=.01):
+        self.probability = probability
+        super(ChaosMonkey, self).__init__()
+
     def process_item(self, item):
-        if random.random() < .05:
+        if random.random() < self.probability:
             raise Exception('Monkey')
         return item
+
+
+class Filter(NanoStreamProcessor):
+    '''
+    Pass through the message if a test [is/is not] passed.
+    '''
+    def __init__(self, module_name, function_name, pass_if=True):
+        self.module = importlib.import_module(module_name)
+        self.function = self.module.getattr(function_name)
+        self.pass_if = pass_if
+        super(Filter, self).__init__()
+
+    def process_item(self, item):
+        if self.function(item) == self.pass_if:
+            return item
+        return None
 
 
 class DoNothing(NanoStreamProcessor):
@@ -102,12 +123,30 @@ class PrinterOfThings(NanoStreamProcessor):
         return message
 
 
+class MakeHttpSession(NanoStreamProcessor):
+    '''
+    Job is to create a session upon initialization and pass it to the
+    `NanoStreamGraph.global_dict`.
+    '''
+    def __init__(self, session_key='session_key', **session_kwargs):
+        self.session = requests.session(**session_kwargs)
+        super(MakeHttpSession, self).__init__()
+        self.make_global(session_key, self.session)
+
+    def process_item(self, item):
+        '''
+        We still need one of these. It's a pass-through. That's all.
+        '''
+        return item
+
+
 class HttpGetRequest(NanoStreamProcessor):
     '''
     This is the object that holds all configuration information to actually
     hitting the API and doing something to the results.
     '''
-    def __init__(self, url=None, endpoint=None, json_output=False):
+    def __init__(
+            self, url=None, session='session', endpoint=None, json_output=False):
         '''
         Keep the functionality of this module very minimal.
         '''
@@ -128,7 +167,7 @@ class HttpGetRequest(NanoStreamProcessor):
 
         # Hit the parameterized endpoint and return the results
         self.current_endpoint_dict = endpoint_dict
-        get_response = self.pipeline.session.get(
+        get_response = self.get_global(self.session).get(
             self.url.format(**endpoint_dict),
             cookies=self.pipeline.cookies)
         self.key_value.update(endpoint_dict)

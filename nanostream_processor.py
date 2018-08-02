@@ -61,13 +61,32 @@ class NanoAncestor:
     def partial(self, **kwargs):
         '''
         Return a version of `self` with some parameters filled-in.
+        Probably overkill.
         '''
         partial_class = type(
             self.__class__.__name__ + '_partial_' + hashlib.md5(
                 bytes(str(kwargs), 'utf8')).hexdigest()[:5],
-            (self.__class__,), {'__init__': partialmethod(self.__init__, **kwargs)})
+            (self.__class__,), {'__init__': partialmethod(
+                self.__init__, **kwargs)})
         import pdb; pdb.set_trace()
         return partial_class
+
+    def make_global(self, name, value):
+        '''
+        Puts the value in the `NanoStreamGraph.global_dict` where it can be
+        accessed from other nodes. Session information would be an example
+        of one possible use.
+        '''
+        if name in self.parent.global_dict:
+            logging.warning(
+                'Name {name} already exists in global_dict'.format(name=name))
+        self.parent.global_dict[name] = value
+
+    def get_global(self, name, default=None):
+        '''
+        Just looks up the value of `name` in the `NanoStreamGraph.global_dict`.
+        '''
+        return self.parent.global_dict.get(name, default)
 
 
 class NanoStreamSender(NanoAncestor):
