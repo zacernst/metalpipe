@@ -21,9 +21,8 @@ import logging
 import threading
 import time
 import multiprocessing as mp
-from nanostream_processor import (
-    NanoStreamProcessor, NanoStreamListener,
-    NanoStreamSender, NanoStreamQueue)
+import nanostream_processor
+# from nanostream_processor import NanoStreamQueue
 import inspect
 
 
@@ -36,21 +35,22 @@ class NanoStreamGraph(object):
     """
     They're actually directed graphs.
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.graph = nx.DiGraph()
         self.node_list = []  # nodes are listeners, processors, etc.
         self.edge_list = []  # edges are queues
         self.thread_list = []  # We'll add these when `start` is calledt
-        self.queue_constructor = NanoStreamQueue
+        self.queue_constructor = nanostream_processor.NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
-        self.global_dict = {}  # For sharing and storing output from steps
+        self.global_dict = {key: value for key, value in kwargs.items()}
         self.node_dict = {}
 
     def add_node(self, node):
         self.node_list.append(node)
         self.graph.add_node(node)
         node.global_dict = self.global_dict
-        node.parent = self
+        node.graph = self
+
         node_name, node_obj = [
             (i, j,) for i, j in
             inspect.getouterframes(inspect.currentframe())[

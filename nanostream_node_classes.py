@@ -1,8 +1,11 @@
 '''
 Location for specific types of nodes.
 '''
-
+import logging
 import random
+import copy
+import requests
+from nanostream_trigger import Trigger
 from nanostream_processor import (
     NanoStreamListener, NanoStreamSender,
     NanoAncestor, NanoStreamProcessor,
@@ -128,16 +131,13 @@ class MakeHttpSession(NanoStreamProcessor):
     Job is to create a session upon initialization and pass it to the
     `NanoStreamGraph.global_dict`.
     '''
-    def __init__(self, session_key='session_key', **session_kwargs):
+    def __init__(self, session_key='http_session', **session_kwargs):
         self.session = requests.session(**session_kwargs)
+        self.session_key = session_key
         super(MakeHttpSession, self).__init__()
-        self.make_global(session_key, self.session)
 
-    def process_item(self, item):
-        '''
-        We still need one of these. It's a pass-through. That's all.
-        '''
-        return item
+    def pre_flight_check(self):
+        self._make_global(self.session_key, self.session)
 
 
 class HttpGetRequest(NanoStreamProcessor):
@@ -146,13 +146,23 @@ class HttpGetRequest(NanoStreamProcessor):
     hitting the API and doing something to the results.
     '''
     def __init__(
-            self, url=None, session='session', endpoint=None, json_output=False):
+        self, url=None, url_parameter_dict=None, url_parameter_key=None,
+            session_key='http_session', json_output=False, **kwargs):
         '''
         Keep the functionality of this module very minimal.
         '''
         self.url = url
-        self.endpoint = endpoint
-        super(HttpGetRequest, self).__init__()
+        self.url_parameter_dict = url_parameter_dict or {}
+        self.url_parameter_key = url_parameter_key
+        self.session_key = session_key
+        self.session = None
+
+        super(HttpGetRequest, self).__init__(**kwargs)
+
+    def pre_flight_check(self):
+        while self.session is None:
+            self.session = self.get_global(self.session_key)
+        logging.info('Got session')
 
     def process_item(self, message):
         '''
@@ -166,13 +176,60 @@ class HttpGetRequest(NanoStreamProcessor):
         '''
 
         # Hit the parameterized endpoint and return the results
-        self.current_endpoint_dict = endpoint_dict
-        get_response = self.get_global(self.session).get(
-            self.url.format(**endpoint_dict),
-            cookies=self.pipeline.cookies)
-        self.key_value.update(endpoint_dict)
+        if isinstance(message, dict):
+            self.url_parameter_dict.update(message)
+        elif isinstance(message, Trigger):
+            pass
+        else:
+            self.url_parameter_dict[self.url_parameter_key] = message
+        get_response = self.get_global(self.session_key).get(
+            self.url.format(**self.url_parameter_dict)
+            )
+        logging.info(
+            'GET request to: ' + self.url.format(**self.url_parameter_dict))
+        #print(get_response.text)
         return get_response.text
 
+class HttpPostRequest(NanoStreamProcessor):
+    '''
+    This is the object that holds all configuration information to actually
+    hitting the API and doing something to the results.
+    '''
+    def __init__(
+            self, url=None, session_key='http_session', post_data=None, json_output=False, **kwargs):
+        '''
+        Keep the functionality of this module very minimal.
+        '''
+        self.url = url
+        self.session_key = session_key
+        self.post_data = post_data or {}
+        super(HttpPostRequest, self).__init__(**kwargs)
+
+    def pre_flight_check(self):
+        self.session = self.get_global(self.session_key)
+        while self.session is None:
+            self.session = self.get_global(self.session_key)
+        logging.info('Got session')
+
+    def process_item(self, message):
+        '''
+        The input to this function will be a dictionary-like object with
+        parameters to be substituted into the endpoint string and a dictionary
+        with keys and values to be passed in the GET request.
+
+        ```
+        {'url': 'http://www.foobar.com/{param}',
+         'param': 1}
+        '''
+        # Hit the parameterized endpoint and return the results
+        post_data = copy.deepcopy(self.post_data)
+        if isinstance(message, dict):
+            post_data.update(dict)
+        logging.info('POST: ' + self.url)
+        post_response = self.session.post(
+            self.url, data=post_data)
+        # logging.info('POST response: ' + post_response.text)
+        return post_response.text
 
 class Serializer(NanoStreamProcessor):
     '''
@@ -244,3 +301,52 @@ class Throttle(NanoStreamProcessor):
     def process_item(self, message):
         time.sleep(self.delay)
         return message
+
+
+class ScheduledTrigger(NanoStreamSender):
+    '''
+    Sends a `Trigger` object periodically.
+    '''
+    def __init__(
+        self, at_time_string='00:00',
+            hours=None, minutes=None, seconds=None):
+
+        super(ScheduledTrigger, self).__init__()
+
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds
+        self.at_time_string = at_time_string
+
+        def send_the_trigger():
+            '''
+            We define this here so that we don't need to include arguments
+            in the call to `schedule`'s `do()` function.
+            '''
+            self.queue_output(Trigger())
+
+        numeric_interval = hours or minutes or seconds
+
+        if hours:
+            interval_type = 'hours'
+        elif minutes:
+            interval_type = 'minutes'
+        elif seconds:
+            interval_type = 'seconds'
+        else:
+            raise Exception('This should not happen')
+        if numeric_interval is not None:
+            getattr(
+                schedule.every(numeric_interval),
+                interval_type).do(send_the_trigger)
+
+
+    def send_trigger(self):
+        logging.info('sending a trigger...')
+        self.queue_output(Trigger())
+
+
+    def start(self):
+        while 1:
+            schedule.run_pending()
+            time.sleep(.1)

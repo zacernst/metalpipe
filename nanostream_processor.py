@@ -23,9 +23,11 @@ import types
 import json
 import time
 import uuid
+import logging
 from functools import partialmethod
-from batch import BatchStart, BatchEnd
+from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
+import nanostream_trigger
 import bowerbird
 import inspect
 
@@ -40,12 +42,15 @@ class NanoAncestor:
     assign attributes to either.
     '''
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.signature = inspect.signature(self.__class__.__init__)
+        self.passthrough = kwargs.get('passthrough', False)
+        self.make_global = kwargs.get('make_global', None)
+        self.no_process_item = not hasattr(self, 'process_item')
 
     def __gt__(self, other):
-        parent = self.parent
-        parent.add_edge(self, other)
+        graph = self.graph
+        graph.add_edge(self, other)
         return other
 
     @property
@@ -68,25 +73,27 @@ class NanoAncestor:
                 bytes(str(kwargs), 'utf8')).hexdigest()[:5],
             (self.__class__,), {'__init__': partialmethod(
                 self.__init__, **kwargs)})
-        import pdb; pdb.set_trace()
         return partial_class
 
-    def make_global(self, name, value):
+    def _make_global(self, name, value):
         '''
         Puts the value in the `NanoStreamGraph.global_dict` where it can be
         accessed from other nodes. Session information would be an example
         of one possible use.
         '''
-        if name in self.parent.global_dict:
+        if name in self.graph.global_dict:
             logging.warning(
                 'Name {name} already exists in global_dict'.format(name=name))
-        self.parent.global_dict[name] = value
+        self.graph.global_dict[name] = value
 
     def get_global(self, name, default=None):
         '''
         Just looks up the value of `name` in the `NanoStreamGraph.global_dict`.
         '''
-        return self.parent.global_dict.get(name, default)
+        return self.graph.global_dict.get(name, default)
+
+    def pre_flight_check(self, *args, **kwargs):
+        pass  # override for initialization that happens at start
 
 
 class NanoStreamSender(NanoAncestor):
@@ -97,7 +104,7 @@ class NanoStreamSender(NanoAncestor):
         self.output_queue_list = []
         self.message_counter = 0
         self.uuid = uuid.uuid4().hex
-        super(NanoStreamSender, self).__init__()
+        super(NanoStreamSender, self).__init__(**kwargs)
 
     def queue_output(self, message, output_queue_list=None):
         self.message_counter += 1
@@ -138,7 +145,7 @@ class NanoStreamListener(NanoAncestor):
         self.child_class = child_class
         self.message_counter = 0
         self.input_queue_list = []
-        super(NanoStreamListener, self).__init__()
+        super(NanoStreamListener, self).__init__(**kwargs)
 
     def _process_item(self, message):
         """
@@ -147,26 +154,37 @@ class NanoStreamListener(NanoAncestor):
         """
         result = self.process_item(message.message_content)
         result = NanoStreamMessage(result)
+        if self.make_global is not None:
+            self._make_global(self.make_global, result)
+        if self.passthrough:
+            logging.info('Passthrough: ' + str(message))
+            return message
         return result
 
     def start(self):
-        while 1:
-            for input_queue in self.input_queue_list:
-                one_item = input_queue.get()
-                if one_item is None:
-                    continue
-                self.message_counter += 1
-                output = self._process_item(one_item)
-                if hasattr(self, 'queue_output'):
-                    self.queue_output(output)
+        self.pre_flight_check()
+        if self.no_process_item:
+            self.queue_output(nanostream_trigger.Trigger())
+            while 1:
+                time.sleep(1)
+        else:
+            while 1:
+                for input_queue in self.input_queue_list:
+                    one_item = input_queue.get()
+                    if one_item is None:
+                        continue
+                    self.message_counter += 1
+                    output = self._process_item(one_item)
+                    if hasattr(self, 'queue_output'):
+                        self.queue_output(output)
 
 
 class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
     """
     """
-    def __init__(self, input_queue=None, output_queue=None):
-        super(NanoStreamProcessor, self).__init__()
-        NanoStreamSender.__init__(self)
+    def __init__(self, input_queue=None, output_queue=None, **kwargs):
+        super(NanoStreamProcessor, self).__init__(**kwargs)
+        NanoStreamSender.__init__(self, **kwargs)
         self.start = super(NanoStreamProcessor, self).start
 
     @property
@@ -178,12 +196,6 @@ class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
     @property
     def is_source(self):
         return not hasattr(self, 'input_queue')
-
-    def process_item(self, *args, **kwargs):
-        raise Exception(
-            "process_item needs to be overridden in child class.")
-
-
 
 
 
