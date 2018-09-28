@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/zacernst/nanostream.svg?branch=master)](https://travis-ci.org/zacernst/nanostream)
+
 # nanostream: Small-scale streaming data
 
 Streaming data tools such as Storm, Flink, and Spark allow you to set up a data
