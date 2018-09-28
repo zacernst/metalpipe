@@ -4,7 +4,7 @@ bcrypt==3.1.4
 behave==1.2.6
 boto3==1.7.62
 botocore==1.10.62
-bowerbird==1.1.0
+# bowerbird==1.1.0
 certifi==2018.4.16
 cffi==1.11.5
 chardet==3.0.4
