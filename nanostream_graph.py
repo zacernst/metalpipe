@@ -22,7 +22,6 @@ import threading
 import time
 import multiprocessing as mp
 import nanostream_processor
-# from nanostream_processor import NanoStreamQueue
 import inspect
 
 
@@ -39,7 +38,7 @@ class NanoStreamGraph(object):
         self.graph = nx.DiGraph()
         self.node_list = []  # nodes are listeners, processors, etc.
         self.edge_list = []  # edges are queues
-        self.thread_list = []  # We'll add these when `start` is calledt
+        self.thread_list = []  # We'll add these when `start` is called
         self.queue_constructor = nanostream_processor.NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
         self.global_dict = {key: value for key, value in kwargs.items()}
@@ -138,7 +137,6 @@ class NanoStreamGraph(object):
                 if not node_thread.isAlive():
                     logging.error('Dead thread')
             time.sleep(1)
-
 
 
 class NanoGraphWorker(object):

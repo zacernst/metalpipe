@@ -4,6 +4,8 @@ Location for specific types of nodes.
 import logging
 import random
 import copy
+import uuid
+import time
 import requests
 from nanostream_trigger import Trigger
 from nanostream_processor import (
@@ -81,6 +83,20 @@ class CounterOfThings(NanoStreamSender):
             counter += 1
 
 
+class StringSplitter(NanoStreamProcessor):
+    def __init__(self, delimiter=',', message_key=None):
+        self.delimiter = delimiter
+        self.message_key = message_key
+        super(StringSplitter, self).__init__()
+
+    def process_item(self, message):
+        input_string = (
+            message if self.message_key is None
+            else message[self.message_key])
+        for item in input_string.split(self.delimiter):
+            pass
+
+
 class SendEnvironmentVariables(NanoStreamProcessor):
 
     def __init__(self, variable_list=None):
@@ -147,22 +163,20 @@ class HttpGetRequest(NanoStreamProcessor):
     '''
     def __init__(
         self, url=None, url_parameter_dict=None, url_parameter_key=None,
-            session_key='http_session', json_output=False, **kwargs):
+            session_key=None, json_output=False, **kwargs):
         '''
         Keep the functionality of this module very minimal.
         '''
         self.url = url
         self.url_parameter_dict = url_parameter_dict or {}
         self.url_parameter_key = url_parameter_key
-        self.session_key = session_key
-        self.session = None
-
+        self.session = requests.Session()
+        self.session_key = session_key or uuid.uuid4().hex
+        self.json_output = json_output
         super(HttpGetRequest, self).__init__(**kwargs)
 
     def pre_flight_check(self):
-        while self.session is None:
-            self.session = self.get_global(self.session_key)
-        logging.info('Got session')
+        pass
 
     def process_item(self, message):
         '''
@@ -182,13 +196,13 @@ class HttpGetRequest(NanoStreamProcessor):
             pass
         else:
             self.url_parameter_dict[self.url_parameter_key] = message
-        get_response = self.get_global(self.session_key).get(
+        get_response = self.session.get(
             self.url.format(**self.url_parameter_dict)
             )
         logging.info(
             'GET request to: ' + self.url.format(**self.url_parameter_dict))
-        #print(get_response.text)
         return get_response.text
+
 
 class HttpPostRequest(NanoStreamProcessor):
     '''
@@ -196,7 +210,8 @@ class HttpPostRequest(NanoStreamProcessor):
     hitting the API and doing something to the results.
     '''
     def __init__(
-            self, url=None, session_key='http_session', post_data=None, json_output=False, **kwargs):
+        self, url=None, session_key='http_session', post_data=None,
+            json_output=False, **kwargs):
         '''
         Keep the functionality of this module very minimal.
         '''
@@ -208,7 +223,7 @@ class HttpPostRequest(NanoStreamProcessor):
     def pre_flight_check(self):
         self.session = self.get_global(self.session_key)
         while self.session is None:
-            self.session = self.get_global(self.session_key)
+            self.session = self.set_global(self.session_key, default={})
         logging.info('Got session')
 
     def process_item(self, message):
@@ -277,18 +292,24 @@ class ConstantEmitter(NanoStreamSender):
     '''
     Send a thing every n seconds
     '''
-    def __init__(self, thing=None, delay=None, from_json=False):
+    def __init__(
+            self, thing=None, thing_key=None, delay=None, from_json=False):
         if from_json:
             thing = json.loads(thing)
 
         self.thing = json.loads(thing) if from_json else thing
+        self.thing_key = thing_key
         self.delay = delay or 0
         super(ConstantEmitter, self).__init__()
 
     def start(self):
+        logging.debug('starting')
         while 1:
             time.sleep(self.delay)
-            self.queue_output(self.thing)
+            output = (
+                {self.thing_key: self.thing} if self.thing_key is not None
+                else self.thing)
+            self.queue_output(output)
 
 
 class Throttle(NanoStreamProcessor):

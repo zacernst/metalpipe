@@ -39,7 +39,7 @@ def exception(message=None):
 class NanoAncestor:
     '''
     Sometimes a node is just a listener; sometimes just a sender. This helps
-    assign attributes to either.
+    assign attributes to both.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -108,6 +108,7 @@ class NanoStreamSender(NanoAncestor):
 
     def queue_output(self, message, output_queue_list=None):
         self.message_counter += 1
+        logging.debug('Queueing: ' + str(message))
         for output_queue in self.output_queue_list:
             output_queue.put(message, block=True, timeout=None)
 
