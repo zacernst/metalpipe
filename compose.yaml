@@ -1,0 +1,19 @@
+---
+#
+
+name: SplitAndSerialize
+
+nodes:
+  - name: splitter
+    class: StringSplitter
+    arg_mapping:
+        delimiter: outer_delimiter
+    frozen_arguments:
+        delimiter: ","
+  - name: serializer
+    class: Serializer
+    arg_mapping: null
+
+edges:
+  - from: splitter
+    to: serializer

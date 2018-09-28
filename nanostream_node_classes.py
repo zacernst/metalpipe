@@ -246,6 +246,7 @@ class HttpPostRequest(NanoStreamProcessor):
         # logging.info('POST response: ' + post_response.text)
         return post_response.text
 
+
 class Serializer(NanoStreamProcessor):
     '''
     Takes an iterable and sends out a series of messages while iterating
