@@ -28,7 +28,7 @@ from functools import partialmethod
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 import nanostream_trigger
-import bowerbird
+# import bowerbird
 import inspect
 
 

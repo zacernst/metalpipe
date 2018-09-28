@@ -1,4 +1,4 @@
-import bowerbird
+# import bowerbird
 from nanostream_processor import NanoStreamProcessor
 
 class BowerBirdFileReader(NanoStreamProcessor):

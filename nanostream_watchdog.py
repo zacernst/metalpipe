@@ -12,7 +12,7 @@ import re
 from nanostream_graph import NanoStreamGraph
 from nanostream_processor import (
     NanoStreamProcessor, NanoStreamSender)
-from bowerbird.filesystem import LocalFileSystem
+# from bowerbird.filesystem import LocalFileSystem
 
 
 logging.basicConfig(level=logging.INFO)
