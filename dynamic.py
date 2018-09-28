@@ -50,7 +50,8 @@ def template_class(
         frozen_arguments_mapping):
 
     kwargs_remapping = kwargs_remapping or {}
-    frozen_init = functools.partial(parent_class.__init__, **frozen_arguments_mapping)
+    frozen_init = functools.partial(
+        parent_class.__init__, **frozen_arguments_mapping)
     if isinstance(parent_class, (str,)):
         parent_class = globals()[parent_class]
     cls = type(class_name, (parent_class,), {})
@@ -60,16 +61,17 @@ def template_class(
     return cls
 
 
-class ProcessorEncapsulator(NanoStreamProcessor):
+class ProcessorClassFactory(type):
 
-    def __init__(self, raw_config):
-        self.node_dict = get_node_dict(raw_config)
-        self.class_name = raw_config['name']
-        self.edge_list_dict = raw_config.get('edges', [])
-        self.raw_config = raw_config
+    def __new__(cls, raw_config):
+        new_class = super().__new__(
+            cls, raw_config['name'], (NanoStreamProcessor,), {})
+        new_class.node_dict = get_node_dict(raw_config)
+        new_class.class_name = raw_config['name']
+        new_class.edge_list_dict = raw_config.get('edges', [])
+        new_class.raw_config = raw_config
 
-        for node_name, node_config in self.node_dict.items():
-            logging.info('Setting up node {node_name}'.format(node_name=node_name))
+        for node_name, node_config in new_class.node_dict.items():
             _class = node_config['class']
             cls = template_class(
                 node_name, _class,
@@ -77,23 +79,14 @@ class ProcessorEncapsulator(NanoStreamProcessor):
                 node_config['frozen_arguments'])
             setattr(cls, 'raw_config', raw_config)
             node_config['cls_obj'] = cls
+        # Inject?
+        globals()[new_class.__name__] = new_class
+        return new_class
 
 
 if __name__ == '__main__':
-
     raw_config = get_config_file('compose.yaml')
-    node_dict = get_node_dict(raw_config)
-    class_name = raw_config['name']
-    edge_list_dict = raw_config.get('edges', [])
+    encapsulator = ProcessorClassFactory(raw_config)
 
-    for node_name, node_config in node_dict.items():
-        logging.info('Setting up node {node_name}'.format(node_name=node_name))
-        _class = node_config['class']
-        cls = template_class(
-            node_name, _class,
-            node_config['remapping'],
-            node_config['frozen_arguments'])
-        setattr(cls, 'raw_config', raw_config)  # Store the config for the whole thing
-        node_config['cls_obj'] = cls
-    encapsulator = ProcessorEncapsulator()
-
+    # Steps:
+    # 1.
