@@ -28,9 +28,12 @@ from functools import partialmethod
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 import nanostream_trigger
-import nanostream_graph
+# import nanostream_graph
 # import bowerbird
 import inspect
+
+
+DEFAULT_MAX_QUEUE_SIZE = 128
 
 
 def exception(message=None):
@@ -48,10 +51,11 @@ class NanoAncestor:
         self.passthrough = kwargs.get('passthrough', False)
         self.make_global = kwargs.get('make_global', None)
         self.no_process_item = not hasattr(self, 'process_item')
+        self.name = kwargs.get('name', None) or uuid.uuid4().hex
 
     def __gt__(self, other):
         # graph = self.graph
-        nanostream_graph.NanoStreamGraph.add_edge(self, other)
+        self.add_edge(other)
         return other
 
     @property
@@ -95,6 +99,17 @@ class NanoAncestor:
 
     def pre_flight_check(self, *args, **kwargs):
         pass  # override for initialization that happens at start
+
+    def add_edge(self, target, **kwargs):
+        """
+        Create an edge connecting `self` to `target`. The edge
+        is really just a queue
+        """
+        max_queue_size = kwargs.get(
+            'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
+        edge_queue = NanoStreamQueue(max_queue_size)
+        target.input_queue_list.append(edge_queue)
+        self.output_queue_list.append(edge_queue)
 
 
 class NanoStreamSender(NanoAncestor):

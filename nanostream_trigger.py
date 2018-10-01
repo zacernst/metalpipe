@@ -9,7 +9,6 @@ import logging
 import re
 import hashlib
 import schedule
-from nanostream_graph import NanoStreamGraph
 
 
 logging.basicConfig(level=logging.INFO)
@@ -30,10 +29,3 @@ class Trigger:
 
 
 
-
-if __name__ == '__main__':
-    import nanostream_pipeline
-    pipeline = nanostream_pipeline.NanoStreamGraph()
-    trigger_node = ScheduledTrigger(seconds=1)
-    pipeline.add_node(trigger_node)
-    pipeline.start()

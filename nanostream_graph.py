@@ -17,17 +17,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import networkx as nx
+import types
+import yaml
 import logging
 import threading
+import functools
 import time
 import multiprocessing as mp
 import nanostream_processor
 import inspect
-
-
+from nanostream_node_classes import StringSplitter, Serializer
 logging.basicConfig(level=logging.INFO)
 
-DEFAULT_MAX_QUEUE_SIZE = 128
 
 
 class NanoStreamGraph(object):
@@ -50,14 +51,15 @@ class NanoStreamGraph(object):
         node.global_dict = self.global_dict
         node.graph = self
 
-        node_name, node_obj = [
-            (i, j,) for i, j in
-            inspect.getouterframes(inspect.currentframe())[
-                -1].frame.f_globals.items() if j is node][0]
-        if node_name not in self.node_dict:
-            self.node_dict[node_name] = node_obj
+        if node.name not in self.node_dict:
+            self.node_dict[node.name] = node
         else:
             logging.warning('same name used for two nodes.')
+        # Recurse into node if the node is a dynamic set of nodes
+        if isinstance(node, DynamicClassMediator):
+            for _, node_dict in node.node_dict.items():
+                node_obj = node_dict['obj']
+                self.add_node(node_obj)
 
     def __getattribute__(self, attr):
         '''
@@ -78,25 +80,7 @@ class NanoStreamGraph(object):
     def __gt__(self, other):
         self.add_edge(self, other)
 
-    @staticmethod
-    def add_edge(source, target, **kwargs):
-        """
-        Create an edge connecting `source` to `target`. The edge
-        is really just a queue
-        """
-        # No rails here --> no check for number of sources and sinks
-        if isinstance(source, NanoStreamGraph):
-            source = source.sinks[0]
-        if isinstance(target, NanoStreamGraph):
-            target = target.sources[0]
-        max_queue_size = kwargs.get(
-            'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
-        edge_queue = nanostream_processor.NanoStreamQueue(max_queue_size)
-        # Following is for NetworkX, cuz why not?
-        # self.graph.add_edge(
-        #     source, target)
-        target.input_queue_list.append(edge_queue)
-        source.output_queue_list.append(edge_queue)
+
 
     @property
     def sources(self):
@@ -152,7 +136,153 @@ class NanoGraphWorker(object):
 
     def worker(self, *args, **kwargs):
         raise NotImplementedError("Need to override worker method")
+########################################################
+
+def get_config_file(pathname):
+    config = yaml.load(open(pathname, 'r').read())
+    return config
+
+
+def get_node_dict(node_config):
+    node_dict = {}
+    for node_config in node_config['nodes']:
+        node_class = globals()[node_config['class']]
+        node_name = node_config['name']
+        node_dict[node_name] = {}
+        node_dict[node_name]['class'] = node_class
+        frozen_arguments = node_config.get('frozen_arguments', {})
+        node_dict[node_name]['frozen_arguments'] = frozen_arguments
+        node_obj = node_class(**frozen_arguments)
+        # node_dict[node_name]['obj'] = node_obj
+        node_dict[node_name]['remapping'] = node_config.get('arg_mapping', {})
+    return node_dict
+
+
+def kwarg_remapper(f, **kwarg_mapping):
+    reverse_mapping = {value: key for key, value in kwarg_mapping.items()}
+    parameters = [i for i, _ in list(inspect.signature(f).parameters.items())]
+    for kwarg in parameters:
+        if kwarg not in kwarg_mapping:
+            reverse_mapping[kwarg] = kwarg
+
+    def remapped_function(*args, **kwargs):
+        # import pdb; pdb.set_trace()
+        remapped_kwargs = {
+            reverse_mapping[argument]: value for argument, value in kwargs.items() if argument in parameters}
+        return f(*args, **remapped_kwargs)
+
+    return remapped_function
+
+
+def template_class(
+    class_name, parent_class, kwargs_remapping,
+        frozen_arguments_mapping):
+
+    kwargs_remapping = kwargs_remapping or {}
+    frozen_init = functools.partial(
+        parent_class.__init__, **frozen_arguments_mapping)
+    if isinstance(parent_class, (str,)):
+        parent_class = globals()[parent_class]
+    cls = type(class_name, (parent_class,), {})
+    setattr(
+        cls, '__init__', kwarg_remapper(
+            frozen_init, **kwargs_remapping))
+    return cls
+
+
+def foo():
+    return 'hi'
+
+
+class DynamicClassMediator(nanostream_processor.NanoStreamProcessor):
+
+    def __init__(self, *args, **kwargs):
+        super(DynamicClassMediator, self).__init__(**kwargs)
+        for node_name, node_dict in self.node_dict.items():
+            cls_obj = node_dict['cls_obj']
+            node_obj = cls_obj(**kwargs)
+            node_dict['obj'] = node_obj
+        for edge in self.raw_config['edges']:
+            source_node_obj = self.node_dict[edge['from']]['obj']
+            target_node_obj = self.node_dict[edge['to']]['obj']
+            source_node_obj > target_node_obj
+
+        def bind_methods():
+            for attr_name in dir(DynamicClassMediator):
+                if attr_name.startswith('_'):
+                    continue
+                attr_obj = getattr(DynamicClassMediator, attr_name)
+                if not isinstance(attr_obj, types.FunctionType):
+                    continue
+                setattr(self, attr_name, types.MethodType(attr_obj, self))
+
+        bind_methods()
+
+    def get_sink(self):
+        sinks = self.sink_list()
+        if len(sinks) != 1:
+            raise Exception(
+                '`DynamicClassMediator` needs to have exactly one sink.')
+        return sinks[0]
+
+    def get_source(self):
+        sources = self.source_list()
+        if len(sources) != 1:
+            raise Exception(
+                '`DynamicClassMediator` needs to have exactly one source.')
+        return sources[0]
+
+    def sink_list(self):
+        sink_nodes = []
+        for node_name, node_dict in self.node_dict.items():
+            node_obj = node_dict['obj']
+            if len(node_obj.output_queue_list) == 0:
+                sink_nodes.append(node_obj)
+        return sink_nodes
+
+    def source_list(self):
+        source_nodes = [
+            node_dict['obj'] for node_dict in self.node_dict.values()
+            if node_dict['obj'].is_source]
+        return source_nodes
+
+    def start(self):
+        for node_dict in self.node_dict.values():
+            print(node_dict)
+            logging.info('Starting node: {node}'.format(node='hi'))
+            node_dict['obj'].start()
+
+    def hi(self):
+        return 'hi'
+
+
+class ProcessorClassFactory(type):
+
+    def __new__(cls, raw_config):
+        new_class = super().__new__(
+            cls, raw_config['name'], (DynamicClassMediator,), {})
+        new_class.node_dict = get_node_dict(raw_config)
+        new_class.class_name = raw_config['name']
+        new_class.edge_list_dict = raw_config.get('edges', [])
+        new_class.raw_config = raw_config
+
+        for node_name, node_config in new_class.node_dict.items():
+            _class = node_config['class']
+            cls = template_class(
+                node_name, _class,
+                node_config['remapping'],
+                node_config['frozen_arguments'])
+            setattr(cls, 'raw_config', raw_config)
+            node_config['cls_obj'] = cls
+        # Inject?
+        globals()[new_class.__name__] = new_class
+        return new_class
+
 
 
 if __name__ == '__main__':
-    pass
+    raw_config = get_config_file('compose.yaml')
+    encapsulator = ProcessorClassFactory(raw_config)
+    obj = encapsulator(outer_delimiter=',')
+    graph = NanoStreamGraph()
+    graph.add_node(obj)
