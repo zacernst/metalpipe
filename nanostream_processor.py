@@ -28,6 +28,7 @@ from functools import partialmethod
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 import nanostream_trigger
+import nanostream_graph
 # import bowerbird
 import inspect
 
@@ -49,8 +50,8 @@ class NanoAncestor:
         self.no_process_item = not hasattr(self, 'process_item')
 
     def __gt__(self, other):
-        graph = self.graph
-        graph.add_edge(self, other)
+        # graph = self.graph
+        nanostream_graph.NanoStreamGraph.add_edge(self, other)
         return other
 
     @property
@@ -193,11 +194,6 @@ class NanoStreamProcessor(NanoStreamListener, NanoStreamSender):
         return (
             not hasattr(self, 'output_queue_list') or
             len(self.output_queue_list) == 0)
-
-    @property
-    def is_source(self):
-        return not hasattr(self, 'input_queue')
-
 
 
 if __name__ == '__main__':

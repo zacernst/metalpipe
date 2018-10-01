@@ -39,7 +39,7 @@ class NanoStreamGraph(object):
         self.node_list = []  # nodes are listeners, processors, etc.
         self.edge_list = []  # edges are queues
         self.thread_list = []  # We'll add these when `start` is called
-        self.queue_constructor = nanostream_processor.NanoStreamQueue
+        # self.queue_constructor = nanostream_processor.NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
         self.global_dict = {key: value for key, value in kwargs.items()}
         self.node_dict = {}
@@ -78,7 +78,8 @@ class NanoStreamGraph(object):
     def __gt__(self, other):
         self.add_edge(self, other)
 
-    def add_edge(self, source, target, **kwargs):
+    @staticmethod
+    def add_edge(source, target, **kwargs):
         """
         Create an edge connecting `source` to `target`. The edge
         is really just a queue
@@ -90,10 +91,10 @@ class NanoStreamGraph(object):
             target = target.sources[0]
         max_queue_size = kwargs.get(
             'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
-        edge_queue = self.queue_constructor(max_queue_size)
+        edge_queue = nanostream_processor.NanoStreamQueue(max_queue_size)
         # Following is for NetworkX, cuz why not?
-        self.graph.add_edge(
-            source, target)
+        # self.graph.add_edge(
+        #     source, target)
         target.input_queue_list.append(edge_queue)
         source.output_queue_list.append(edge_queue)
 
