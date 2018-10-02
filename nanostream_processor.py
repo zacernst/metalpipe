@@ -27,7 +27,7 @@ import logging
 from functools import partialmethod
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
-from nanostream_queue import NanoStreamQueue
+# from nanostream_queue import NanoStreamQueue
 import nanostream_trigger
 # import nanostream_graph
 # import bowerbird
