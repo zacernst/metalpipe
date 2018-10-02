@@ -50,5 +50,5 @@ class NanoStreamMessage(object):
     def __repr__(self):
         s = ': '.join([
             'NanoStreamMessage',
-            self.uuid.hex])
+            self.uuid.hex, str(self.message_content)])
         return s

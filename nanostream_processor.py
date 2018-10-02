@@ -27,6 +27,7 @@ import logging
 from functools import partialmethod
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
+from nanostream_queue import NanoStreamQueue
 import nanostream_trigger
 # import nanostream_graph
 # import bowerbird
@@ -35,6 +36,7 @@ import inspect
 
 DEFAULT_MAX_QUEUE_SIZE = 128
 
+logging.basicConfig(level=logging.DEBUG)
 
 def exception(message=None):
     raise Exception(message)
@@ -108,8 +110,17 @@ class NanoAncestor:
         max_queue_size = kwargs.get(
             'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = NanoStreamQueue(max_queue_size)
-        target.input_queue_list.append(edge_queue)
-        self.output_queue_list.append(edge_queue)
+
+        # Make this recursive below
+        if hasattr(target, 'get_source'):  # Only metaclass has this method
+            target.get_source().input_queue_list.append(edge_queue)
+        else:
+            target.input_queue_list.append(edge_queue)
+
+        if hasattr(self, 'get_source'):
+            self.get_sink().output_queue_list.append(edge_queue)
+        else:
+            self.output_queue_list.append(edge_queue)
 
 
 class NanoStreamSender(NanoAncestor):
@@ -129,29 +140,6 @@ class NanoStreamSender(NanoAncestor):
             output_queue.put(message, block=True, timeout=None)
 
 
-class NanoStreamQueue:
-    """
-    """
-    def __init__(self, max_queue_size, name=None):
-        self.queue = queue.Queue(max_queue_size)
-        self.name = name or uuid.uuid4().hex
-
-    def get(self):
-        try:
-            message = self.queue.get(block=False)
-        except queue.Empty:
-            message = None
-        return message
-
-    def put(self, message, *args, **kwargs):
-        '''
-        '''
-        if not isinstance(message, NanoStreamMessage):
-            message = NanoStreamMessage(message)
-        if message.message_content is not None:
-            self.queue.put(message)
-
-
 class NanoStreamListener(NanoAncestor):
     """
     Anything that reads from an input queue.
@@ -169,14 +157,19 @@ class NanoStreamListener(NanoAncestor):
         This calls the user's ``process_item`` with just the message content,
         and then returns the full message.
         """
-        result = self.process_item(message.message_content)
-        result = NanoStreamMessage(result)
-        if self.make_global is not None:
-            self._make_global(self.make_global, result)
-        if self.passthrough:
-            logging.info('Passthrough: ' + str(message))
-            return message
-        return result
+        logging.debug('Processing message content: {message_content}'.format(
+            message_content=message.mesage_content)))
+        # Change everything to generators in the processing of
+        # messages for nodes that return more than one message output
+        # per input.
+        for result in self.process_item(messager.message_content):
+            result = NanoStreamMessage(result)
+            if self.make_global is not None:
+                self._make_global(self.make_global, result)
+            if self.passthrough:
+                logging.debug('Passthrough: ' + str(message))
+                result = message
+            yield result
 
     def start(self):
         self.pre_flight_check()

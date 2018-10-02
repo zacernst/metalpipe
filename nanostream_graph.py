@@ -23,12 +23,15 @@ import logging
 import threading
 import functools
 import time
+import sys
 import multiprocessing as mp
 import nanostream_processor
 import inspect
-from nanostream_node_classes import StringSplitter, Serializer
-logging.basicConfig(level=logging.INFO)
+from nanostream_node_classes import (
+    StringSplitter, Serializer, PrinterOfThings, ConstantEmitter)
 
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class NanoStreamGraph(object):
@@ -40,7 +43,6 @@ class NanoStreamGraph(object):
         self.node_list = []  # nodes are listeners, processors, etc.
         self.edge_list = []  # edges are queues
         self.thread_list = []  # We'll add these when `start` is called
-        # self.queue_constructor = nanostream_processor.NanoStreamQueue
         self.thread_constructor = threading.Thread  # For future mp support
         self.global_dict = {key: value for key, value in kwargs.items()}
         self.node_dict = {}
@@ -77,11 +79,6 @@ class NanoStreamGraph(object):
         self.add_node(other)
         return self
 
-    def __gt__(self, other):
-        self.add_edge(self, other)
-
-
-
     @property
     def sources(self):
         return [node for node in self.node_list if node.is_source]
@@ -102,13 +99,20 @@ class NanoStreamGraph(object):
         """
         We check whether any of the nodes have a "run_on_start" function.
         """
-        for node in self.graph.nodes():
+        for node_name, node in self.node_dict.items():
             if hasattr(node, 'run_on_start'):
+                logging.info(
+                    'Found `run_on_start` for: {node_name}'.format(
+                        node_name=node_name))
                 node.run_on_start()
-        for node in self.graph.nodes():
+        for node_name, node in self.node_dict.items():
+            logging.info('Starting node {node_name}'.format(
+                node_name=node_name))
             worker = self.thread_constructor(target=node.start)
             self.thread_list.append(worker)
             worker.start()
+            logging.info('Started node {node_name}'.format(
+                node_name=node_name))
         monitor_thread = threading.Thread(
             target=NanoStreamGraph.monitor_nodes, args=(self,))
         monitor_thread.start()
@@ -136,7 +140,7 @@ class NanoGraphWorker(object):
 
     def worker(self, *args, **kwargs):
         raise NotImplementedError("Need to override worker method")
-########################################################
+
 
 def get_config_file(pathname):
     config = yaml.load(open(pathname, 'r').read())
@@ -166,9 +170,9 @@ def kwarg_remapper(f, **kwarg_mapping):
             reverse_mapping[kwarg] = kwarg
 
     def remapped_function(*args, **kwargs):
-        # import pdb; pdb.set_trace()
         remapped_kwargs = {
-            reverse_mapping[argument]: value for argument, value in kwargs.items() if argument in parameters}
+            reverse_mapping[argument]: value for argument, value
+            in kwargs.items() if argument in parameters}
         return f(*args, **remapped_kwargs)
 
     return remapped_function
@@ -218,18 +222,27 @@ class DynamicClassMediator(nanostream_processor.NanoStreamProcessor):
 
         bind_methods()
 
+        source = self.get_source()
+        self.input_queue_list = source.input_queue_list
+        sink = self.get_sink()
+        self.output_queue_list = sink.output_queue_list
+
     def get_sink(self):
         sinks = self.sink_list()
-        if len(sinks) != 1:
+        if len(sinks) > 1:
             raise Exception(
-                '`DynamicClassMediator` needs to have exactly one sink.')
+                '`DynamicClassMediator` may have no more than one sink.')
+        elif len(sinks) == 0:
+            return None
         return sinks[0]
 
     def get_source(self):
         sources = self.source_list()
-        if len(sources) != 1:
+        if len(sources) > 1:
             raise Exception(
-                '`DynamicClassMediator` needs to have exactly one source.')
+                '`DynamicClassMediator` may have no more than one source.')
+        elif len(sources) == 0:
+            return None
         return sources[0]
 
     def sink_list(self):
@@ -279,10 +292,17 @@ class ProcessorClassFactory(type):
         return new_class
 
 
-
 if __name__ == '__main__':
     raw_config = get_config_file('compose.yaml')
     encapsulator = ProcessorClassFactory(raw_config)
     obj = encapsulator(outer_delimiter=',')
+    # sys.exit(0)
+    printer = PrinterOfThings()
+    emitter = ConstantEmitter(thing='foo,bar')
     graph = NanoStreamGraph()
     graph.add_node(obj)
+    graph.add_node(printer)
+    graph.add_node(emitter)
+    emitter > obj
+    obj > printer
+    graph.start()

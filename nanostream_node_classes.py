@@ -88,13 +88,18 @@ class StringSplitter(NanoStreamProcessor):
         self.delimiter = delimiter
         self.message_key = message_key
         super(StringSplitter, self).__init__()
+        import pdb; pdb.set_trace()
 
     def process_item(self, message):
+        logging.debug('hi')
+        print(self.delimiter)
         input_string = (
             message if self.message_key is None
             else message[self.message_key])
         for item in input_string.split(self.delimiter):
-            pass
+            logging.debug('split item: ' + str(item))
+            self.queue_output(item)
+
 
 
 class SendEnvironmentVariables(NanoStreamProcessor):
@@ -133,7 +138,7 @@ class DivisibleBySevenFilter(NanoStreamProcessor):
 
 class PrinterOfThings(NanoStreamProcessor):
 
-    def __init__(self, prepend=''):
+    def __init__(self, prepend='printer:'):
         self.prepend = prepend
         super(PrinterOfThings, self).__init__()
 
@@ -257,6 +262,7 @@ class Serializer(NanoStreamProcessor):
         super(Serializer, self).__init__()
 
     def process_item(self, message):
+        print('serializer process...')
         if self.include_batch_markers:
             self.queue_output(BatchStart())
         for item in message:
@@ -294,7 +300,7 @@ class ConstantEmitter(NanoStreamSender):
     Send a thing every n seconds
     '''
     def __init__(
-            self, thing=None, thing_key=None, delay=None, from_json=False):
+            self, thing=None, thing_key=None, delay=2, from_json=False):
         if from_json:
             thing = json.loads(thing)
 
