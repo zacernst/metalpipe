@@ -158,7 +158,7 @@ class NanoStreamListener(NanoAncestor):
         and then returns the full message.
         """
         logging.debug('Processing message content: {message_content}'.format(
-            message_content=message.mesage_content)))
+            message_content=message.mesage_content))
         # Change everything to generators in the processing of
         # messages for nodes that return more than one message output
         # per input.
