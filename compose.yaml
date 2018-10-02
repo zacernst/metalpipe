@@ -1,17 +1,17 @@
 ---
 #
 
-name: SplitAndSerialize
+name: TestDynamicClass
 
 nodes:
-  - name: splitter
-    class: StringSplitter
+  - name: my_emitter
+    class: ConstantEmitter
     arg_mapping:
-        delimiter: outer_delimiter
-  - name: serializer
-    class: Serializer
+        thing: outer_thing
+  - name: printer
+    class: PrinterOfThings
     arg_mapping: null
 
 edges:
-  - from: splitter
-    to: serializer
+  - from: my_emitter
+    to: printer

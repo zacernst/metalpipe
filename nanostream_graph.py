@@ -297,12 +297,14 @@ if __name__ == '__main__':
     encapsulator = ProcessorClassFactory(raw_config)
     obj = encapsulator(outer_delimiter=',')
     # sys.exit(0)
-    printer = PrinterOfThings()
+    # printer = PrinterOfThings()
     emitter = ConstantEmitter(thing='foo,bar')
     graph = NanoStreamGraph()
-    graph.add_node(obj)
-    graph.add_node(printer)
+    #graph.add_node(obj)
+    #graph.add_node(printer)
     graph.add_node(emitter)
-    emitter > obj
-    obj > printer
+    #emitter > printer
     graph.start()
+    #emitter > obj
+    #obj > printer
+    #graph.start()
