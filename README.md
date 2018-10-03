@@ -73,10 +73,85 @@ class FooEmitter(NanoNode):  # inherit from NanoNode
     def generator(self):
         while 1:
             time.sleep(self.interval)
-            yield message
+            yield message  # Output must be yielded, not returned
 ```
 
+Of course, the example is trivial because you generally won't want to keep
+sending the same string over and over again forever. More realistic uses of
+this pattern would include reading lines from a file, connecting to an external
+API, and so on.
 
+Now let's suppose you want to create a node that is passed a string as a 
+message, and returns `True` if the message has an even number of characters, 
+`False` otherwise. The class definition would look like this:
+
+```
+class MessageLengthTester(NanoNode):
+    def __init__(self):
+        # No particular initialization required in this example
+        super(MessageLengthTester, self).__init__()
+
+    def process_item(self, message):
+        if len(message) % 2 == 0:
+            yield True  # Again, note the use of yield instead of return
+        else:
+            yield False
+```
+
+That's it.
+
+Instantiating both of them into a pipeline is just a matter of instantiating
+the classes and hooking them together:
+
+```
+message_node = FooEmitter(message='foobar', interval=5)
+length_tester_node = MessageLengthTester()
+
+message_node > length_tester_node
+
+message_node.global_start()
+```
+
+## Composing and configuring `NanoNode` objects
+
+Let's suppose you've worked very hard to create the pipeline from the last
+example. Now, your boss says that another engineering team wants to use it,
+but they want to rename parameters and "freeze" the values of certain
+other parameters to specific values. Once that's done, they want to use it
+as just one part of a more complicated `NanoStream` pipeline.
+
+This can be accomplished using a configuration file. When `NanoStream` parses
+the configuration file, it will dynamically create the desired class, which
+can be instantiated and used as if it were a single node in another pipeline.
+
+The configuration file is written in YAML, and it would look like this:
+
+```
+name: FooMessageTester
+
+nodes:
+  - name: foo_generator
+    class FooEmitter
+    frozen_arguments:
+      message: foobar
+    arg_mapping:
+      interval: foo_interval 
+  - name: length_tester
+    class: MessageLengthTester
+    arg_mapping: null
+```
+
+With this file saved as (e.g.) `foo_message.yaml`, the following code will
+create a `FooMessageTester` class and instantiate it:
+
+```
+foo_message_config = yaml.load(open('./foo_message.yaml', 'r').read())
+class_factory(foo_message_config)
+# At this point, there is now a `FooMessageTester` class
+foo_node = FooMessageTester(foo_interval=1)
+```
+
+(...more documentation later...)
 
 # This is an alpha release
 
