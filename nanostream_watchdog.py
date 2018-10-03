@@ -11,14 +11,14 @@ import logging
 import re
 from nanostream_graph import NanoStreamGraph
 from nanostream_processor import (
-    NanoStreamProcessor, NanoStreamSender)
+    NanoNode)
 # from bowerbird.filesystem import LocalFileSystem
 
 
 logging.basicConfig(level=logging.INFO)
 
 
-class FileSystemWatchdog(NanoStreamProcessor):
+class FileSystemWatchdog(NanoNode):
     def __init__(
         self, regexes=None, recurse=False,
             bowerbird_filesystem=None, poll_frequency=5):
