@@ -2,6 +2,10 @@
 
 # nanostream: Small-scale streaming data
 
+Hadoop is to Redis as
+Spark is to NanoStream
+
+
 Streaming data tools such as Storm, Flink, and Spark allow you to set up a data
 processing pipeline in a clear, intuitive manner. You work on creating each
 processor in the pipeline, and then stitch those together into a directed

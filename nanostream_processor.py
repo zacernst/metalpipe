@@ -19,11 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import time
 import uuid
 import logging
+import os
 import threading
 import functools
+import csv
+import io
 import yaml
 import types
 import inspect
+
+from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 from nanostream_queue import NanoStreamQueue
 
@@ -33,7 +38,7 @@ DEFAULT_MAX_QUEUE_SIZE = 128
 logging.basicConfig(level=logging.DEBUG)
 
 
-class NanoAncestor:
+class NanoNode:
     '''
     Sometimes a node is just a listener; sometimes just a sender. This helps
     assign attributes to both.
@@ -93,7 +98,9 @@ class NanoAncestor:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
-                    for output in self.process_item(one_item):
+                    message_content = one_item.message_content
+
+                    for output in self.process_item(message_content):
                         yield output
 
     def processor(self, message):
@@ -138,11 +145,11 @@ class NanoAncestor:
         for node in self.all_connected():
             logging.debug('global_start:' + str(self))
             node.global_dict = global_dict
-            thread = threading.Thread(target=NanoAncestor.stream, args=(node,))
+            thread = threading.Thread(target=NanoNode.stream, args=(node,))
             thread.start()
 
 
-class CounterOfThings(NanoAncestor):
+class CounterOfThings(NanoNode):
 
     def generator(self):
         '''
@@ -154,7 +161,7 @@ class CounterOfThings(NanoAncestor):
             counter += 1
 
 
-class PrinterOfThings(NanoAncestor):
+class PrinterOfThings(NanoNode):
 
     def __init__(self, prepend='printer:'):
         self.prepend = prepend
@@ -165,7 +172,7 @@ class PrinterOfThings(NanoAncestor):
         yield message
 
 
-class ConstantEmitter(NanoAncestor):
+class ConstantEmitter(NanoNode):
     '''
     Send a thing every n seconds
     '''
@@ -178,7 +185,9 @@ class ConstantEmitter(NanoAncestor):
         self.thing_key = thing_key
         self.delay = delay or 0
         super(ConstantEmitter, self).__init__()
-        logging.debug('init constant emitter with constant {thing}'.format(thing=str(thing)))
+        logging.debug(
+            'init constant emitter with constant {thing}'.format(
+                thing=str(thing)))
 
     def generator(self):
         logging.debug('starting constant emitter')
@@ -192,7 +201,79 @@ class ConstantEmitter(NanoAncestor):
             logging.debug('yielded output: {output}'.format(output=output))
 
 
-class DynamicClassMediator(NanoAncestor):
+class LocalFileReader(NanoNode):
+
+    def __init__(
+        self, directory='.', send_batch_markers=True,
+            serialize=False, read_mode='r'):
+        self.directory = directory
+        self.serialize = serialize
+        self.read_mode = read_mode
+        self.send_batch_markers = send_batch_markers
+        super(LocalFileReader, self).__init__()
+
+    def process_item(self, message):
+        filename = '/'.join([self.directory, message])
+        with open(filename, self.read_mode) as file_obj:
+            if self.serialize:
+                if self.send_batch_markers:
+                    yield BatchStart()
+                for line in file_obj:
+                    output = line
+                    yield output
+                yield BatchEnd()
+            else:
+                output = file_obj.read()
+                yield output
+
+
+class CSVReader(NanoNode):
+
+    def __init__(self, send_batch_markers=True):
+        self.send_batch_markers = send_batch_markers
+        super(CSVReader, self).__init__()
+
+    def process_item(self, message):
+        file_obj = io.StringIO(message)
+        #if isinstance(message, file):
+        #    file_obj = message
+        reader = csv.DictReader(file_obj)
+        if self.send_batch_markers:
+            yield BatchStart()
+        for row in reader:
+            yield row
+        if self.send_batch_markers:
+            yield BatchEnd()
+
+
+class LocalDirectoryWatchdog(NanoNode):
+
+    def __init__(self, directory='.', check_interval=3):
+        self.directory = directory
+        self.latest_arrival = time.time()
+        self.check_interval = check_interval
+        super(LocalDirectoryWatchdog, self).__init__()
+
+    def generator(self):
+        while 1:
+            logging.debug('sleeping...')
+            time.sleep(self.check_interval)
+            time_in_interval = None
+            for filename in os.listdir(self.directory):
+                last_modified_time = os.path.getmtime(
+                    '/'.join([self.directory, filename]))
+                if last_modified_time > self.latest_arrival:
+                    yield '/'.join([self.directory, filename])
+                    if time_in_interval is None or last_modified_time > time_in_interval:
+                        time_in_interval = last_modified_time
+                        logging.debug('time_in_interval: ' + str(time_in_interval))
+            logging.debug('done looping over filenames')
+            if time_in_interval is not None:
+                self.latest_arrival = time_in_interval
+
+
+
+class DynamicClassMediator(NanoNode):
 
     def __init__(self, *args, **kwargs):
 
@@ -291,7 +372,7 @@ def kwarg_remapper(f, **kwarg_mapping):
         for key, value in kwargs.items():
             if key in reverse_mapping:
                 remapped_kwargs[reverse_mapping[key]] = value
-        print(remapped_kwargs)
+        logging.debug('remaed function with kwargs: ' + str(remapped_kwargs))
 
         #remapped_kwargs = {
         #    reverse_mapping[argument]: value for argument, value
@@ -336,15 +417,20 @@ def class_factory(raw_config):
     globals()[new_class.__name__] = new_class
     return new_class
 
-
+def test_1():
+    filename_emitter = ConstantEmitter(thing='hubdialer_config.yaml')
+    file_reader = LocalFileReader(serialize=False)
+    printer = PrinterOfThings()
+    watchdog = LocalDirectoryWatchdog(directory='./sample_data')
+    csv_reader = CSVReader()
+    watchdog > file_reader > csv_reader > printer
+    watchdog.global_start()
 
 if __name__ == '__main__':
 
-    raw_config = yaml.load(open('./compose.yaml', 'r'))
+    raw_config = yaml.load(open('./csv_watcher.yaml', 'r'))
     class_factory(raw_config)
-    obj = TestDynamicClass(outer_thing='qux')
-
-
+    obj = CSVWatcher(watch_directory='./sample_data')
 
 
     #obj.global_start()
