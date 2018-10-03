@@ -51,6 +51,31 @@ printing the rows of any CSV file that appears there (or is modified).
 
 ## Rolling your own `NanoNode` class
 
+`NanoNode` objects fall into one of two categories, depending on whether they
+ingest data from other nodes, or generate data another way. If they accept data
+from an upstream `NanoNode`, then you specify a `process_item` method; if they
+generate their own data (i.e. they're at the beginning of the pipeline), then
+you specify a `generator` method. Your class should inherit from `NanoNode`,
+and you provide the appropriate method (`process_item` or `generator`), and
+if necessary, define an `__init__` method.
+
+For example, suppose you want to create a source node for your pipeline that
+simply emits the word `foo` every few seconds, and the user specifies how
+many seconds between each `foo`. Then the class would be defined like so:
+
+```
+class FooEmitter(NanoNode):  # inherit from NanoNode
+    def __init__(self, message='', interval=1):
+        self.message = message
+        self.interval = interval
+        super(FooEmitter, self).__init__()  # Must call the `NanoNode` __init__
+
+    def generator(self):
+        while 1:
+            time.sleep(self.interval)
+            yield message
+```
+
 
 
 # This is an alpha release
