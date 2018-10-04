@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import threading
 import time
+import collections
 
 
 class TimedDict(dict):
@@ -27,38 +28,40 @@ class TimedDict(dict):
     def __init__(self, timeout=10, check_interval=1, timeout_call=None):
         self.timeout = timeout
         self.check_interval = check_interval
-        self.base_dict = {}
+        self.base_dict = collections.defaultdict(lambda x: None)
         self.time_dict = {}
         self.timeout_call = timeout_call
-        self.check_thread = threading.Thread(target=self.check_loop)
-        self.check_thread.start()
- 
-    def check_loop(self):
-        while 1:
-            current_time = time.time()
-            for key, value in self.base_dict.items():
-                created_time = self.time_dict[key]
-                if current_time - created_time > self.timeout:
-                    del self.base_dict[key]
-                    del self.time_dict[key]
-                    if self.timeout_call is not None:
-                        self.timeout_call(key, value)
-                    break
-            time.sleep(self.check_interval)
+        self.last_check_time = time.time()
+
+    def __repr__(self):
+        self.clean()
+        d = {key: (self.base_dict[key], self.time_dict[key],) for key in self.base_dict.keys()}
+        return d.__repr__()
 
     def __setitem__(self, key, value):
         current_time = time.time()
         self.base_dict[key] = value
         self.time_dict[key] = current_time
+        self.clean()
+
+    def clean(self):
+        current_time = time.time()
+        if current_time - self.last_check_time > self.check_interval:
+            key_set = set(self.base_dict.keys())
+            for key in key_set:
+                if current_time - self.time_dict[key] > self.timeout:
+                    del self.time_dict[key]
+                    del self.base_dict[key]
+        self.last_check_time = current_time
 
     def __getitem__(self, key):
-        return self.base_dict[key]
+        out = self.base_dict[key]
+        self.clean()
+        return out
 
 
 if __name__ == '__main__':
-    def callback(x, y):
-        print('callback with', x, y)
-
-    d = TimedDict(timeout_call=callback)
+    d = TimedDict(timeout=10, check_interval=1)
     d['foo'] = 'bar'
-    
+    print(d)
+
