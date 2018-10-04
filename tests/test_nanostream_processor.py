@@ -5,7 +5,7 @@ import time
 import pytest
 import nanostream_node
 import nanostream_queue
-
+import nanostream_poison_pill
 
 os.environ['PYTHONPATH'] = '.'
 logging.basicConfig(level=logging.INFO)
@@ -22,7 +22,7 @@ def test_has_input_queue():
     obj = nanostream_node.PrinterOfThings()
     assert isinstance(obj.input_queue_list, (list,))
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')  # By function because we terminate it
 def simple_graph():
     '''
     Fixture. Returns a `ConstantEmitter` that feeds into a `PrinterOfThings`
@@ -59,5 +59,5 @@ def test_start_simple_graph(simple_graph):
     simple_graph.global_start()
     time.sleep(2)
     assert simple_graph.thread_dict['printer'].is_alive()
-    assert simple_graph.thread_dict['emitter'].is_alive()
+    simple_graph.terminate()
 

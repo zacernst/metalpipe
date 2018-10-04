@@ -28,6 +28,7 @@ class NanoStreamQueue:
     def __init__(self, max_queue_size, name=None):
         self.queue = queue.Queue(max_queue_size)
         self.name = name or uuid.uuid4().hex
+        self.open_for_business = True
 
     def get(self):
         try:

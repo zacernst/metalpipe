@@ -60,6 +60,9 @@ class NanoNode:
         self.add_edge(other)
         return other
 
+    def run_generator(self):
+        return any(queue.open_for_business for queue in self.output_queue_list)
+
     @property
     def is_source(self):
         return len(self.input_queue_list) == 0
@@ -97,6 +100,9 @@ class NanoNode:
         if self.is_source and not isinstance(self, (DynamicClassMediator,)):
             for output in self.generator():
                 yield output
+                if not any(queue.open_for_business for queue in self.output_queue_list):
+                    logging.info('shutting down.')
+                    break
         else:
             while 1:
                 for input_queue in self.input_queue_list:
@@ -114,6 +120,9 @@ class NanoNode:
                             yield output
                 if self.kill_thread:
                     break
+            for input_queue in self.input_queue_list:
+                input_queue.open_for_business = False
+
 
     def process_item(self, message):
         '''
@@ -169,6 +178,9 @@ class NanoNode:
             thread.start()
             node.thread_dict = thread_dict
             thread_dict[node.name] = thread
+
+    def terminate(self):
+        self.broadcast(PoisonPill())
 
 
 class CounterOfThings(NanoNode):
@@ -275,7 +287,7 @@ class LocalDirectoryWatchdog(NanoNode):
         super(LocalDirectoryWatchdog, self).__init__()
 
     def generator(self):
-        while 1:
+        while self.run_generator():
             logging.debug('sleeping...')
             time.sleep(self.check_interval)
             time_in_interval = None
