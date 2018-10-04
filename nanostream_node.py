@@ -271,6 +271,31 @@ class LocalDirectoryWatchdog(NanoNode):
                 self.latest_arrival = time_in_interval
 
 
+class HttpGetRequest(NanoStreamProcessor):
+    '''
+    Makes GET requests.
+    '''
+    def __init__(self, url=None, endpoint=None):
+
+        self.url = url
+        self.endpoint = endpoint
+        super(HttpGetRequest, self).__init__()
+
+    def process_item(self, message):
+        '''
+        The input to this function will be a dictionary-like object with
+        parameters to be substituted into the endpoint string and a dictionary
+        with keys and values to be passed in the GET request.
+        '''
+
+        # Hit the parameterized endpoint and yield back the results
+        self.current_endpoint_dict = endpoint_dict
+        get_response = self.pipeline.session.get(
+            self.url.format(**endpoint_dict),
+            cookies=self.pipeline.cookies)
+        self.key_value.update(endpoint_dict)
+        return get_response.text
+
 
 class DynamicClassMediator(NanoNode):
 

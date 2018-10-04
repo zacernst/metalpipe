@@ -155,7 +155,21 @@ class_factory(foo_message_config)
 foo_node = FooMessageTester(foo_interval=1)
 ```
 
-(...more documentation later...)
+You can now use `foo_node` just as you would any other node. So in order to
+run it, you just do:
+
+```
+foo_node.global_start()
+```
+
+Because `foo_node` is just another node, you can insert it into a larger
+pipeline and reuse it. For example, suppose that other engineering team
+wants to add a `PrinterOfThings` to the end of the pipeline. They'd do this:
+
+```
+printer = PrinterOfThings()
+foo_node > printer
+```
 
 # This is an alpha release
 

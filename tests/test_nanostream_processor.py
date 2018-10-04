@@ -1,6 +1,6 @@
 import os
 os.environ['PYTHONPATH'] = '.'
-import nanostream_processor
+import nanostream_node
 
 assert 1 == 1
 
