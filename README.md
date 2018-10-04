@@ -40,9 +40,13 @@ in a pipeline like so:
     file_reader = LocalFileReader(serialize=False)
     csv_reader = CSVReader()
     printer = PrinterOfThings()
+
     # Use ">" to create connections between the nodes
     watchdog > file_reader > csv_reader > printer
+
     # Start it
+    # You can run the `global_start` method on any of the connected nodes;
+    # it will automatically start all of them.
     watchdog.global_start()
 ```
 

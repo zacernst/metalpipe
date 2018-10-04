@@ -264,7 +264,9 @@ class LocalDirectoryWatchdog(NanoNode):
                     '/'.join([self.directory, filename]))
                 if last_modified_time > self.latest_arrival:
                     yield '/'.join([self.directory, filename])
-                    if time_in_interval is None or last_modified_time > time_in_interval:
+                    if (
+                        time_in_interval is None or
+                            last_modified_time > time_in_interval):
                         time_in_interval = last_modified_time
                         logging.debug('time_in_interval: ' + str(time_in_interval))
             logging.debug('done looping over filenames')
