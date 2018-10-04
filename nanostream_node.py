@@ -271,7 +271,7 @@ class LocalDirectoryWatchdog(NanoNode):
                 self.latest_arrival = time_in_interval
 
 
-class HttpGetRequest(NanoStreamProcessor):
+class HttpGetRequest(NanoNode):
     '''
     Makes GET requests.
     '''
