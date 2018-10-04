@@ -33,15 +33,15 @@ from nanostream_message import NanoStreamMessage
 from nanostream_queue import NanoStreamQueue
 
 
-DEFAULT_MAX_QUEUE_SIZE = 128
+DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class NanoNode:
     '''
-    Sometimes a node is just a listener; sometimes just a sender. This helps
-    assign attributes to both.
+    The foundational class of `NanoStream`. This class is inherited by all
+    nodes in a computation graph.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -74,6 +74,7 @@ class NanoNode:
         edge_queue = NanoStreamQueue(max_queue_size)
 
         self.output_node_list.append(target)
+        # set output_node_list to be same object as sink output_node_list
         target.input_node_list.append(self)
 
         # Make this recursive below
@@ -89,7 +90,7 @@ class NanoNode:
             self.output_queue_list.append(edge_queue)
 
     def start(self):
-        if self.is_source:
+        if self.is_source and not isinstance(self, (DynamicClassMediator,)):
             for output in self.generator():
                 yield output
         else:
@@ -110,9 +111,6 @@ class NanoNode:
         """
         logging.debug('Processing message content: {message_content}'.format(
             message_content=message.mesage_content))
-        # Change everything to generators in the processing of
-        # messages for nodes that return more than one message output
-        # per input.
         for result in self.process_item(message.message_content):
             result = NanoStreamMessage(result)
             yield result
@@ -235,8 +233,6 @@ class CSVReader(NanoNode):
 
     def process_item(self, message):
         file_obj = io.StringIO(message)
-        #if isinstance(message, file):
-        #    file_obj = message
         reader = csv.DictReader(file_obj)
         if self.send_batch_markers:
             yield BatchStart()
@@ -268,7 +264,8 @@ class LocalDirectoryWatchdog(NanoNode):
                         time_in_interval is None or
                             last_modified_time > time_in_interval):
                         time_in_interval = last_modified_time
-                        logging.debug('time_in_interval: ' + str(time_in_interval))
+                        logging.debug(
+                            'time_in_interval: ' + str(time_in_interval))
             logging.debug('done looping over filenames')
             if time_in_interval is not None:
                 self.latest_arrival = time_in_interval
@@ -306,6 +303,9 @@ class DynamicClassMediator(NanoNode):
         self.input_queue_list = source.input_queue_list
         sink = self.get_sink()
         self.output_queue_list = sink.output_queue_list
+
+        self.output_node_list = sink.output_node_list
+        self.input_node_list = source.input_node_list
 
     def get_sink(self):
         sinks = self.sink_list()
@@ -419,23 +419,18 @@ def class_factory(raw_config):
     globals()[new_class.__name__] = new_class
     return new_class
 
-def test_1():
-    filename_emitter = ConstantEmitter(thing='hubdialer_config.yaml')
-    file_reader = LocalFileReader(serialize=False)
-    printer = PrinterOfThings()
-    watchdog = LocalDirectoryWatchdog(directory='./sample_data')
-    csv_reader = CSVReader()
-    watchdog > file_reader > csv_reader > printer
-    watchdog.global_start()
 
 if __name__ == '__main__':
 
-    raw_config = yaml.load(open('./csv_watcher.yaml', 'r'))
+    raw_config = yaml.load(
+        open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
     class_factory(raw_config)
     obj = CSVWatcher(watch_directory='./sample_data')
 
+    printer = PrinterOfThings(prepend='TWO:')
+    obj > printer
 
-    #obj.global_start()
+    obj.global_start()
 
     #c = CounterOfThings()
     #p = PrinterOfThings()
