@@ -16,17 +16,5 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from timed_dict import TimedDict
-from nanostream_node import NanoNode
-
-
-class InnerJoin(NanoNode):
-    '''
-    Joins two streams of dict-like objects.
-    '''
-
-    def __init__(self, join_keys=None, expiration_window=5):
-        self.join_keys = join_keys
-
-    def start(self):
-        pass
+class PoisonPill:
+    pass

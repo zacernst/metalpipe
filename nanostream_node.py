@@ -31,9 +31,11 @@ import inspect
 from nanostream_batch import BatchStart, BatchEnd
 from nanostream_message import NanoStreamMessage
 from nanostream_queue import NanoStreamQueue
-
+from nanostream_canary import Canary
+from nanostream_poison_pill import PoisonPill
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -51,6 +53,8 @@ class NanoNode:
         self.input_node_list = []
         self.output_node_list = []
         self.global_dict = None
+        self.thread_dict = {}
+        self.kill_thread = False
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -100,9 +104,24 @@ class NanoNode:
                     if one_item is None:
                         continue
                     message_content = one_item.message_content
+                    if isinstance(message_content, (PoisonPill,)):
+                        logging.info('received poision pill.')
+                        self.kill_thread = True
+                    elif message_content is None:
+                        pass
+                    else:
+                        for output in self.process_item(message_content):
+                            yield output
+                if self.kill_thread:
+                    break
 
-                    for output in self.process_item(message_content):
-                        yield output
+    def process_item(self, message):
+        '''
+        Default `process_item` method for broadcast queues. With this method
+        guaranteed to exist, we can handle poison pills and canaries in the
+        `_process_item` method.
+        '''
+        pass
 
     def processor(self, message):
         """
@@ -137,14 +156,19 @@ class NanoNode:
                 seen = seen | node.all_connected(seen=seen)
         return seen
 
+    def broadcast(self, broadcast_message):
+        for node in self.all_connected():
+            for input_queue in node.input_queue_list:
+                input_queue.put(broadcast_message)
+
     def global_start(self):
-        thread_dict = {}
-        global_dict = {}
+        thread_dict = self.thread_dict
         for node in self.all_connected():
             logging.debug('global_start:' + str(self))
-            node.global_dict = global_dict
             thread = threading.Thread(target=NanoNode.stream, args=(node,))
             thread.start()
+            node.thread_dict = thread_dict
+            thread_dict[node.name] = thread
 
 
 class CounterOfThings(NanoNode):
@@ -454,7 +478,8 @@ if __name__ == '__main__':
 
     printer = PrinterOfThings(prepend='TWO:')
     obj > printer
-
+    obj.node_dict['printer']['obj'].name = 'printer'
+    obj.node_dict['csv_reader']['obj'].name = 'csv_reader'
     obj.global_start()
 
     #c = CounterOfThings()
