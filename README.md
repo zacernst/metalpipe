@@ -77,7 +77,7 @@ class FooEmitter(NanoNode):  # inherit from NanoNode
     def generator(self):
         while 1:
             time.sleep(self.interval)
-            yield message  # Output must be yielded, not returned
+            yield self.message  # Output must be yielded, not returned
 ```
 
 Of course, the example is trivial because you generally won't want to keep
