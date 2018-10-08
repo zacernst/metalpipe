@@ -55,6 +55,7 @@ class NanoNode:
         self.global_dict = None
         self.thread_dict = {}
         self.kill_thread = False
+        self.accumulator = {}
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -84,6 +85,9 @@ class NanoNode:
         # set output_node_list to be same object as sink output_node_list
         target.input_node_list.append(self)
 
+        edge_queue.source_node = self
+        edge_queue.target_node = target
+
         # Make this recursive below
         # TODO: Add support for composition
         if 0 and hasattr(target, 'get_source'):  # Only metaclass has this method
@@ -99,7 +103,7 @@ class NanoNode:
     def start(self):
         if self.is_source and not isinstance(self, (DynamicClassMediator,)):
             for output in self.generator():
-                yield output
+                yield output, None
                 if not any(queue.open_for_business for queue in self.output_queue_list):
                     logging.info('shutting down.')
                     break
@@ -117,7 +121,7 @@ class NanoNode:
                         pass
                     else:
                         for output in self.process_item(message_content):
-                            yield output
+                            yield output, one_item  # Also yield previous message
                 if self.kill_thread:
                     break
             for input_queue in self.input_queue_list:
@@ -144,9 +148,13 @@ class NanoNode:
             yield result
 
     def stream(self):
-        for output in self.start():
+        for output, previous_message in self.start():
             for output_queue in self.output_queue_list:
-                output_queue.put(output, block=True, timeout=None)
+                output_queue.put(
+                    output,
+                    block=True,
+                    timeout=None,
+                    previous_message=previous_message)
 
     def all_connected(self, seen=None):
         seen = seen or set()
@@ -311,10 +319,11 @@ class HttpGetRequest(NanoNode):
     '''
     Makes GET requests.
     '''
-    def __init__(self, url=None, endpoint=None):
+    def __init__(self, url=None, endpoint=None, endpoint_dict=None):
 
         self.url = url
         self.endpoint = endpoint
+        self.endpoint_dict = endpoint_dict or {}
         super(HttpGetRequest, self).__init__()
 
     def process_item(self, message):
@@ -488,11 +497,21 @@ if __name__ == '__main__':
     class_factory(raw_config)
     obj = CSVWatcher(watch_directory='./sample_data')
 
-    printer = PrinterOfThings(prepend='TWO:')
+    printer = PrinterOfThings(prepend='TWO: ')
     obj > printer
     obj.node_dict['printer']['obj'].name = 'printer'
     obj.node_dict['csv_reader']['obj'].name = 'csv_reader'
     obj.global_start()
+
+    get_post = HttpGetRequest(
+        url='https://jsonplaceholder.typicode.com',
+        endpoint='posts/{post_number}',
+        endpoint_dict={})
+
+    url_output = PrinterOfThings()
+
+
+    # def __init__(self, url=None, endpoint=None, endpoint_dict=None):
 
     #c = CounterOfThings()
     #p = PrinterOfThings()

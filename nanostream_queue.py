@@ -29,6 +29,8 @@ class NanoStreamQueue:
         self.queue = queue.Queue(max_queue_size)
         self.name = name or uuid.uuid4().hex
         self.open_for_business = True
+        self.source_node = None
+        self.target_node = None
 
     def get(self):
         try:
@@ -40,10 +42,16 @@ class NanoStreamQueue:
     def put(self, message, *args, **kwargs):
         '''
         '''
+        previous_message = kwargs['previous_message']
         if not isinstance(message, NanoStreamMessage):
-            message = NanoStreamMessage(message)
+            message_obj = NanoStreamMessage(message)
+            message_obj.accumulator[self.source_node.name] = message
+            if previous_message is not None:
+                message_obj.accumulator.update(previous_message.accumulator)
         logging.debug(
                 'Putting message on queue {queue_name}: {message_content}'.format(
-                queue_name=self.name, message_content=message.message_content))
-        if message.message_content is not None:
-            self.queue.put(message)
+                queue_name=self.name, message_content=message_obj.message_content))
+        if message_obj.message_content is not None:
+            self.queue.put(message_obj)
+        logging.debug('Put message on queue: ' + str(message_obj))
+        logging.debug('Message history: ' + str(message_obj.accumulator))

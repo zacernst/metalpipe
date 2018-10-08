@@ -33,19 +33,7 @@ class NanoStreamMessage(object):
         self.time_created = time.time()
         self.time_processed = None
         self.uuid = uuid.uuid4()
-
-    def add_history(self, message):
-        """
-        We maintain a list of all the previous ``NanoStreamMessage`` objects
-        from the history of ``self`` in the attribute ``history``. This is
-        done by copying the previous history from the previous message,
-        deleting ``history`` from the previous message, and appending
-        the previous message to ``self.history``.
-        """
-
-        self.history = message.history
-        del message.history
-        self.history.append(message)
+        self.accumulator = {}
 
     def __repr__(self):
         s = ': '.join([

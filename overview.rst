@@ -5,8 +5,6 @@ Overview
 What is it? Why is it?
 ----------------------
 
-**Hadoop is to Redis as Spark is to NanoStream**
-
 We love stream processing. It's a great model for lots of work,
 especially ETL. There are excellent stream processing tools such as
 Spark, Flink, and Storm. They're designed for handling huge amounts of
@@ -90,7 +88,7 @@ defined like so:
             super(FooEmitter, self).__init__()  # Must call the `NanoNode` __init__
 
         def generator(self):
-            while 1:
+            while self.run_generator():
                 time.sleep(self.interval)
                 yield message  # Output must be yielded, not returned
 
@@ -98,6 +96,11 @@ Of course, the example is trivial because you generally won't want to
 keep sending the same string over and over again forever. More realistic
 uses of this pattern would include reading lines from a file, connecting
 to an external API, and so on.
+
+Note that the code inside the ``generator`` function is wrapped inside a
+``while`` loop that tests the value of ``self.run_generator()``. You'll
+want to ensure that your generator methods follow the same pattern because
+
 
 Now let's suppose you want to create a node that is passed a string as a
 message, and returns ``True`` if the message has an even number of
