@@ -28,11 +28,12 @@ import yaml
 import types
 import inspect
 
-from nanostream_batch import BatchStart, BatchEnd
-from nanostream_message import NanoStreamMessage
-from nanostream_queue import NanoStreamQueue
-from nanostream_canary import Canary
-from nanostream_poison_pill import PoisonPill
+from nanostream.message.batch import BatchStart, BatchEnd
+from nanostream.message.message import NanoStreamMessage
+from nanostream.queue.queue import NanoStreamQueue
+from nanostream.message.canary import Canary
+from nanostream.message.poison_pill import PoisonPill
+
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 

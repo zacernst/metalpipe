@@ -19,8 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import queue
 import uuid
 import logging
-from nanostream_message import NanoStreamMessage
+from nanostream.message.message import NanoStreamMessage
+
+
 logging.basicConfig(level=logging.DEBUG)
+
 
 class NanoStreamQueue:
     """
@@ -42,7 +45,7 @@ class NanoStreamQueue:
     def put(self, message, *args, **kwargs):
         '''
         '''
-        previous_message = kwargs['previous_message']
+        previous_message = kwargs.get('previous_message', None)
         if not isinstance(message, NanoStreamMessage):
             message_obj = NanoStreamMessage(message)
             message_obj.accumulator[self.source_node.name] = message
