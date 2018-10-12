@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+
 import time
 import uuid
 import logging
@@ -30,9 +31,10 @@ import inspect
 
 from nanostream.message.batch import BatchStart, BatchEnd
 from nanostream.message.message import NanoStreamMessage
-from nanostream.queue.queue import NanoStreamQueue
+from nanostream.node_queue.queue import NanoStreamQueue
 from nanostream.message.canary import Canary
 from nanostream.message.poison_pill import PoisonPill
+from nanostream.utils.set_attributes import set_kwarg_attributes
 
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
@@ -206,8 +208,9 @@ class CounterOfThings(NanoNode):
 
 class PrinterOfThings(NanoNode):
 
+    @set_kwarg_attributes()
     def __init__(self, prepend='printer:'):
-        self.prepend = prepend
+        # self.prepend = prepend
         super(PrinterOfThings, self).__init__()
 
     def process_item(self, message):
@@ -219,14 +222,11 @@ class ConstantEmitter(NanoNode):
     '''
     Send a thing every n seconds
     '''
-    def __init__(
-            self, thing=None, thing_key=None, delay=2, from_json=False):
-        if from_json:
-            thing = json.loads(thing)
 
-        self.thing = json.loads(thing) if from_json else thing
-        self.thing_key = thing_key
-        self.delay = delay or 0
+    @set_kwarg_attributes()
+    def __init__(
+            self, thing=None, thing_key=None, delay=2):
+
         super(ConstantEmitter, self).__init__()
         logging.debug(
             'init constant emitter with constant {thing}'.format(
@@ -244,15 +244,22 @@ class ConstantEmitter(NanoNode):
             logging.debug('yielded output: {output}'.format(output=output))
 
 
+class TimeWindowAccumulator(NanoNode):
+    '''
+    Every N seconds, put the latest M seconds data on the queue.
+    '''
+
+    @set_kwarg_attributes()
+    def __init__(self, time_window=None, send_interval=None):
+        pass
+
+
 class LocalFileReader(NanoNode):
 
+    @set_kwarg_attributes()
     def __init__(
         self, directory='.', send_batch_markers=True,
             serialize=False, read_mode='r'):
-        self.directory = directory
-        self.serialize = serialize
-        self.read_mode = read_mode
-        self.send_batch_markers = send_batch_markers
         super(LocalFileReader, self).__init__()
 
     def process_item(self, message):
@@ -272,8 +279,8 @@ class LocalFileReader(NanoNode):
 
 class CSVReader(NanoNode):
 
+    @set_kwarg_attributes()
     def __init__(self, send_batch_markers=True):
-        self.send_batch_markers = send_batch_markers
         super(CSVReader, self).__init__()
 
     def process_item(self, message):
@@ -320,11 +327,9 @@ class HttpGetRequest(NanoNode):
     '''
     Makes GET requests.
     '''
-    def __init__(self, url=None, endpoint=None, endpoint_dict=None):
 
-        self.url = url
-        self.endpoint = endpoint
-        self.endpoint_dict = endpoint_dict or {}
+    @set_kwarg_attributes()
+    def __init__(self, url=None, endpoint=None, endpoint_dict=None):
         super(HttpGetRequest, self).__init__()
 
     def process_item(self, message):
