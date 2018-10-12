@@ -4,7 +4,7 @@ import time
 
 import pytest
 import nanostream.node as node
-import nanostream.queue.queue as queue
+import nanostream.node_queue.queue as queue
 import nanostream.message.poison_pill as poison_pill
 
 os.environ['PYTHONPATH'] = '.'
