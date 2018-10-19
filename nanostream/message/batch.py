@@ -3,9 +3,17 @@ We'll use markers to delimit batches of things, such as serialized
 files and that kind of thing.
 '''
 
+from nanostream.utils.set_attributes import set_kwarg_attributes
+
+
 class BatchStart:
-    pass
+
+    @set_kwarg_attributes()
+    def __init__(self, *args, **kwargs):
+        pass
 
 
 class BatchEnd:
-    pass
+    @set_kwarg_attributes()
+    def __init__(self, *args, **kwargs):
+        pass

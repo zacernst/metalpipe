@@ -22,19 +22,23 @@ import uuid
 import logging
 import os
 import threading
+import sys
 import functools
 import csv
 import io
 import yaml
 import types
 import inspect
+import MySQLdb
 
+from timed_dict.timed_dict import TimedDict
 from nanostream.message.batch import BatchStart, BatchEnd
 from nanostream.message.message import NanoStreamMessage
 from nanostream.node_queue.queue import NanoStreamQueue
 from nanostream.message.canary import Canary
 from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
+from nanostream.utils.data_structures import Record, Row
 
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
@@ -130,7 +134,6 @@ class NanoNode:
             for input_queue in self.input_queue_list:
                 input_queue.open_for_business = False
 
-
     def process_item(self, message):
         '''
         Default `process_item` method for broadcast queues. With this method
@@ -204,6 +207,55 @@ class CounterOfThings(NanoNode):
         while 1:
             yield counter
             counter += 1
+
+
+class StreamMySQLTable(NanoNode):
+
+    def __init__(
+        self, host='localhost', user=None, table=None,
+        password=None, database=None, port=3306, to_row_obj=True,
+            batch=True):
+        self.host = host
+        self.user = user
+        self.to_row_obj = to_row_obj
+        self.password = password
+        self.database = database
+        self.port = port
+        self.batch = batch
+        self.table = table
+        self.db = MySQLdb.connect(
+            passwd=self.password, db=self.database,
+            user=self.user, port=self.port)
+        self.cursor = MySQLdb.cursors.DictCursor(self.db)
+
+        self.table_schema_query = (
+            '''SELECT column_name, column_type '''
+            '''FROM information_schema.columns '''
+            '''WHERE table_name='{table}';'''.format(table=self.table))
+
+        self.table_schema = self.get_schema()
+
+        super(StreamMySQLTable, self).__init__()
+
+    def get_schema(self):
+        '''({'column_name': 'emp_no', 'column_type': 'int(11)'}, {'column_name': 'birth_date', 'column_type': 'date'}, {'column_name': 'first_name', 'column_type': 'varchar(14)'}, {'column_name': 'last_name', 'column_type': 'varchar(16)'}, {'column_name': 'gender', 'column_type': "enum('M','F')"}, {'column_name': 'hire_date', 'column_type': 'date'})'''
+        self.cursor.execute(self.table_schema_query)
+        table_schema = self.cursor.fetchall()
+        return table_schema
+
+    def generator(self):
+        if self.batch:
+            yield BatchStart(schema=self.table_schema)
+        self.cursor.execute(
+            """SELECT * FROM {table};""".format(table=self.table))
+        result = self.cursor.fetchone()
+        while result is not None:
+            if self.to_row_obj:
+                result = Row.from_dict(result)
+            yield result
+            result = self.cursor.fetchone()
+        if self.batch:
+            yield BatchEnd()
 
 
 class PrinterOfThings(NanoNode):
@@ -280,7 +332,7 @@ class LocalFileReader(NanoNode):
 class CSVReader(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, send_batch_markers=True):
+    def __init__(self, send_batch_markers=True, to_row_obj=True):
         super(CSVReader, self).__init__()
 
     def process_item(self, message):
@@ -289,6 +341,8 @@ class CSVReader(NanoNode):
         if self.send_batch_markers:
             yield BatchStart()
         for row in reader:
+            if self.to_row_obj:
+                row = Row.from_dict(row)
             yield row
         if self.send_batch_markers:
             yield BatchEnd()
@@ -346,6 +400,34 @@ class HttpGetRequest(NanoNode):
             cookies=self.pipeline.cookies)
         self.key_value.update(endpoint_dict)
         return get_response.text
+
+class SimpleJoin(NanoNode):
+    '''
+    Joins two streams on a key, using exact match only. MVP.
+    '''
+
+    def __init__(self, key, window=30):
+        self.key = key
+        self.window = window
+        self.timed_dict = TimedDict(timeout=window)
+        super(SimpleJoin, self).__init__()
+
+    def process_item(self, message):
+        '''
+        Assumes that `message` is a `Row` object.
+        '''
+
+        if isinstance(message, (BatchStart, BatchEnd,)):
+            pass
+        else:
+            print(message.first_name.value)
+            key = getattr(message, self.key).value
+            if isinstance(self.timed_dict[key], Row):
+                self.timed_dict[key] = self.timed_dict[key].concat(
+                    message, fail_on_duplicate=False)
+                yield self.timed_dict[key]
+            else:
+                self.timed_dict[key] = message
 
 
 class DynamicClassMediator(NanoNode):
@@ -442,9 +524,6 @@ def kwarg_remapper(f, **kwarg_mapping):
         if kwarg not in kwarg_mapping:
             reverse_mapping[kwarg] = kwarg
 
-    # kwarg_mapping: {thing: outer_thing}
-    # reverse_mapping: {thing_key: thing_key, outer_thing: thing}
-
     def remapped_function(*args, **kwargs):
         remapped_kwargs = {}
         for key, value in kwargs.items():
@@ -452,9 +531,6 @@ def kwarg_remapper(f, **kwarg_mapping):
                 remapped_kwargs[reverse_mapping[key]] = value
         logging.debug('remaed function with kwargs: ' + str(remapped_kwargs))
 
-        #remapped_kwargs = {
-        #    reverse_mapping[argument]: value for argument, value
-        #    in kwargs.items() if argument in parameters}
         return f(*args, **remapped_kwargs)
 
     return remapped_function
@@ -498,29 +574,22 @@ def class_factory(raw_config):
 
 if __name__ == '__main__':
 
+    employees_table = StreamMySQLTable(
+        user='zac', password='imadfs1',
+        database='employees', table='employees')
+    printer = PrinterOfThings()
+
     raw_config = yaml.load(
         open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
     class_factory(raw_config)
     obj = CSVWatcher(watch_directory='./sample_data')
 
-    printer = PrinterOfThings(prepend='TWO: ')
-    obj > printer
-    obj.node_dict['printer']['obj'].name = 'printer'
-    obj.node_dict['csv_reader']['obj'].name = 'csv_reader'
-    obj.global_start()
-
-    get_post = HttpGetRequest(
-        url='https://jsonplaceholder.typicode.com',
-        endpoint='posts/{post_number}',
-        endpoint_dict={})
-
-    url_output = PrinterOfThings()
+    joiner = SimpleJoin(key='first_name')
 
 
-    # def __init__(self, url=None, endpoint=None, endpoint_dict=None):
+    employees_table > joiner
+    obj > joiner
 
-    #c = CounterOfThings()
-    #p = PrinterOfThings()
-    #c = CounterOfThings()
-    #e = ConstantEmitter(thing='foobar', delay=2)
-    #e > p > c
+    joiner > printer
+
+    printer.global_start()

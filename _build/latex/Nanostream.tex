@@ -53,7 +53,7 @@
 
 
 \title{Nanostream Documentation}
-\date{Oct 04, 2018}
+\date{Oct 12, 2018}
 \release{0.1}
 \author{Zachary Ernst}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -75,8 +75,6 @@
 
 \section{What is it? Why is it?}
 \label{\detokenize{overview:what-is-it-why-is-it}}
-\sphinxstylestrong{Hadoop is to Redis as Spark is to NanoStream}
-
 We love stream processing. It’s a great model for lots of work,
 especially ETL. There are excellent stream processing tools such as
 Spark, Flink, and Storm. They’re designed for handling huge amounts of
@@ -161,7 +159,7 @@ defined like so:
         \PYG{n+nb}{super}\PYG{p}{(}\PYG{n}{FooEmitter}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{o}{.}\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} Must call the {}`NanoNode{}` \PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}
 
     \PYG{k}{def} \PYG{n+nf}{generator}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
-        \PYG{k}{while} \PYG{l+m+mi}{1}\PYG{p}{:}
+        \PYG{k}{while} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{run\PYGZus{}generator}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
             \PYG{n}{time}\PYG{o}{.}\PYG{n}{sleep}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{interval}\PYG{p}{)}
             \PYG{k}{yield} \PYG{n}{message}  \PYG{c+c1}{\PYGZsh{} Output must be yielded, not returned}
 \end{sphinxVerbatim}
@@ -170,6 +168,10 @@ Of course, the example is trivial because you generally won’t want to
 keep sending the same string over and over again forever. More realistic
 uses of this pattern would include reading lines from a file, connecting
 to an external API, and so on.
+
+Note that the code inside the \sphinxcode{\sphinxupquote{generator}} function is wrapped inside a
+\sphinxcode{\sphinxupquote{while}} loop that tests the value of \sphinxcode{\sphinxupquote{self.run\_generator()}}. You’ll
+want to ensure that your generator methods follow the same pattern because
 
 Now let’s suppose you want to create a node that is passed a string as a
 message, and returns \sphinxcode{\sphinxupquote{True}} if the message has an even number of
@@ -269,11 +271,23 @@ pipeline. They’d do this:
 \end{sphinxVerbatim}
 
 
-\subsection{This is an alpha release}
-\label{\detokenize{overview:this-is-an-alpha-release}}
-‘nuff said.
+\chapter{Requirements}
+\label{\detokenize{requirements:requirements}}\label{\detokenize{requirements::doc}}
+NanoStream is written in Python 3.5. All requirements are pip-installable and
+are listed n the \sphinxcode{\sphinxupquote{requirements.txt}} file:
 
-\sphinxhref{mailto:zac.ernst@gmail.com}{zac.ernst@gmail.com}
+\sphinxcode{\sphinxupquote{{}`
+pip install -r requirements.txt
+{}`}}
+
+The documentation is written using Sphinx, so if you want to rebuild the docs,
+you’ll do:
+
+\sphinxcode{\sphinxupquote{{}`
+make {[}html \textbar{} latexpdf \textbar{} whatever{]}
+{}`}}
+
+That ought to be everything.
 
 
 \chapter{Implementation}

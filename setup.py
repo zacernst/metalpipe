@@ -8,7 +8,7 @@ setuptools.setup(
     description="Small-scale stream processing",
     url="https://github.com/zacernst/nanostream",
     packages=[
-        'nanostream', 'nanostream.message', 'nanostream.queue',
+        'nanostream', 'nanostream.message', 'nanostream.node_queue',
         'nanostream.watchdog', 'nanostream.utils', 'nanostream.exp',],
     classifiers=[
         "Programming Language :: Python :: 3",
