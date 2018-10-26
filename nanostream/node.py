@@ -582,14 +582,12 @@ if __name__ == '__main__':
     raw_config = yaml.load(
         open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
     class_factory(raw_config)
-    obj = CSVWatcher(watch_directory='./sample_data')
+    csv_watcher = CSVWatcher(watch_directory='./sample_data')
 
     joiner = SimpleJoin(key='first_name')
 
-
     employees_table > joiner
-    obj > joiner
-
+    csv_watcher > joiner
     joiner > printer
 
     printer.global_start()
