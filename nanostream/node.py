@@ -37,7 +37,7 @@ from nanostream.node_queue.queue import NanoStreamQueue
 from nanostream.message.canary import Canary
 from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
-from nanostream.utils.data_structures import Record, Row
+from nanostream.utils.data_structures import Row
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 

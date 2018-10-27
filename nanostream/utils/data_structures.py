@@ -30,7 +30,7 @@ class MySQLTypeSystem(DataSourceTypeSystem):
     pass
 
 
-class TranslationLayerTypeSystem(DataSourceTypeSystem):
+class IntermediateTypeSystem(DataSourceTypeSystem):
     pass
 
 
