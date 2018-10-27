@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import time
 import uuid
 import logging
@@ -40,9 +39,7 @@ from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Record, Row
 
-
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
-
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -84,8 +81,7 @@ class NanoNode:
         Create an edge connecting `self` to `target`. The edge
         is really just a queue
         """
-        max_queue_size = kwargs.get(
-            'max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
+        max_queue_size = kwargs.get('max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = NanoStreamQueue(max_queue_size)
 
         self.output_node_list.append(target)
@@ -97,7 +93,8 @@ class NanoNode:
 
         # Make this recursive below
         # TODO: Add support for composition
-        if 0 and hasattr(target, 'get_source'):  # Only metaclass has this method
+        if 0 and hasattr(target,
+                         'get_source'):  # Only metaclass has this method
             target.get_source().input_queue_list.append(edge_queue)
         else:
             target.input_queue_list.append(edge_queue)
@@ -108,10 +105,11 @@ class NanoNode:
             self.output_queue_list.append(edge_queue)
 
     def start(self):
-        if self.is_source and not isinstance(self, (DynamicClassMediator,)):
+        if self.is_source and not isinstance(self, (DynamicClassMediator, )):
             for output in self.generator():
                 yield output, None
-                if not any(queue.open_for_business for queue in self.output_queue_list):
+                if not any(queue.open_for_business
+                           for queue in self.output_queue_list):
                     logging.info('shutting down.')
                     break
         else:
@@ -121,7 +119,7 @@ class NanoNode:
                     if one_item is None:
                         continue
                     message_content = one_item.message_content
-                    if isinstance(message_content, (PoisonPill,)):
+                    if isinstance(message_content, (PoisonPill, )):
                         logging.info('received poision pill.')
                         self.kill_thread = True
                     elif message_content is None:
@@ -165,7 +163,7 @@ class NanoNode:
     def all_connected(self, seen=None):
         seen = seen or set()
 
-        if isinstance(self, (DynamicClassMediator,)):
+        if isinstance(self, (DynamicClassMediator, )):
             for node_name, node_dict in self.node_dict.items():
                 node_obj = node_dict['obj']
                 seen = seen | node_obj.all_connected(seen=seen)
@@ -188,7 +186,7 @@ class NanoNode:
         thread_dict = self.thread_dict
         for node in self.all_connected():
             logging.debug('global_start:' + str(self))
-            thread = threading.Thread(target=NanoNode.stream, args=(node,))
+            thread = threading.Thread(target=NanoNode.stream, args=(node, ))
             thread.start()
             node.thread_dict = thread_dict
             thread_dict[node.name] = thread
@@ -198,7 +196,6 @@ class NanoNode:
 
 
 class CounterOfThings(NanoNode):
-
     def generator(self):
         '''
         Just start counting integers
@@ -210,11 +207,15 @@ class CounterOfThings(NanoNode):
 
 
 class StreamMySQLTable(NanoNode):
-
-    def __init__(
-        self, host='localhost', user=None, table=None,
-        password=None, database=None, port=3306, to_row_obj=True,
-            batch=True):
+    def __init__(self,
+                 host='localhost',
+                 user=None,
+                 table=None,
+                 password=None,
+                 database=None,
+                 port=3306,
+                 to_row_obj=True,
+                 batch=True):
         self.host = host
         self.user = user
         self.to_row_obj = to_row_obj
@@ -224,21 +225,22 @@ class StreamMySQLTable(NanoNode):
         self.batch = batch
         self.table = table
         self.db = MySQLdb.connect(
-            passwd=self.password, db=self.database,
-            user=self.user, port=self.port)
+            passwd=self.password,
+            db=self.database,
+            user=self.user,
+            port=self.port)
         self.cursor = MySQLdb.cursors.DictCursor(self.db)
 
-        self.table_schema_query = (
-            '''SELECT column_name, column_type '''
-            '''FROM information_schema.columns '''
-            '''WHERE table_name='{table}';'''.format(table=self.table))
+        self.table_schema_query = ('''SELECT column_name, column_type '''
+                                   '''FROM information_schema.columns '''
+                                   '''WHERE table_name='{table}';'''.format(
+                                       table=self.table))
 
         self.table_schema = self.get_schema()
 
         super(StreamMySQLTable, self).__init__()
 
     def get_schema(self):
-        '''({'column_name': 'emp_no', 'column_type': 'int(11)'}, {'column_name': 'birth_date', 'column_type': 'date'}, {'column_name': 'first_name', 'column_type': 'varchar(14)'}, {'column_name': 'last_name', 'column_type': 'varchar(16)'}, {'column_name': 'gender', 'column_type': "enum('M','F')"}, {'column_name': 'hire_date', 'column_type': 'date'})'''
         self.cursor.execute(self.table_schema_query)
         table_schema = self.cursor.fetchall()
         return table_schema
@@ -259,7 +261,6 @@ class StreamMySQLTable(NanoNode):
 
 
 class PrinterOfThings(NanoNode):
-
     @set_kwarg_attributes()
     def __init__(self, prepend='printer:'):
         # self.prepend = prepend
@@ -276,21 +277,19 @@ class ConstantEmitter(NanoNode):
     '''
 
     @set_kwarg_attributes()
-    def __init__(
-            self, thing=None, thing_key=None, delay=2):
+    def __init__(self, thing=None, thing_key=None, delay=2):
 
         super(ConstantEmitter, self).__init__()
-        logging.debug(
-            'init constant emitter with constant {thing}'.format(
-                thing=str(thing)))
+        logging.debug('init constant emitter with constant {thing}'.format(
+            thing=str(thing)))
 
     def generator(self):
         logging.debug('starting constant emitter')
         while 1:
             time.sleep(self.delay)
-            output = (
-                {self.thing_key: self.thing} if self.thing_key is not None
-                else self.thing)
+            output = ({
+                self.thing_key: self.thing
+            } if self.thing_key is not None else self.thing)
             logging.debug('output:' + str(output))
             yield output
             logging.debug('yielded output: {output}'.format(output=output))
@@ -307,11 +306,12 @@ class TimeWindowAccumulator(NanoNode):
 
 
 class LocalFileReader(NanoNode):
-
     @set_kwarg_attributes()
-    def __init__(
-        self, directory='.', send_batch_markers=True,
-            serialize=False, read_mode='r'):
+    def __init__(self,
+                 directory='.',
+                 send_batch_markers=True,
+                 serialize=False,
+                 read_mode='r'):
         super(LocalFileReader, self).__init__()
 
     def process_item(self, message):
@@ -330,7 +330,6 @@ class LocalFileReader(NanoNode):
 
 
 class CSVReader(NanoNode):
-
     @set_kwarg_attributes()
     def __init__(self, send_batch_markers=True, to_row_obj=True):
         super(CSVReader, self).__init__()
@@ -349,7 +348,6 @@ class CSVReader(NanoNode):
 
 
 class LocalDirectoryWatchdog(NanoNode):
-
     def __init__(self, directory='.', check_interval=3):
         self.directory = directory
         self.latest_arrival = time.time()
@@ -362,16 +360,15 @@ class LocalDirectoryWatchdog(NanoNode):
             time.sleep(self.check_interval)
             time_in_interval = None
             for filename in os.listdir(self.directory):
-                last_modified_time = os.path.getmtime(
-                    '/'.join([self.directory, filename]))
+                last_modified_time = os.path.getmtime('/'.join(
+                    [self.directory, filename]))
                 if last_modified_time > self.latest_arrival:
                     yield '/'.join([self.directory, filename])
-                    if (
-                        time_in_interval is None or
-                            last_modified_time > time_in_interval):
+                    if (time_in_interval is None
+                            or last_modified_time > time_in_interval):
                         time_in_interval = last_modified_time
-                        logging.debug(
-                            'time_in_interval: ' + str(time_in_interval))
+                        logging.debug('time_in_interval: ' +
+                                      str(time_in_interval))
             logging.debug('done looping over filenames')
             if time_in_interval is not None:
                 self.latest_arrival = time_in_interval
@@ -396,10 +393,10 @@ class HttpGetRequest(NanoNode):
         # Hit the parameterized endpoint and yield back the results
         self.current_endpoint_dict = endpoint_dict
         get_response = self.pipeline.session.get(
-            self.url.format(**endpoint_dict),
-            cookies=self.pipeline.cookies)
+            self.url.format(**endpoint_dict), cookies=self.pipeline.cookies)
         self.key_value.update(endpoint_dict)
         return get_response.text
+
 
 class SimpleJoin(NanoNode):
     '''
@@ -417,7 +414,10 @@ class SimpleJoin(NanoNode):
         Assumes that `message` is a `Row` object.
         '''
 
-        if isinstance(message, (BatchStart, BatchEnd,)):
+        if isinstance(message, (
+                BatchStart,
+                BatchEnd,
+        )):
             pass
         else:
             print(message.first_name.value)
@@ -431,7 +431,6 @@ class SimpleJoin(NanoNode):
 
 
 class DynamicClassMediator(NanoNode):
-
     def __init__(self, *args, **kwargs):
 
         super(DynamicClassMediator, self).__init__(**kwargs)
@@ -494,7 +493,8 @@ class DynamicClassMediator(NanoNode):
     def source_list(self):
         source_nodes = [
             node_dict['obj'] for node_dict in self.node_dict.values()
-            if node_dict['obj'].is_source]
+            if node_dict['obj'].is_source
+        ]
         return source_nodes
 
     def hi(self):
@@ -536,24 +536,21 @@ def kwarg_remapper(f, **kwarg_mapping):
     return remapped_function
 
 
-def template_class(
-    class_name, parent_class, kwargs_remapping,
-        frozen_arguments_mapping):
+def template_class(class_name, parent_class, kwargs_remapping,
+                   frozen_arguments_mapping):
 
     kwargs_remapping = kwargs_remapping or {}
-    frozen_init = functools.partial(
-        parent_class.__init__, **frozen_arguments_mapping)
-    if isinstance(parent_class, (str,)):
+    frozen_init = functools.partial(parent_class.__init__,
+                                    **frozen_arguments_mapping)
+    if isinstance(parent_class, (str, )):
         parent_class = globals()[parent_class]
-    cls = type(class_name, (parent_class,), {})
-    setattr(
-        cls, '__init__', kwarg_remapper(
-            frozen_init, **kwargs_remapping))
+    cls = type(class_name, (parent_class, ), {})
+    setattr(cls, '__init__', kwarg_remapper(frozen_init, **kwargs_remapping))
     return cls
 
 
 def class_factory(raw_config):
-    new_class = type(raw_config['name'], (DynamicClassMediator,), {})
+    new_class = type(raw_config['name'], (DynamicClassMediator, ), {})
     new_class.node_dict = get_node_dict(raw_config)
     new_class.class_name = raw_config['name']
     new_class.edge_list_dict = raw_config.get('edges', [])
@@ -561,10 +558,8 @@ def class_factory(raw_config):
 
     for node_name, node_config in new_class.node_dict.items():
         _class = node_config['class']
-        cls = template_class(
-            node_name, _class,
-            node_config['remapping'],
-            node_config['frozen_arguments'])
+        cls = template_class(node_name, _class, node_config['remapping'],
+                             node_config['frozen_arguments'])
         setattr(cls, 'raw_config', raw_config)
         node_config['cls_obj'] = cls
     # Inject?
@@ -575,8 +570,10 @@ def class_factory(raw_config):
 if __name__ == '__main__':
 
     employees_table = StreamMySQLTable(
-        user='zac', password='imadfs1',
-        database='employees', table='employees')
+        user='zac',
+        password='imadfs1',
+        database='employees',
+        table='employees')
     printer = PrinterOfThings()
 
     raw_config = yaml.load(

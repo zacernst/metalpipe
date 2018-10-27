@@ -24,7 +24,6 @@ import re
 import hashlib
 import schedule
 
-
 logging.basicConfig(level=logging.INFO)
 
 
@@ -36,10 +35,7 @@ class Trigger:
     def __init__(self, previous_trigger_time=None, trigger_name=None):
         self.previous_trigger_time = None
         self.trigger_name = trigger_name or hashlib.md5(
-            bytes(str(random.random()),'ascii')).hexdigest()
+            bytes(str(random.random()), 'ascii')).hexdigest()
         self.time_sent = time.time()  # In epochs
-        logging.info('Sent trigger at {now}'.format(
-            now=str(datetime.datetime.now())))
-
-
-
+        logging.info(
+            'Sent trigger at {now}'.format(now=str(datetime.datetime.now())))

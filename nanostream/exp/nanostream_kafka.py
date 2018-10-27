@@ -26,10 +26,9 @@ import collections
 import kafka
 from nanostream.nanostream_encoder import encode, decode
 from nanostream.nanostream_processor import NanoStreamSender
-from nanostream.nanostream_pipeline import (
-    NanoGraphWorker, NanoStreamGraph, NanoPrinter)
+from nanostream.nanostream_pipeline import (NanoGraphWorker, NanoStreamGraph,
+                                            NanoPrinter)
 from nanostream.nanostream_processor import NanoStreamProcessor
-
 
 MAX_QUEUE_SIZE = 1000
 
@@ -44,6 +43,7 @@ class NanoKafkaSynchronizer(NanoStreamProcessor):
 class NanoKafkaListener(NanoStreamSender):
     """
     """
+
     def __init__(self,
                  offset_dictionary=None,
                  topics=None,
@@ -56,14 +56,13 @@ class NanoKafkaListener(NanoStreamSender):
                  group_id=None):
         self.message_parser = message_parser or (lambda x: x)
         self.payload_only = payload_only
-        self.offset_dictionary = (
-            offset_dictionary or collections.defaultdict(int))
+        self.offset_dictionary = (offset_dictionary
+                                  or collections.defaultdict(int))
         self.started = time.time()
         self.auto_offset_reset = auto_offset_reset
         self.topics = topics or []
-        self.bootstrap_servers = (
-            bootstrap_servers or os.environ.get(
-                'BOOTSTRAP_SERVERS', '')).split(',')
+        self.bootstrap_servers = (bootstrap_servers or os.environ.get(
+            'BOOTSTRAP_SERVERS', '')).split(',')
         print(self.bootstrap_servers)
         self.producer = kafka.KafkaProducer(
             bootstrap_servers=self.bootstrap_servers)
@@ -84,10 +83,14 @@ class NanoKafkaListener(NanoStreamSender):
             bootstrap_servers=self.bootstrap_servers,
             auto_offset_reset=self.auto_offset_reset)
         self.partitions_dictionary = {
-            topic: self.listener.partitions_for_topic(topic) for
-            topic in self.topics}
+            topic: self.listener.partitions_for_topic(topic)
+            for topic in self.topics
+        }
         self.assignments = []
-        self.offset_dictionary = offset_dictionary or {topic: {} for topic in self.topics}
+        self.offset_dictionary = offset_dictionary or {
+            topic: {}
+            for topic in self.topics
+        }
 
         # Let's convert the offset_dictionary to a better thing
         # If the values are ints, set all partitions to that offset
@@ -95,13 +98,15 @@ class NanoKafkaListener(NanoStreamSender):
         for topic, offset_info in self.offset_dictionary.items():
             if isinstance(offset_info, int):
                 offset_dict = {
-                    partition: offset_info for
-                    partition in self.partitions_dictionary[topic]}
+                    partition: offset_info
+                    for partition in self.partitions_dictionary[topic]
+                }
             elif isinstance(offset_info, dict):
                 offset_dict = offset_info
             else:
-                raise Exception('You specified partition offsets, but you did not '
-                                'provide an int or a dict.')
+                raise Exception(
+                    'You specified partition offsets, but you did not '
+                    'provide an int or a dict.')
 
         self.update_offset_interval = \
             update_offset_interval
@@ -115,10 +120,12 @@ class NanoKafkaListener(NanoStreamSender):
             if topic_partition.topic not in self.topics:
                 continue
             try:
-                offset = self.offset_dictionary[topic_partition.topic][topic_partition.partition]
+                offset = self.offset_dictionary[topic_partition.topic][
+                    topic_partition.partition]
             except KeyError:
                 offset = default_offset
-                self.offset_dictionary[topic_partition.topic][topic_partition.partition] = offset
+                self.offset_dictionary[topic_partition.topic][
+                    topic_partition.partition] = offset
             self.listener.seek(topic_partition, offset)
 
         super(NanoKafkaListener, self).__init__()
@@ -127,10 +134,9 @@ class NanoKafkaListener(NanoStreamSender):
         """
         """
         if not hasattr(self, 'parent'):
-            raise Exception(
-                "Use 'messages' method instead of 'start' "
-                "if the `NanoKafkaListener` is not "
-                "inside a `NanoStreamGraph`")
+            raise Exception("Use 'messages' method instead of 'start' "
+                            "if the `NanoKafkaListener` is not "
+                            "inside a `NanoStreamGraph`")
         counter = 0
         while 1:
             response = self.listener.poll()
@@ -139,13 +145,12 @@ class NanoKafkaListener(NanoStreamSender):
                     if not self.payload_only:
                         self.queue_message(message)
                         continue
-                    self.offset_dictionary[message.topic][message.partition] = message.offset
+                    self.offset_dictionary[message.topic][
+                        message.partition] = message.offset
                     message = self.message_parser(message)
                     counter += 1
-                    self.offset_dictionary[
-                        kafka.TopicPartition(
-                            message.topic,
-                            message.partition)] = message.offset
+                    self.offset_dictionary[kafka.TopicPartition(
+                        message.topic, message.partition)] = message.offset
                     if self.payload_only:
                         message = json.loads(message.value)
                     self.queue_message(message)
@@ -162,10 +167,8 @@ class NanoKafkaListener(NanoStreamSender):
                     message = self.message_parser(message)
                     counter += 1
                     if counter % self.update_offset_interval == 0:
-                        self.offset_dictionary[
-                            kafka.TopicPartition(
-                                message.topic,
-                                message.partition)] = message.offset
+                        self.offset_dictionary[kafka.TopicPartition(
+                            message.topic, message.partition)] = message.offset
                     if self.payload_only:
                         message = json.loads(message.value)
                     yield message
@@ -174,13 +177,17 @@ class NanoKafkaListener(NanoStreamSender):
 class NanoKafkaProducer(object):
     """
     """
-    def __init__(self, input_queue=None,
-                 bootstrap_servers=None, topic=None, encode_output=True):
+
+    def __init__(self,
+                 input_queue=None,
+                 bootstrap_servers=None,
+                 topic=None,
+                 encode_output=True):
         self.topic = topic
         self.input_queue = input_queue
         self.encode_output = encode_output
-        self.bootstrap_servers = (
-            bootstrap_servers or os.environ.get('BOOTSTRAP_SERVERS', '')).split(',')
+        self.bootstrap_servers = (bootstrap_servers or os.environ.get(
+            'BOOTSTRAP_SERVERS', '')).split(',')
         self.producer = kafka.KafkaProducer(
             bootstrap_servers=self.bootstrap_servers)
 
@@ -233,7 +240,10 @@ def main():
     """
     listener_1 = NanoKafkaListener(
         topics=['public.members.v1'],
-        offset_dictionary={'public.members.v1': {0: 12000000, 1: 13000000}})
+        offset_dictionary={'public.members.v1': {
+            0: 12000000,
+            1: 13000000
+        }})
     listener_2 = NanoKafkaListener(topics=['finance.invoices.v1'])
     # listener_1.offset_dictionary['public.members.v1'][0] would give you the offset
     #     for that topic and partition

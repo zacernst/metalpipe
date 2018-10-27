@@ -6,8 +6,8 @@ from datetime import datetime
 import uuid
 
 MAX_LENGTH_POWER_OF_TWO = 16
-INTEGER_LENGTHS = [2 ** i for i in range(MAX_LENGTH_POWER_OF_TWO)]
-VARCHAR_LENGTHS = [2 ** i for i in range(MAX_LENGTH_POWER_OF_TWO)]
+INTEGER_LENGTHS = [2**i for i in range(MAX_LENGTH_POWER_OF_TWO)]
+VARCHAR_LENGTHS = [2**i for i in range(MAX_LENGTH_POWER_OF_TWO)]
 
 
 class IncompatibleTypesException(Exception):
@@ -73,12 +73,15 @@ class BOOL(DataType, IntermediateTypeSystem):
 class MYSQL_DATE(DataType, MySQLTypeSystem):
     python_cast_function = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
 
+
 class MYSQL_BOOL(DataType, MySQLTypeSystem):
     pass
+
 
 ###############
 # MYSQL TYPES #
 ###############
+
 
 class MYSQL_VARCHAR_BASE(DataType, MySQLTypeSystem):
     python_cast_function = str
@@ -93,8 +96,7 @@ class MYSQL_VARCHAR(type):
         x = super().__new__(
             cls,
             'MYSQL_VARCHAR{max_length}'.format(max_length=str(max_length)),
-            (MYSQL_VARCHAR_BASE,),
-            {'max_length': max_length})
+            (MYSQL_VARCHAR_BASE, ), {'max_length': max_length})
         return x
 
 
@@ -105,19 +107,18 @@ class MYSQL_INTEGER_BASE(DataType):
 class MYSQL_INTEGER(type):
     def __new__(cls, max_length):
         x = super().__new__(
-            cls,
-            'MYSQL_INT{max_length}'.format(max_length=str(max_length)),
-            (MYSQL_INTEGER_BASE,),
-            {'max_length': max_length})
+            cls, 'MYSQL_INT{max_length}'.format(max_length=str(max_length)),
+            (MYSQL_INTEGER_BASE, ), {'max_length': max_length})
         return x
 
 
 for varchar_length in VARCHAR_LENGTHS:
-    globals()['MYSQL_VARCHAR' + str(varchar_length)] = MYSQL_VARCHAR(varchar_length)
-
+    globals()['MYSQL_VARCHAR' +
+              str(varchar_length)] = MYSQL_VARCHAR(varchar_length)
 
 for integer_length in INTEGER_LENGTHS:
-    globals()['MYSQL_INTEGER' + str(integer_length)] = MYSQL_INTEGER(integer_length)
+    globals()['MYSQL_INTEGER' +
+              str(integer_length)] = MYSQL_INTEGER(integer_length)
 
 
 def mysql_type(string):
@@ -135,9 +136,8 @@ def mysql_type(string):
     elif string == 'date':
         cls = MYSQL_DATE
     else:
-        raise Exception(
-            'Unrecognized MySQL type: {type_string}'.format(
-                type_string=string))
+        raise Exception('Unrecognized MySQL type: {type_string}'.format(
+            type_string=string))
     return cls
 
 
@@ -155,8 +155,7 @@ class Row:
             records: A list of ``DataType`` objects
         '''
 
-        self.records = {
-            record.name: record for record in records}
+        self.records = {record.name: record for record in records}
         self.type_system = type_system
 
     def is_empty(self):
@@ -183,13 +182,13 @@ class Row:
 
         record_list = [
             Record(value, STRING, name=key)
-            for key, value in row_dictionary.items()]
+            for key, value in row_dictionary.items()
+        ]
         return Row(*record_list)
 
     def concat(self, other, fail_on_duplicate=True):
-        if (
-            len(set(self.keys()) & set(other.keys())) > 0 and
-                fail_on_duplicate):
+        if (len(set(self.keys()) & set(other.keys())) > 0
+                and fail_on_duplicate):
             raise Exception(
                 'Overlapping records during concatenation of `Row`.')
         self.records.update(other.records)

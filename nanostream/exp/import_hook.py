@@ -3,6 +3,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+
 class NoisyImportFinder:
 
     PATH_TRIGGER = '__nanostream__'
@@ -21,7 +22,8 @@ class NoisyImportFinder:
         logging.info(fullname)
         if fullname == self.PATH_TRIGGER:
             logging.info('Loading derived class')
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
 
         return None
 

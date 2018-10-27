@@ -7,6 +7,7 @@ import random
 import hashlib
 from nanostream_processor import *
 
+
 class FileReader(NanoStreamProcessor):
     """
     Reads a file and passes its contents down the pipeline.

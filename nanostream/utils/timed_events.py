@@ -4,9 +4,12 @@ from nanostream.utils.required_arguments import required_arguments
 
 
 class RepeateEvent:
-
     @required_arguments('interval')
-    def __init__(self, daemon=True, interval=None, number_of_events=None, start=True):
+    def __init__(self,
+                 daemon=True,
+                 interval=None,
+                 number_of_events=None,
+                 start=True):
         self.event_obj = threading.Event()
         self.run = start
 
@@ -28,8 +31,6 @@ class RepeateEvent:
         self.run = False
 
 
-
-
 event_thread, event_obj, kill_switch = make_timer(interval=2)
 event_thread.start()
 counter = 0
@@ -41,4 +42,3 @@ while 1:
     event_obj.clear()
     if counter > 3:
         kill_switch.kill()
-

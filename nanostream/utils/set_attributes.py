@@ -52,4 +52,5 @@ class set_kwarg_attributes:
                     continue
                 setattr(_self, kwarg, value)
             f(_self, *args, **kwargs)
+
         return inner_function

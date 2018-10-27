@@ -7,7 +7,6 @@ from nanostream.utils.set_attributes import set_kwarg_attributes
 
 
 class BatchStart:
-
     @set_kwarg_attributes()
     def __init__(self, *args, **kwargs):
         pass

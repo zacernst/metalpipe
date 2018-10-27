@@ -25,6 +25,7 @@ will raise:
 
 '''
 
+
 class MissingRequiredArgument(Exception):
     pass
 
@@ -46,4 +47,5 @@ class required_arguments:
                         kwarg_list=', '.join(missing_kwargs)))
             out = f(*args, **kwargs)
             return out
+
         return inner_function

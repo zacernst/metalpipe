@@ -36,7 +36,7 @@ class NanoStreamMessage(object):
         self.accumulator = {}
 
     def __repr__(self):
-        s = ': '.join([
-            'NanoStreamMessage',
-            self.uuid.hex, str(self.message_content)])
+        s = ': '.join(
+            ['NanoStreamMessage', self.uuid.hex,
+             str(self.message_content)])
         return s

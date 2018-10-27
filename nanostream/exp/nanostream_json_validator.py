@@ -1,12 +1,10 @@
 import json
 from jsonschema import validate
-from nanostream.nanostream_processor import (
-    NanoStreamProcessor)
+from nanostream.nanostream_processor import (NanoStreamProcessor)
 
 
 class JsonValidator(NanoStreamProcessor):
-    def __init__(
-            self, schema_filename):
+    def __init__(self, schema_filename):
 
         with open(schema_filename, 'r') as json_schema_file:
             self.schema = json.load(json_schema_file)
