@@ -21,13 +21,13 @@ import uuid
 import logging
 from nanostream.message.message import NanoStreamMessage
 
-
 logging.basicConfig(level=logging.DEBUG)
 
 
 class NanoStreamQueue:
     """
     """
+
     def __init__(self, max_queue_size, name=None):
         self.queue = queue.Queue(max_queue_size)
         self.name = name or uuid.uuid4().hex
@@ -52,8 +52,9 @@ class NanoStreamQueue:
             if previous_message is not None:
                 message_obj.accumulator.update(previous_message.accumulator)
         logging.debug(
-                'Putting message on queue {queue_name}: {message_content}'.format(
-                queue_name=self.name, message_content=message_obj.message_content))
+            'Putting message on queue {queue_name}: {message_content}'.format(
+                queue_name=self.name,
+                message_content=message_obj.message_content))
         if message_obj.message_content is not None:
             self.queue.put(message_obj)
         logging.debug('Put message on queue: ' + str(message_obj))
