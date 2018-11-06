@@ -6,7 +6,8 @@ from datetime import datetime
 import uuid
 
 MAX_LENGTH_POWER_OF_TWO = 16
-INTEGER_LENGTHS = [2**i for i in range(MAX_LENGTH_POWER_OF_TWO)]
+INTEGER_LENGTHS = set(2**i for i in range(MAX_LENGTH_POWER_OF_TWO))
+INTEGER_LENGTHS = INTEGER_LENGTHS | (set(i for i in range(32)))
 VARCHAR_LENGTHS = [2**i for i in range(MAX_LENGTH_POWER_OF_TWO)]
 
 
@@ -19,10 +20,44 @@ class DataSourceTypeSystem:
     Information about mapping one type system onto another contained in
     the children of this class.
     '''
-    pass
+    @staticmethod
+    def convert(obj):
+        '''
+        Override this method if something more complicated is necessary.
+        '''
+        obj = convert_to_type_system(obj, MySQLTypeSystem)
+        return obj
+
+
+def convert_to_type_system(obj, cls):
+    members_of_type_system = [
+        i for i in globals().values() if hasattr(i, '__bases__') and
+        cls in all_bases(i)]
+    max_length = getattr(obj.original_type, 'max_length', None)
+    matching_max_length = [
+        i for i in members_of_type_system
+        if getattr(i, 'max_length', None) == max_length]
+    matching_intermediate_data_type = [
+        i for i in matching_max_length if i.intermediate_type is obj.__class__]
+    if len(matching_intermediate_data_type) == 0:
+        raise Exception('No matching intermediate data type.')
+    elif len(matching_intermediate_data_type) > 1:
+        raise Exception('More than one matching intermediate data type')
+    else:
+        pass  # No other cases?
+    data_type = matching_intermediate_data_type[0]
+    converted_obj = data_type(obj.value)
+    if hasattr(obj, 'max_length'):
+        converted_obj.max_length = obj.max_length
+    converted_obj.original_type = obj.original_type
+    return converted_obj
 
 
 class PythonTypeSystem(DataSourceTypeSystem):
+    pass
+
+
+class PrimitiveTypeSystem(DataSourceTypeSystem):
     pass
 
 
@@ -31,16 +66,32 @@ class MySQLTypeSystem(DataSourceTypeSystem):
 
 
 class IntermediateTypeSystem(DataSourceTypeSystem):
+    '''
+    Never instantiate this by hand.
+    '''
     pass
+
+
+def primitive_to_intermediate_type(thing, name=None):
+    if isinstance(thing, (int,)):
+        cast_type = INTEGER
+    elif isinstance(thing, (float,)):
+        cast_type = FLOAT
+    elif isinstance(thing, (str,)):
+        cast_type = STRING
+    else:
+        raise Exception('Unknown type')
+    return cast_type(thing, name=name, original_type=PrimitiveTypeSystem)
 
 
 class DataType:
 
     python_cast_function = (lambda x: x)
 
-    def __init__(self, value, name=None):
+    def __init__(self, value, original_type=None, name=None):
         self.value = value
         self.name = name or uuid.uuid4().hex
+        self.original_type = original_type
 
     @classmethod
     def __repr__(cls):
@@ -48,6 +99,16 @@ class DataType:
 
     def __repr__(self):
         return ':'.join([str(self.value), self.__class__.__name__])
+
+    def to_intermediate_type(self):
+        '''
+        Convert the ``DataType`` to an ``IntermediateDataType`` using its
+        class's ``intermediate_type`` attribute.
+        '''
+        if not hasattr(self.__class__, 'intermediate_type'):
+            raise Exception('No ``intermediate_type`` cast defined.')
+        return self.__class__.intermediate_type(
+            self.value, original_type=self.__class__, name=self.name)
 
 
 class STRING(DataType, IntermediateTypeSystem):
@@ -70,14 +131,6 @@ class BOOL(DataType, IntermediateTypeSystem):
     python_cast_function = bool
 
 
-class MYSQL_DATE(DataType, MySQLTypeSystem):
-    python_cast_function = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
-
-
-class MYSQL_BOOL(DataType, MySQLTypeSystem):
-    pass
-
-
 ###############
 # MYSQL TYPES #
 ###############
@@ -85,10 +138,22 @@ class MYSQL_BOOL(DataType, MySQLTypeSystem):
 
 class MYSQL_VARCHAR_BASE(DataType, MySQLTypeSystem):
     python_cast_function = str
+    intermediate_type = STRING
 
 
 class MYSQL_ENUM(DataType, MySQLTypeSystem):
     python_cast_function = str  # Placeholder
+    intermediate_type = STRING  # Needs to be changed
+
+
+class MYSQL_DATE(DataType, MySQLTypeSystem):
+    python_cast_function = lambda x: datetime.datetime.strptime(x, '%Y-%m-%d')
+    intermediate_type = DATETIME
+
+
+class MYSQL_BOOL(DataType, MySQLTypeSystem):
+    python_cast_function = bool
+    intermediate_type = BOOL
 
 
 class MYSQL_VARCHAR(type):
@@ -100,8 +165,9 @@ class MYSQL_VARCHAR(type):
         return x
 
 
-class MYSQL_INTEGER_BASE(DataType):
+class MYSQL_INTEGER_BASE(DataType, MySQLTypeSystem):
     python_cast_function = int
+    intermediate_type = INTEGER
 
 
 class MYSQL_INTEGER(type):
@@ -116,12 +182,16 @@ for varchar_length in VARCHAR_LENGTHS:
     globals()['MYSQL_VARCHAR' +
               str(varchar_length)] = MYSQL_VARCHAR(varchar_length)
 
+
 for integer_length in INTEGER_LENGTHS:
     globals()['MYSQL_INTEGER' +
               str(integer_length)] = MYSQL_INTEGER(integer_length)
 
 
 def mysql_type(string):
+    '''
+    Parses the schema strings from MySQL and returns the appropriate class.
+    '''
     string = string.lower()
     if string.startswith('int') and '(' in string:
         max_length = string[4:-1]
@@ -180,10 +250,7 @@ class Row:
         Creates a ``Row`` object form a dictionary mapping names to values.
         '''
 
-        record_list = [
-            Record(value, STRING, name=key)
-            for key, value in row_dictionary.items()
-        ]
+        import pdb; pdb.set_trace()
         return Row(*record_list)
 
     def concat(self, other, fail_on_duplicate=True):
@@ -220,8 +287,38 @@ class Row:
         concat(self, other, fail_on_duplicate=False)
 
 
+def all_bases(obj):
+    '''
+    Return all the class to which ``obj`` belongs.
+    '''
+    def _inner(thing, bases=None):
+        bases = bases or set()
+        if not hasattr(thing, '__bases__'):
+            thing = thing.__class__
+        for i in thing.__bases__ or []:
+            bases.add(i)
+            bases = bases | _inner(i, bases=bases)
+        return bases
+    return set(_inner(obj))
+
+
+def get_type_system(obj):
+    bases = all_bases(obj)
+    type_system_list = [
+        i for i in bases if DataSourceTypeSystem in i.__bases__]
+    if len(type_system_list) > 1:
+        raise Exception('Belongs to more than one type system?')
+    elif len(type_system_list) == 0:
+        raise Exception('Belongs to no type system?')
+    else:
+        return type_system_list[0]
+
+
 if __name__ == '__main__':
     foo = MYSQL_VARCHAR16('foo', name='foo')
     bar = MYSQL_INTEGER8(12)
     r = Row(foo, bar, type_system=MySQLTypeSystem)
     t = Row(type_system=PythonTypeSystem)
+    intermediate = bar.to_intermediate_type()
+    converted_foo = MySQLTypeSystem.convert(intermediate)
+    print(converted_foo)

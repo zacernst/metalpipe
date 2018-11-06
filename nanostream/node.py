@@ -37,7 +37,8 @@ from nanostream.node_queue.queue import NanoStreamQueue
 from nanostream.message.canary import Canary
 from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
-from nanostream.utils.data_structures import Row
+from nanostream.utils.data_structures import Row, MySQLTypeSystem
+from nanostream.utils import data_structures as ds
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 
@@ -50,7 +51,7 @@ class NanoNode:
     nodes in a computation graph.
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, batch=False, **kwargs):
         self.name = kwargs.get('name', None) or uuid.uuid4().hex
         self.input_queue_list = []
         self.output_queue_list = []
@@ -60,6 +61,7 @@ class NanoNode:
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
+        self.batch = batch
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -237,6 +239,8 @@ class StreamMySQLTable(NanoNode):
                                        table=self.table))
 
         self.table_schema = self.get_schema()
+        # Need a mapping from header to MYSQL TYPE
+        import pdb; pdb.set_trace()
 
         super(StreamMySQLTable, self).__init__()
 
@@ -253,7 +257,8 @@ class StreamMySQLTable(NanoNode):
         result = self.cursor.fetchone()
         while result is not None:
             if self.to_row_obj:
-                result = Row.from_dict(result)
+                import pdb; pdb.set_trace()
+                result = Row.from_dict(result, type_system=MySQLTypeSystem)
             yield result
             result = self.cursor.fetchone()
         if self.batch:

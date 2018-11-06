@@ -20,6 +20,7 @@ import queue
 import uuid
 import logging
 from nanostream.message.message import NanoStreamMessage
+from nanostream.message.batch import BatchStart, BatchEnd
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -45,17 +46,23 @@ class NanoStreamQueue:
     def put(self, message, *args, **kwargs):
         '''
         '''
-        previous_message = kwargs.get('previous_message', None)
-        if not isinstance(message, NanoStreamMessage):
-            message_obj = NanoStreamMessage(message)
-            message_obj.accumulator[self.source_node.name] = message
-            if previous_message is not None:
-                message_obj.accumulator.update(previous_message.accumulator)
-        logging.debug(
-            'Putting message on queue {queue_name}: {message_content}'.format(
-                queue_name=self.name,
-                message_content=message_obj.message_content))
-        if message_obj.message_content is not None:
-            self.queue.put(message_obj)
-        logging.debug('Put message on queue: ' + str(message_obj))
-        logging.debug('Message history: ' + str(message_obj.accumulator))
+        def _put(_message):
+            previous_message = kwargs.get('previous_message', None)
+            if not isinstance(_message, NanoStreamMessage):
+                message_obj = NanoStreamMessage(_message)
+                message_obj.accumulator[self.source_node.name] = _message
+                if previous_message is not None:
+                    message_obj.accumulator.update(previous_message.accumulator)
+            logging.debug(
+                'Putting message on queue {queue_name}: {message_content}'.format(
+                    queue_name=self.name,
+                    message_content=message_obj.message_content))
+            if message_obj.message_content is not None:
+                self.queue.put(message_obj)
+            logging.debug('Put message on queue: ' + str(message_obj))
+            logging.debug('Message history: ' + str(message_obj.accumulator))
+        if self.source_node.batch and isinstance(message, (list, tuple,)):
+            _put(BatchStart())
+            for item in message:
+                _put(item)
+            _put(BatchEnd())
