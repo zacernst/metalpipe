@@ -8,7 +8,8 @@ import uuid
 MAX_LENGTH_POWER_OF_TWO = 16
 INTEGER_LENGTHS = set(2**i for i in range(MAX_LENGTH_POWER_OF_TWO))
 INTEGER_LENGTHS = INTEGER_LENGTHS | (set(i for i in range(32)))
-VARCHAR_LENGTHS = [2**i for i in range(MAX_LENGTH_POWER_OF_TWO)]
+VARCHAR_LENGTHS = set(2**i for i in range(MAX_LENGTH_POWER_OF_TWO))
+VARCHAR_LENGTHS = VARCHAR_LENGTHS | (set(i for i in range(32)))
 
 
 class IncompatibleTypesException(Exception):
@@ -27,6 +28,11 @@ class DataSourceTypeSystem:
         '''
         obj = convert_to_type_system(obj, MySQLTypeSystem)
         return obj
+
+    @staticmethod
+    def type_mapping(*args, **kwargs):
+        raise NotImplemented(
+            'Class does not have a ``type_mapping`` function.')
 
 
 def convert_to_type_system(obj, cls):
@@ -62,7 +68,36 @@ class PrimitiveTypeSystem(DataSourceTypeSystem):
 
 
 class MySQLTypeSystem(DataSourceTypeSystem):
-    pass
+    '''
+    Each ``TypeSystem`` gets a ``type_mapping`` static method that takes a
+    string and returns the class in the type system named by that string.
+    For example, ``int(8)`` in a MySQL schema should return the
+    ``MYSQL_INTEGER8`` class.
+    '''
+
+    @staticmethod
+    def type_mapping(string):
+        '''
+        Parses the schema strings from MySQL and returns the appropriate class.
+        '''
+        string = string.lower()
+        if string.startswith('int') and '(' in string:
+            max_length = string[4:-1]
+            cls = globals()['MYSQL_INTEGER' + max_length]
+        elif string.startswith('int'):
+            cls = INTEGER_BASE
+        elif string.startswith('varchar') and '(' in string:
+            max_length = string[8:-1]
+            cls = globals()['MYSQL_VARCHAR' + max_length]
+        elif string.startswith('varchar'):
+            cls = VARCHAR_BASE
+        elif string == 'date':
+            cls = MYSQL_DATE
+        else:
+            cls = MYSQL_VARCHAR128
+            #raise Exception('Unrecognized MySQL type: {type_string}'.format(
+            #    type_string=string))
+        return cls
 
 
 class IntermediateTypeSystem(DataSourceTypeSystem):
@@ -85,8 +120,12 @@ def primitive_to_intermediate_type(thing, name=None):
 
 
 class DataType:
+    '''
+    Each ``DataType`` gets a ``python_cast_function``, which is a function.
+    '''
 
-    python_cast_function = (lambda x: x)
+    python_cast_function = None
+    intermediate_type = None
 
     def __init__(self, value, original_type=None, name=None):
         self.value = value
@@ -105,10 +144,23 @@ class DataType:
         Convert the ``DataType`` to an ``IntermediateDataType`` using its
         class's ``intermediate_type`` attribute.
         '''
-        if not hasattr(self.__class__, 'intermediate_type'):
+        if self.__class__.intermediate_type is None:
             raise Exception('No ``intermediate_type`` cast defined.')
         return self.__class__.intermediate_type(
             self.value, original_type=self.__class__, name=self.name)
+
+    def to_python(self):
+        if self.__class__.python_cast_function is None:
+            raise Exception('No method for casting to Python primitive.')
+        else:
+            return self.__class__.python_cast_function(self.value)
+
+    @property
+    def type_system(self):
+        '''
+        Just for convenience to make the type system an attribute.
+        '''
+        return get_type_system(self)
 
 
 class STRING(DataType, IntermediateTypeSystem):
@@ -131,9 +183,11 @@ class BOOL(DataType, IntermediateTypeSystem):
     python_cast_function = bool
 
 
-###############
-# MYSQL TYPES #
-###############
+# MYSQL TYPES
+#
+# Each ``DataType`` has a ``python_cast_function`` and an ``intermediate_type``
+# attribute. The ``intermediate_type`` is the class in the
+# ``IntermediateTypeSystem`` to which this ``DataType`` would be cast.
 
 
 class MYSQL_VARCHAR_BASE(DataType, MySQLTypeSystem):
@@ -173,20 +227,23 @@ class MYSQL_INTEGER_BASE(DataType, MySQLTypeSystem):
 class MYSQL_INTEGER(type):
     def __new__(cls, max_length):
         x = super().__new__(
-            cls, 'MYSQL_INT{max_length}'.format(max_length=str(max_length)),
+            cls, 'MYSQL_INTEGER{max_length}'.format(max_length=str(max_length)),
             (MYSQL_INTEGER_BASE, ), {'max_length': max_length})
         return x
 
+def make_types():
+    types_dict = {}
+    for varchar_length in VARCHAR_LENGTHS:
+        types_dict['MYSQL_VARCHAR' +
+                  str(varchar_length)] = MYSQL_VARCHAR(varchar_length)
 
-for varchar_length in VARCHAR_LENGTHS:
-    globals()['MYSQL_VARCHAR' +
-              str(varchar_length)] = MYSQL_VARCHAR(varchar_length)
 
+    for integer_length in INTEGER_LENGTHS:
+        types_dict['MYSQL_INTEGER' +
+                  str(integer_length)] = MYSQL_INTEGER(integer_length)
+    return types_dict
 
-for integer_length in INTEGER_LENGTHS:
-    globals()['MYSQL_INTEGER' +
-              str(integer_length)] = MYSQL_INTEGER(integer_length)
-
+globals().update(make_types())
 
 def mysql_type(string):
     '''
@@ -195,7 +252,10 @@ def mysql_type(string):
     string = string.lower()
     if string.startswith('int') and '(' in string:
         max_length = string[4:-1]
-        cls = globals()['MYSQL_INT' + max_length]
+        try:
+            cls = globals()['MYSQL_INTEGER' + max_length]
+        except:
+            import pdb; pdb.set_trace()
     elif string.startswith('int'):
         cls = INTEGER_BASE
     elif string.startswith('varchar') and '(' in string:
@@ -206,8 +266,9 @@ def mysql_type(string):
     elif string == 'date':
         cls = MYSQL_DATE
     else:
-        raise Exception('Unrecognized MySQL type: {type_string}'.format(
-            type_string=string))
+        cls = MYSQL_VARCHAR128  # No
+        #raise Exception('Unrecognized MySQL type: {type_string}'.format(
+        #    type_string=string))
     return cls
 
 
@@ -217,7 +278,7 @@ class Row:
     mapping the names of the values to the ``DataType`` objects.
     '''
 
-    def __init__(self, *records, type_system=PythonTypeSystem):
+    def __init__(self, *records, type_system=None):
         '''
         Constructor for ``Row``.
 
@@ -245,7 +306,7 @@ class Row:
         return ', '.join([str(record) for record in self.records.values()])
 
     @staticmethod
-    def from_dict(row_dictionary):
+    def from_dict(row_dictionary, **kwargs):
         '''
         Creates a ``Row`` object form a dictionary mapping names to values.
         '''

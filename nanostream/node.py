@@ -45,23 +45,58 @@ DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 logging.basicConfig(level=logging.DEBUG)
 
 
+def no_op(*args, **kwargs):
+    '''
+    No-op function to serve as default ``pre_flight_function``.
+    '''
+    pass
+
+
+def get_environment_variables(environment_variables=None):
+    environment_variables = environment_variables or []
+    environment = {
+        environment_variable: os.environ.get(environment_variable, None)
+        for environment_variable in environment_variables}
+    return environment
+
+
 class NanoNode:
     '''
     The foundational class of `NanoStream`. This class is inherited by all
     nodes in a computation graph.
     '''
 
-    def __init__(self, *args, batch=False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        batch=False,
+        pre_flight_function=no_op,
+        pre_flight_function_args=None,
+        pre_flight_function_kwargs=None,
+        pre_flight_destinations=None,
+        globalize_output=None,
+        globalize_aggregate_output=None,
+            **kwargs):
         self.name = kwargs.get('name', None) or uuid.uuid4().hex
         self.input_queue_list = []
         self.output_queue_list = []
         self.input_node_list = []
         self.output_node_list = []
-        self.global_dict = None
+        self.global_dict = None  # We'll add a dictionary upon startup
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
         self.batch = batch
+        self.globalize_output = globalize_output
+        self.globalize_aggregate_output = globalize_aggregate_output
+        self.pre_flight_function = pre_flight_function
+        self.pre_flight_function_args = pre_flight_function_args or tuple()
+        self.pre_flight_function_kwargs = pre_flight_function_kwargs or {}
+        self.pre_flight_destinations = pre_flight_destinations,
+        self.globalize_pre_flight_function = (
+            globalize_pre_flight_function or False)  # Not sure about this
+
+        import pdb; pdb.set_trace()
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -107,8 +142,28 @@ class NanoNode:
             self.output_queue_list.append(edge_queue)
 
     def start(self):
+        # Run pre-flight function and save output if necessary
+        if self.pre_flight_function is not None:
+            pre_flight_results = pre_flight_function(
+                *pre_flight_function_args, **pre_flight_function_kwargs)
+            if pre_flight_destinations is not None:
+                if not isinstance(pre_flight_destinations, (dict,)):
+                    raise Exception(
+                        'Trying pre-flight function, but '
+                        'targets are not given in a dictionary.')
+                for key, value in pre_flight_results.items():
+                    self.setattr(pre_flight_destinations[key], value)
+
+        # We have to separate the pre-flight function, the setup of the
+        # class, and any necessary startup functions (such as connecting
+        # to a database).
+
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
             for output in self.generator():
+                if self.globalize_output is not None:
+                    self.global_dict[self.globalize_output] = output
+                if self.globalize_aggregate_output is not None:
+                    self.global_dict[self.globalize_aggregate_output].append(output)
                 yield output, None
                 if not any(queue.open_for_business
                            for queue in self.output_queue_list):
@@ -128,7 +183,14 @@ class NanoNode:
                         pass
                     else:
                         for output in self.process_item(message_content):
-                            yield output, one_item  # Also yield previous message
+                            if self.globalize_output is not None:
+                                self.global_dict[
+                                    self.globalize_output] = output
+                            if self.globalize_aggregate_output is not None:
+                                self.global_dict[
+                                    self.globalize_aggregate_output].\
+                                append(output)
+                            yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
             for input_queue in self.input_queue_list:
@@ -186,7 +248,9 @@ class NanoNode:
 
     def global_start(self):
         thread_dict = self.thread_dict
+        global_dict = {}
         for node in self.all_connected():
+            node.global_dict = global_dict  # Establishing shared globals
             logging.debug('global_start:' + str(self))
             thread = threading.Thread(target=NanoNode.stream, args=(node, ))
             thread.start()
@@ -209,15 +273,18 @@ class CounterOfThings(NanoNode):
 
 
 class StreamMySQLTable(NanoNode):
-    def __init__(self,
-                 host='localhost',
-                 user=None,
-                 table=None,
-                 password=None,
-                 database=None,
-                 port=3306,
-                 to_row_obj=True,
-                 batch=True):
+    def __init__(
+        self,
+        *args,
+        host='localhost',
+        user=None,
+        table=None,
+        password=None,
+        database=None,
+        port=3306,
+        to_row_obj=True,
+        batch=True,
+            **kwargs):
         self.host = host
         self.user = user
         self.to_row_obj = to_row_obj
@@ -226,6 +293,7 @@ class StreamMySQLTable(NanoNode):
         self.port = port
         self.batch = batch
         self.table = table
+        import pdb; pdb.set_trace()
         self.db = MySQLdb.connect(
             passwd=self.password,
             db=self.database,
@@ -240,9 +308,18 @@ class StreamMySQLTable(NanoNode):
 
         self.table_schema = self.get_schema()
         # Need a mapping from header to MYSQL TYPE
-        import pdb; pdb.set_trace()
+        for mapping in self.table_schema:
+            column = mapping['column_name']
+            type_string = mapping['column_type']
+            this_type = ds.MySQLTypeSystem.type_mapping(type_string)
+            print(column, this_type)
+            # Start here:
+            #    store the type_mapping
+            #    use it to cast the data into the MySQLTypeSchema
+            #    ensure that the generator is emitting MySQLTypeSchema objects
 
-        super(StreamMySQLTable, self).__init__()
+
+        super(StreamMySQLTable, self).__init__(**kwargs)
 
     def get_schema(self):
         self.cursor.execute(self.table_schema_query)
@@ -257,7 +334,6 @@ class StreamMySQLTable(NanoNode):
         result = self.cursor.fetchone()
         while result is not None:
             if self.to_row_obj:
-                import pdb; pdb.set_trace()
                 result = Row.from_dict(result, type_system=MySQLTypeSystem)
             yield result
             result = self.cursor.fetchone()
@@ -385,10 +461,12 @@ class HttpGetRequest(NanoNode):
     '''
 
     @set_kwarg_attributes()
-    def __init__(self, url=None, endpoint=None, endpoint_dict=None):
+    def __init__(
+            self, url=None, endpoint=None, endpoint_dict=None, json=True):
+        self.endpoint.update(endpoint_dict)
         super(HttpGetRequest, self).__init__()
 
-    def process_item(self, message):
+    def process_item(self, item):
         '''
         The input to this function will be a dictionary-like object with
         parameters to be substituted into the endpoint string and a dictionary
@@ -396,11 +474,10 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        self.current_endpoint_dict = endpoint_dict
         get_response = self.pipeline.session.get(
-            self.url.format(**endpoint_dict), cookies=self.pipeline.cookies)
-        self.key_value.update(endpoint_dict)
-        return get_response.text
+            self.endpoint.format(**(item or {})),
+            cookies=self.pipeline.cookies)
+        return get_response.json() if self.json else get_response.text
 
 
 class SimpleJoin(NanoNode):
@@ -573,12 +650,14 @@ def class_factory(raw_config):
 
 
 if __name__ == '__main__':
-
+    globals().update(ds.make_types())  # Insert types into namespace
     employees_table = StreamMySQLTable(
-        user='zac',
         password='imadfs1',
         database='employees',
-        table='employees')
+        table='employees',
+        pre_flight_function=get_environment_variables,
+        pre_flight_function_args=('MYSQL_USER',),
+        pre_flight_destinations={'MYSQL_USER': 'user'})
     printer = PrinterOfThings()
 
     raw_config = yaml.load(
