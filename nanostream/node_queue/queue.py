@@ -61,8 +61,5 @@ class NanoStreamQueue:
                 self.queue.put(message_obj)
             logging.debug('Put message on queue: ' + str(message_obj))
             logging.debug('Message history: ' + str(message_obj.accumulator))
-        if self.source_node.batch and isinstance(message, (list, tuple,)):
-            _put(BatchStart())
-            for item in message:
-                _put(item)
-            _put(BatchEnd())
+
+        _put(message)

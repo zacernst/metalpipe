@@ -49,7 +49,7 @@ def no_op(*args, **kwargs):
     '''
     No-op function to serve as default ``pre_flight_function``.
     '''
-    pass
+    return None
 
 
 def get_environment_variables(environment_variables=None):
@@ -64,6 +64,14 @@ class NanoNode:
     '''
     The foundational class of `NanoStream`. This class is inherited by all
     nodes in a computation graph.
+
+    Order of operations:
+    1. Child class ``__init__`` function
+    2. ``NanoNode`` ``__init__`` function
+    3. ``preflight_function`` (Specified in initialization params)
+    4. ``setup``
+    5. start
+
     '''
 
     def __init__(
@@ -76,6 +84,7 @@ class NanoNode:
         pre_flight_destinations=None,
         globalize_output=None,
         globalize_aggregate_output=None,
+        globalize_pre_flight_function=False,
             **kwargs):
         self.name = kwargs.get('name', None) or uuid.uuid4().hex
         self.input_queue_list = []
@@ -92,11 +101,17 @@ class NanoNode:
         self.pre_flight_function = pre_flight_function
         self.pre_flight_function_args = pre_flight_function_args or tuple()
         self.pre_flight_function_kwargs = pre_flight_function_kwargs or {}
-        self.pre_flight_destinations = pre_flight_destinations,
+        self.pre_flight_destinations = pre_flight_destinations or {}
         self.globalize_pre_flight_function = (
-            globalize_pre_flight_function or False)  # Not sure about this
+            globalize_pre_flight_function)  # Not sure about this
 
-        import pdb; pdb.set_trace()
+    def setup(self):
+        '''
+        To be overridden by child classes when we need to do something
+        after setting attributes and the pre-flight function.
+        '''
+        pass
+
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -130,51 +145,51 @@ class NanoNode:
 
         # Make this recursive below
         # TODO: Add support for composition
-        if 0 and hasattr(target,
-                         'get_source'):  # Only metaclass has this method
-            target.get_source().input_queue_list.append(edge_queue)
-        else:
-            target.input_queue_list.append(edge_queue)
-
-        if 0 and hasattr(self, 'get_source'):
-            self.get_sink().output_queue_list.append(edge_queue)
-        else:
-            self.output_queue_list.append(edge_queue)
+        target.input_queue_list.append(edge_queue)
+        self.output_queue_list.append(edge_queue)
 
     def start(self):
         # Run pre-flight function and save output if necessary
+        logging.info('Starting node: {node}'.format(
+            node=self.__class__.__name__))
         if self.pre_flight_function is not None:
-            pre_flight_results = pre_flight_function(
-                *pre_flight_function_args, **pre_flight_function_kwargs)
-            if pre_flight_destinations is not None:
-                if not isinstance(pre_flight_destinations, (dict,)):
+            pre_flight_results = self.pre_flight_function(
+                *self.pre_flight_function_args,
+                **self.pre_flight_function_kwargs) or {}
+            if self.pre_flight_destinations is not None:
+                if not isinstance(self.pre_flight_destinations, (dict,)):
                     raise Exception(
                         'Trying pre-flight function, but '
                         'targets are not given in a dictionary.')
                 for key, value in pre_flight_results.items():
-                    self.setattr(pre_flight_destinations[key], value)
+                    setattr(self, self.pre_flight_destinations[key], value)
 
         # We have to separate the pre-flight function, the setup of the
         # class, and any necessary startup functions (such as connecting
         # to a database).
+
+        self.setup()  # Setup function?
 
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
             for output in self.generator():
                 if self.globalize_output is not None:
                     self.global_dict[self.globalize_output] = output
                 if self.globalize_aggregate_output is not None:
-                    self.global_dict[self.globalize_aggregate_output].append(output)
+                    self.global_dict[self.globalize_aggregate_output].\
+                    append(output)
                 yield output, None
                 if not any(queue.open_for_business
                            for queue in self.output_queue_list):
                     logging.info('shutting down.')
                     break
         else:
+            logging.debug('About to enter loop for reading input queue in {node}.'.format(node=str(self)))
             while 1:
                 for input_queue in self.input_queue_list:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
+                    logging.debug('Got item: {one_item}'.format(one_item=str(one_item)))
                     message_content = one_item.message_content
                     if isinstance(message_content, (PoisonPill, )):
                         logging.info('received poision pill.')
@@ -282,7 +297,7 @@ class StreamMySQLTable(NanoNode):
         password=None,
         database=None,
         port=3306,
-        to_row_obj=True,
+        to_row_obj=False,
         batch=True,
             **kwargs):
         self.host = host
@@ -293,7 +308,10 @@ class StreamMySQLTable(NanoNode):
         self.port = port
         self.batch = batch
         self.table = table
-        import pdb; pdb.set_trace()
+
+        super(StreamMySQLTable, self).__init__(**kwargs)
+
+    def setup(self):
         self.db = MySQLdb.connect(
             passwd=self.password,
             db=self.database,
@@ -312,14 +330,10 @@ class StreamMySQLTable(NanoNode):
             column = mapping['column_name']
             type_string = mapping['column_type']
             this_type = ds.MySQLTypeSystem.type_mapping(type_string)
-            print(column, this_type)
             # Start here:
             #    store the type_mapping
             #    use it to cast the data into the MySQLTypeSchema
             #    ensure that the generator is emitting MySQLTypeSchema objects
-
-
-        super(StreamMySQLTable, self).__init__(**kwargs)
 
     def get_schema(self):
         self.cursor.execute(self.table_schema_query)
@@ -342,10 +356,11 @@ class StreamMySQLTable(NanoNode):
 
 
 class PrinterOfThings(NanoNode):
+
     @set_kwarg_attributes()
     def __init__(self, prepend='printer:'):
-        # self.prepend = prepend
         super(PrinterOfThings, self).__init__()
+        logging.info('Initialized printer...')
 
     def process_item(self, message):
         print(self.prepend + str(message))
@@ -502,7 +517,6 @@ class SimpleJoin(NanoNode):
         )):
             pass
         else:
-            print(message.first_name.value)
             key = getattr(message, self.key).value
             if isinstance(self.timed_dict[key], Row):
                 self.timed_dict[key] = self.timed_dict[key].concat(
@@ -575,8 +589,7 @@ class DynamicClassMediator(NanoNode):
     def source_list(self):
         source_nodes = [
             node_dict['obj'] for node_dict in self.node_dict.values()
-            if node_dict['obj'].is_source
-        ]
+            if node_dict['obj'].is_source]
         return source_nodes
 
     def hi(self):
@@ -611,7 +624,7 @@ def kwarg_remapper(f, **kwarg_mapping):
         for key, value in kwargs.items():
             if key in reverse_mapping:
                 remapped_kwargs[reverse_mapping[key]] = value
-        logging.debug('remaed function with kwargs: ' + str(remapped_kwargs))
+        logging.debug('renamed function with kwargs: ' + str(remapped_kwargs))
 
         return f(*args, **remapped_kwargs)
 
@@ -656,19 +669,23 @@ if __name__ == '__main__':
         database='employees',
         table='employees',
         pre_flight_function=get_environment_variables,
-        pre_flight_function_args=('MYSQL_USER',),
+        pre_flight_function_args=(('MYSQL_USER',),),
         pre_flight_destinations={'MYSQL_USER': 'user'})
     printer = PrinterOfThings()
 
-    raw_config = yaml.load(
-        open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
-    class_factory(raw_config)
-    csv_watcher = CSVWatcher(watch_directory='./sample_data')
+    employees_table > printer
+    employees_table.global_start()
 
-    joiner = SimpleJoin(key='first_name')
 
-    employees_table > joiner
-    csv_watcher > joiner
-    joiner > printer
+    #raw_config = yaml.load(
+    #    open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
+    #class_factory(raw_config)
+    #csv_watcher = CSVWatcher(watch_directory='./sample_data')
 
-    printer.global_start()
+    #joiner = SimpleJoin(key='first_name')
+
+    #employees_table > joiner
+    #csv_watcher > joiner
+    #joiner > printer
+
+    #printer.global_start()
