@@ -47,17 +47,24 @@ logging.basicConfig(level=logging.DEBUG)
 
 def no_op(*args, **kwargs):
     '''
-    No-op function to serve as default ``pre_flight_function``.
+    No-op function to serve as default ``get_runtime_attrs``.
     '''
     return None
 
 
-def get_environment_variables(environment_variables=None):
-    environment_variables = environment_variables or []
+def get_environment_variables(*args):
+    environment_variables = args or []
     environment = {
         environment_variable: os.environ.get(environment_variable, None)
         for environment_variable in environment_variables}
     return environment
+
+
+class Parameters:
+
+    def __init__(self, **kwargs):
+        self.parameters = kwargs
+
 
 
 class NanoNode:
@@ -72,19 +79,33 @@ class NanoNode:
     4. ``setup``
     5. start
 
+
+    These methods have the following intended uses:
+
+    1. ``__init__`` Sets attribute values and calls the ``NanoNode`` ``__init__``
+       method.
+    2. ``get_runtime_attrs`` Sets any attribute values that are to be determined
+       at runtime, e.g. by checking environment variables or reading values
+       from a database. The ``get_runtime_attrs`` should return a dictionary
+       of attributes -> values, or else ``None``.
+    3. ``setup`` Sets the state of the ``NanoNode`` and/or creates any attributes
+       that require information available only at runtime.
+
+
+    Let's create a ``parameters`` object; when a ``NanoNode`` receives one,
+    it replaces its own attributes with the values in the object.
     '''
 
     def __init__(
         self,
         *args,
         batch=False,
-        pre_flight_function=no_op,
-        pre_flight_function_args=None,
-        pre_flight_function_kwargs=None,
-        pre_flight_destinations=None,
+        get_runtime_attrs=no_op,
+        get_runtime_attrs_args=None,
+        get_runtime_attrs_kwargs=None,
+        runtime_attrs_destinations=None,
         globalize_output=None,
         globalize_aggregate_output=None,
-        globalize_pre_flight_function=False,
             **kwargs):
         self.name = kwargs.get('name', None) or uuid.uuid4().hex
         self.input_queue_list = []
@@ -98,12 +119,10 @@ class NanoNode:
         self.batch = batch
         self.globalize_output = globalize_output
         self.globalize_aggregate_output = globalize_aggregate_output
-        self.pre_flight_function = pre_flight_function
-        self.pre_flight_function_args = pre_flight_function_args or tuple()
-        self.pre_flight_function_kwargs = pre_flight_function_kwargs or {}
-        self.pre_flight_destinations = pre_flight_destinations or {}
-        self.globalize_pre_flight_function = (
-            globalize_pre_flight_function)  # Not sure about this
+        self.get_runtime_attrs = get_runtime_attrs
+        self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
+        self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
+        self.runtime_attrs_destinations = runtime_attrs_destinations or {}
 
     def setup(self):
         '''
@@ -152,17 +171,23 @@ class NanoNode:
         # Run pre-flight function and save output if necessary
         logging.info('Starting node: {node}'.format(
             node=self.__class__.__name__))
-        if self.pre_flight_function is not None:
-            pre_flight_results = self.pre_flight_function(
-                *self.pre_flight_function_args,
-                **self.pre_flight_function_kwargs) or {}
-            if self.pre_flight_destinations is not None:
-                if not isinstance(self.pre_flight_destinations, (dict,)):
-                    raise Exception(
-                        'Trying pre-flight function, but '
-                        'targets are not given in a dictionary.')
+        # ``get_runtime_attrs`` returns a dict-like object whose keys and
+        # values are stored as attributes of the ``NanoNode`` object.
+        if self.get_runtime_attrs is not None:
+            pre_flight_results = self.get_runtime_attrs(
+                *self.get_runtime_attrs_args,
+                **self.get_runtime_attrs_kwargs) or {}
+            if self.runtime_attrs_destinations is not None:
                 for key, value in pre_flight_results.items():
-                    setattr(self, self.pre_flight_destinations[key], value)
+                    setattr(self, self.runtime_attrs_destinations[key], value)
+            elif self.runtime_attrs_destinations is None:
+                for key, value in pre_flight_results.items():
+                    setattr(self, key, value)
+            else:
+                raise Exception(
+                    'There is a ``get_runtime_attrs``, but the '
+                    '``runtime_attrs_destinations`` is neither None nor a '
+                    'dict-like object.')
 
         # We have to separate the pre-flight function, the setup of the
         # class, and any necessary startup functions (such as connecting
@@ -183,19 +208,30 @@ class NanoNode:
                     logging.info('shutting down.')
                     break
         else:
-            logging.debug('About to enter loop for reading input queue in {node}.'.format(node=str(self)))
+            logging.debug(
+                'About to enter loop for reading input queue in {node}.'.format(
+                    node=str(self)))
             while 1:
                 for input_queue in self.input_queue_list:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
-                    logging.debug('Got item: {one_item}'.format(one_item=str(one_item)))
+                    logging.debug('Got item: {one_item}'.format(
+                        one_item=str(one_item)))
                     message_content = one_item.message_content
-                    if isinstance(message_content, (PoisonPill, )):
+                    # If we receive a ``Parameters`` object, set the attributes
+                    if isinstance(message_content, (Parameters,)):
+                        for key, value in message_content.parameters.items():
+                            setattr(self, key, value)
+                    # If we receive a ``PoisonPill`` object, kill the thread.
+                    elif isinstance(message_content, (PoisonPill,)):
                         logging.info('received poision pill.')
                         self.kill_thread = True
+                    # If we receive ``None``, then pass.
                     elif message_content is None:
                         pass
+                    # Otherwise, process the message as usual, by calling
+                    # the ``NanoNode`` object's ``process_item`` method.
                     else:
                         for output in self.process_item(message_content):
                             if self.globalize_output is not None:
@@ -486,6 +522,11 @@ class HttpGetRequest(NanoNode):
         The input to this function will be a dictionary-like object with
         parameters to be substituted into the endpoint string and a dictionary
         with keys and values to be passed in the GET request.
+
+        Three use-cases:
+        1. Endpoint and parameters set initially and never changed.
+        2. Endpoint and parameters set once at runtime
+        3. Endpoint and parameters set by upstream messages
         '''
 
         # Hit the parameterized endpoint and yield back the results
@@ -668,9 +709,9 @@ if __name__ == '__main__':
         password='imadfs1',
         database='employees',
         table='employees',
-        pre_flight_function=get_environment_variables,
-        pre_flight_function_args=(('MYSQL_USER',),),
-        pre_flight_destinations={'MYSQL_USER': 'user'})
+        get_runtime_attrs=get_environment_variables,
+        get_runtime_attrs_args=('MYSQL_USER',),
+        runtime_attrs_destinations={'MYSQL_USER': 'user'})
     printer = PrinterOfThings()
 
     employees_table > printer
