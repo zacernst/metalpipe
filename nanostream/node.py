@@ -29,6 +29,7 @@ import yaml
 import types
 import inspect
 import MySQLdb
+import requests
 
 from timed_dict.timed_dict import TimedDict
 from nanostream.message.batch import BatchStart, BatchEnd
@@ -105,9 +106,12 @@ class NanoNode:
         input_as_parameters=False,  # Input is a dict-like set of attrs
         runtime_attrs_destinations=None,
         globalize_output=None,
+        input_mapping=None,
+        throttle=0,
         globalize_aggregate_output=None,
             **kwargs):
         self.name = kwargs.get('name', None) or uuid.uuid4().hex
+        self.input_mapping = input_mapping or {}
         self.input_queue_list = []
         self.output_queue_list = []
         self.input_node_list = []
@@ -120,6 +124,7 @@ class NanoNode:
         self.batch = batch
         self.globalize_output = globalize_output
         self.globalize_aggregate_output = globalize_aggregate_output
+        self.throttle = throttle
         self.get_runtime_attrs = get_runtime_attrs
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
@@ -218,6 +223,7 @@ class NanoNode:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
+                    time.sleep(self.throttle)
                     logging.debug('Got item: {one_item}'.format(
                         one_item=str(one_item)))
                     message_content = one_item.message_content
@@ -236,6 +242,27 @@ class NanoNode:
                     # the ``NanoNode`` object's ``process_item`` method.
                     else:
                         self.message = message_content
+
+                        # Remap inputs; if input_mapping is a string,
+                        # assume we're mapping to {input_mapping: value}, else
+                        # assume we're renaming keys
+
+                        print(self, self.input_mapping)
+                        if isinstance(self.input_mapping, (str,)):
+                            self.message = {self.input_mapping: self.message}
+                        elif isinstance(self.input_mapping, (dict,)) and len(self.input_mapping) > 0 and isinstance(self.message, (dict,)):
+                            for key, value in self.message.items():
+                                if key in self.input_mapping:
+                                    self.message[self.input_mapping[key]] = value
+                        elif isinstance(self.input_mapping, (dict,)) and len(self.input_mapping) > 0 and hasattr(self.message, '__dict__') and not isinstance(self.message, (dict,)):
+                            for key, value in self.message.__dict__.items():
+                                if key in self.input_mapping:
+                                    self.message.__dict__[self.input_mapping[key]] = value
+                        elif isinstance(self.input_mapping, (dict,)) and len(self.input_mapping) > 0:
+                            raise Exception('Bad case in input remmaping.')
+                        else:
+                            pass
+
                         for output in self.process_item():
                             if self.input_as_parameters:
                                 for key, value in self.message.items():
@@ -532,11 +559,15 @@ class HttpGetRequest(NanoNode):
     Makes GET requests.
     '''
 
-    @set_kwarg_attributes()
     def __init__(
-            self, url=None, endpoint=None, endpoint_dict=None, json=True):
-        self.endpoint.update(endpoint_dict)
-        super(HttpGetRequest, self).__init__()
+            self, url=None, endpoint='', endpoint_dict=None, json=True, **kwargs):
+        self.endpoint = endpoint
+        self.url = url
+        self.endpoint_dict = endpoint_dict or {}
+        self.json = json
+
+        self.endpoint_dict.update(self.endpoint_dict)
+        super(HttpGetRequest, self).__init__(**kwargs)
 
     def process_item(self):
         '''
@@ -551,9 +582,11 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        get_response = self.pipeline.session.get(
-            self.endpoint.format(**(item or {})))
-        return get_response.json() if self.json else get_response.text
+        print(self.message)
+        get_response = requests.get(
+            self.endpoint.format(**(self.message or {})))
+        output = get_response.json() if self.json else get_response.text
+        yield output
 
 
 class SimpleJoin(NanoNode):
@@ -739,7 +772,20 @@ if __name__ == '__main__':
     printer = PrinterOfThings()
 
     employees_table > printer
-    employees_table.global_start()
+    # employees_table.global_start()
+
+    post_counter = CounterOfThings()
+    printer = PrinterOfThings()
+    printer_2 = PrinterOfThings()
+    rest_endpoint = 'https://jsonplaceholder.typicode.com/posts/{post_number}'
+    rest_service = HttpGetRequest(endpoint=rest_endpoint, throttle=5, input_mapping='post_number')
+
+    # Need a way to remap inputs and outputs
+    post_counter > printer
+    post_counter > rest_service > printer_2
+    post_counter.global_start()
+
+
 
 
     #raw_config = yaml.load(
