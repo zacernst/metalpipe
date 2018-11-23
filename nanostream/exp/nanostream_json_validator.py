@@ -11,11 +11,11 @@ class JsonValidator(NanoStreamProcessor):
 
         super(JsonValidator, self).__init__()
 
-    def process_item(self, item):
-        if isinstance(item, str):
-            item = json.loads(item)
+    def process_item(self):
+        if isinstance(self.message, str):
+            self.message = json.loads(self.message)
         try:
             validate(item, self.schema)
-            return item
+            return self.message
         except ValidationError:
             pass  # We'll log the error here

@@ -66,7 +66,6 @@ class Parameters:
         self.parameters = kwargs
 
 
-
 class NanoNode:
     '''
     The foundational class of `NanoStream`. This class is inherited by all
@@ -103,6 +102,7 @@ class NanoNode:
         get_runtime_attrs=no_op,
         get_runtime_attrs_args=None,
         get_runtime_attrs_kwargs=None,
+        input_as_parameters=False,  # Input is a dict-like set of attrs
         runtime_attrs_destinations=None,
         globalize_output=None,
         globalize_aggregate_output=None,
@@ -113,6 +113,7 @@ class NanoNode:
         self.input_node_list = []
         self.output_node_list = []
         self.global_dict = None  # We'll add a dictionary upon startup
+        self.input_as_parameters = input_as_parameters
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
@@ -129,8 +130,9 @@ class NanoNode:
         To be overridden by child classes when we need to do something
         after setting attributes and the pre-flight function.
         '''
+        logging.info('No ``setup`` method for {class_name}.'.format(
+            class_name=self.__class__.__name__))
         pass
-
 
     def __gt__(self, other):
         self.add_edge(other)
@@ -233,7 +235,11 @@ class NanoNode:
                     # Otherwise, process the message as usual, by calling
                     # the ``NanoNode`` object's ``process_item`` method.
                     else:
-                        for output in self.process_item(message_content):
+                        self.message = message_content
+                        for output in self.process_item():
+                            if self.input_as_parameters:
+                                for key, value in self.message.items():
+                                    setattr(self, key, value)
                             if self.globalize_output is not None:
                                 self.global_dict[
                                     self.globalize_output] = output
@@ -247,7 +253,7 @@ class NanoNode:
             for input_queue in self.input_queue_list:
                 input_queue.open_for_business = False
 
-    def process_item(self, message):
+    def process_item(self, *args, **kwargs):
         '''
         Default `process_item` method for broadcast queues. With this method
         guaranteed to exist, we can handle poison pills and canaries in the
@@ -255,14 +261,14 @@ class NanoNode:
         '''
         pass
 
-    def processor(self, message):
+    def processor(self):
         """
         This calls the user's ``process_item`` with just the message content,
         and then returns the full message.
         """
         logging.debug('Processing message content: {message_content}'.format(
             message_content=message.mesage_content))
-        for result in self.process_item(message.message_content):
+        for result in self.process_item():
             result = NanoStreamMessage(result)
             yield result
 
@@ -321,6 +327,21 @@ class CounterOfThings(NanoNode):
         while 1:
             yield counter
             counter += 1
+
+
+class GetEnvironmentVariables(NanoNode):
+    def __init__(self, *args, mappings=None):
+        self.environment_mappings = mappings or {}
+        self.environment_variables = args or []
+        super(GetEnvironmentVariables, self).__init__()
+
+    def generator(self):
+        environment = {
+            self.environment_mappings.get(
+                environment_variable, environment_variable): os.environ.get(
+                    environment_variable, None)
+                for environment_variable in self.environment_variables}
+        return environment
 
 
 class StreamMySQLTable(NanoNode):
@@ -398,9 +419,9 @@ class PrinterOfThings(NanoNode):
         super(PrinterOfThings, self).__init__()
         logging.info('Initialized printer...')
 
-    def process_item(self, message):
-        print(self.prepend + str(message))
-        yield message
+    def process_item(self):
+        print(self.prepend + str(self.message))
+        yield self.message
 
 
 class ConstantEmitter(NanoNode):
@@ -446,8 +467,8 @@ class LocalFileReader(NanoNode):
                  read_mode='r'):
         super(LocalFileReader, self).__init__()
 
-    def process_item(self, message):
-        filename = '/'.join([self.directory, message])
+    def process_item(self):
+        filename = '/'.join([self.directory, self.message])
         with open(filename, self.read_mode) as file_obj:
             if self.serialize:
                 if self.send_batch_markers:
@@ -466,8 +487,8 @@ class CSVReader(NanoNode):
     def __init__(self, send_batch_markers=True, to_row_obj=True):
         super(CSVReader, self).__init__()
 
-    def process_item(self, message):
-        file_obj = io.StringIO(message)
+    def process_item(self):
+        file_obj = io.StringIO(self.message)
         reader = csv.DictReader(file_obj)
         if self.send_batch_markers:
             yield BatchStart()
@@ -517,7 +538,7 @@ class HttpGetRequest(NanoNode):
         self.endpoint.update(endpoint_dict)
         super(HttpGetRequest, self).__init__()
 
-    def process_item(self, item):
+    def process_item(self):
         '''
         The input to this function will be a dictionary-like object with
         parameters to be substituted into the endpoint string and a dictionary
@@ -531,8 +552,7 @@ class HttpGetRequest(NanoNode):
 
         # Hit the parameterized endpoint and yield back the results
         get_response = self.pipeline.session.get(
-            self.endpoint.format(**(item or {})),
-            cookies=self.pipeline.cookies)
+            self.endpoint.format(**(item or {})))
         return get_response.json() if self.json else get_response.text
 
 
@@ -547,12 +567,12 @@ class SimpleJoin(NanoNode):
         self.timed_dict = TimedDict(timeout=window)
         super(SimpleJoin, self).__init__()
 
-    def process_item(self, message):
+    def process_item(self):
         '''
         Assumes that `message` is a `Row` object.
         '''
 
-        if isinstance(message, (
+        if isinstance(self.message, (
                 BatchStart,
                 BatchEnd,
         )):
@@ -705,6 +725,10 @@ def class_factory(raw_config):
 
 if __name__ == '__main__':
     globals().update(ds.make_types())  # Insert types into namespace
+
+    env_vars = GetEnvironmentVariables('MYSQL_USER', 'PYTHONPATH')
+
+
     employees_table = StreamMySQLTable(
         password='imadfs1',
         database='employees',

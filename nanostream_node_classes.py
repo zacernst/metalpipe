@@ -9,20 +9,12 @@ import time
 import requests
 from nanostream_processor import NanoStreamAncestor
 
-class PrintStreamProcessor(NanoStreamAncestor):
-    """
-    Just a class that prints, for testing purposes only.
-    """
-    def process_item(self, item):
-        print(item)
-        yield item
-
 
 class ExtractKeysStreamProcessor(NanoStreamAncestor):
     """
     Just extracts the keys from a dictionary. For testing.
     """
-    def process_item(self, item):
+    def process_item(self):
         output = list(item.keys())
         yield output
 
@@ -37,17 +29,6 @@ class CounterOfThings(NanoStreamAncestor):
         while 1:
             yield counter
             counter += 1
-
-
-class PrinterOfThings(NanoStreamAncestor):
-
-    def __init__(self, prepend='printer:'):
-        self.prepend = prepend
-        super(PrinterOfThings, self).__init__()
-
-    def process_item(self, message):
-        print(self.prepend + str(message))
-        yield message
 
 
 class ConstantEmitter(NanoStreamAncestor):

@@ -33,7 +33,7 @@ class FileSystemWatchdog(NanoNode):
         modified_file = args[0].src_path
         self.queue_message(modified_file)
 
-    def process_item(self, tigger):
+    def process_item(self):
         seen = self.bowerbird_filesystem.ls('.')
         for filename in seen:
             logging.debug('checking:' + filename)
