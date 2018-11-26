@@ -61,5 +61,7 @@ class NanoStreamQueue:
                 self.queue.put(message_obj)
             logging.debug('Put message on queue: ' + str(message_obj))
             logging.debug('Message history: ' + str(message_obj.accumulator))
-
+        logging.debug('In Queue object --> ' + str(message))
+        if 0 and self.target_node.name == 'user_service':
+            import pdb; pdb.set_trace()
         _put(message)
