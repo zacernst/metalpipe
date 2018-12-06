@@ -48,6 +48,12 @@ class NanoStreamQueue:
         '''
         def _put(_message):
             previous_message = kwargs.get('previous_message', None)
+            # Check if we need to retain the previous message in the keys of
+            # this message, assuming we have dictionaries, etc.
+            if self.source_node.retain_input:
+                for key, value in previous_message:
+                    _message[key] = value
+
             if not isinstance(_message, NanoStreamMessage):
                 message_obj = NanoStreamMessage(_message)
                 message_obj.accumulator[self.source_node.name] = _message

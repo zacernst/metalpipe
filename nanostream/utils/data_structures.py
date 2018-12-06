@@ -300,7 +300,7 @@ class Row:
 
         if attr not in self.__dict__ and attr in self.records:
             return self.records[attr]
-        return super(Row, self).__init__()
+        return super(Row, self).__getattr__(attr)
 
     def __repr__(self):
         return ', '.join([str(record) for record in self.records.values()])

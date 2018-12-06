@@ -48,8 +48,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def no_op(*args, **kwargs):
     '''
-    No-op function to serve as default ``get_runtime_attrs``.
-    '''
+    No-op function to serve as default ``get_runtime_attrs``.  '''
     return None
 
 
@@ -91,8 +90,34 @@ class NanoNode:
     3. ``setup`` Sets the state of the ``NanoNode`` and/or creates any attributes
        that require information available only at runtime.
 
-    Let's create a ``parameters`` object; when a ``NanoNode`` receives one,
-    it replaces its own attributes with the values in the object.
+    :ivar batch: None
+    :ivar send_batch_markers: If ``True``, then a ``BatchStart`` marker will
+        be sent when a new input is received, and a ``BatchEnd`` will be sent
+        after the input has been processed. The intention is that a number of
+        items will be emitted for each input received. For example, we might
+        emit a table row-by-row for each input.
+    :ivar get_runtime_attrs: A function that returns a dictionary-like object.
+        The keys and values will be saved to this ``NanoNode`` object's
+        attributes. The function is executed one time, upon starting the node.
+    :ivar get_runtime_attrs_args: A tuple of arguments to be passed to the
+        ``get_runtime_attrs`` function upon starting the node.
+    :ivar get_runtime_attrs_kwargs: A dictionary of kwargs passed to the
+        ``get_runtime_attrs`` function.
+    :ivar runtime_attrs_destinations: If set, this is a dictionary mapping
+        the keys returned from the ``get_runtime_attrs`` function to the
+        names of the attributes to which the values will be saved.
+    :ivar input_as_parameters: If ``True``, then when a dictionary-like
+        object is passed as input, the keys and values will be saved to the
+        node's attributes.
+    :ivar throttle: For each input received, a delay of ``throttle`` seconds
+        will be added.
+    :ivar keep_alive: If ``True``, keep the node's thread alive after
+        everything has been processed.
+    :ivar name: The name of the node. Defaults to a randomly generated hash.
+
+    :ivar input_mapping: None
+    :ivar retrain_input: None
+
     '''
 
     def __init__(
@@ -104,13 +129,13 @@ class NanoNode:
         get_runtime_attrs_kwargs=None,
         input_as_parameters=False,  # Input is a dict-like set of attrs
         runtime_attrs_destinations=None,
-        set_attrs_from_function=None,
-        globalize_output=None,
         input_mapping=None,
+        retain_input=False,
         throttle=0,
-        globalize_aggregate_output=None,
+        keep_alive=False,
+        name=None,
             **kwargs):
-        self.name = kwargs.get('name', None) or uuid.uuid4().hex
+        self.name = name or uuid.uuid4().hex
         self.input_mapping = input_mapping or {}
         self.input_queue_list = []
         self.output_queue_list = []
@@ -122,15 +147,13 @@ class NanoNode:
         self.kill_thread = False
         self.accumulator = {}
         self.batch = batch
-        self.globalize_output = globalize_output
-        self.globalize_aggregate_output = globalize_aggregate_output
+        self.keep_alive = keep_alive
+        self.retain_input = retain_input  # Keep the input dictionary and send it downstream
         self.throttle = throttle
         self.get_runtime_attrs = get_runtime_attrs
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
         self.runtime_attrs_destinations = runtime_attrs_destinations or {}
-        # A dictionary mapping attr -> function
-        self.set_attrs_from_function = set_attrs_from_function or {}
 
     def setup(self):
         '''
@@ -205,16 +228,13 @@ class NanoNode:
 
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
             for output in self.generator():
-                if self.globalize_output is not None:
-                    self.global_dict[self.globalize_output] = output
-                if self.globalize_aggregate_output is not None:
-                    self.global_dict[self.globalize_aggregate_output].\
-                    append(output)
                 yield output, None
                 if not any(queue.open_for_business
                            for queue in self.output_queue_list):
                     logging.debug('shutting down.')
                     break
+            while self.keep_alive:
+                time.sleep(1)
         else:
             logging.debug(
                 'About to enter loop for reading input queue in {node}.'.format(
@@ -276,18 +296,12 @@ class NanoNode:
                             if self.input_as_parameters:
                                 for key, value in self.message.items():
                                     setattr(self, key, value)
-                            if self.globalize_output is not None:
-                                self.global_dict[
-                                    self.globalize_output] = output
-                            if self.globalize_aggregate_output is not None:
-                                self.global_dict[
-                                    self.globalize_aggregate_output].\
-                                append(output)
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
             for input_queue in self.input_queue_list:
                 input_queue.open_for_business = False
+
 
     def process_item(self, *args, **kwargs):
         '''
@@ -386,11 +400,33 @@ class CounterOfThings(NanoNode):
                 assert False
 
 
+class SequenceEmitter(NanoNode):
+    '''
+    Emits ``sequence`` ``max_sequences`` times, or forever if
+    ``max_sequences`` is ``None``.
+    '''
+
+    def __init__(self, sequence, *args, max_sequences=None, **kwargs):
+        self.sequence = sequence
+        self.max_sequences = max_sequences
+        super(SequenceEmitter, self).__init__(*args, **kwargs)
+
+    def generator(self):
+        '''
+        Emit the sequence ``max_sequences`` times.
+        '''
+        counter = 0
+        while self.max_sequences is None or counter < self.max_sequences:
+            for item in self.sequence:
+                yield item
+            counter += 1
+
+
 class GetEnvironmentVariables(NanoNode):
-    def __init__(self, *args, mappings=None):
+    def __init__(self, *args, mappings=None, **kwargs):
         self.environment_mappings = mappings or {}
         self.environment_variables = args or []
-        super(GetEnvironmentVariables, self).__init__()
+        super(GetEnvironmentVariables, self).__init__(**kwargs)
 
     def generator(self):
         environment = {
@@ -467,6 +503,7 @@ class StreamMySQLTable(NanoNode):
             result = self.cursor.fetchone()
         if self.batch:
             yield BatchEnd()
+
 
 
 class PrinterOfThings(NanoNode):
