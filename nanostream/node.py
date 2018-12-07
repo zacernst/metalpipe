@@ -90,7 +90,6 @@ class NanoNode:
     3. ``setup`` Sets the state of the ``NanoNode`` and/or creates any attributes
        that require information available only at runtime.
 
-    :ivar batch: None
     :ivar send_batch_markers: If ``True``, then a ``BatchStart`` marker will
         be sent when a new input is received, and a ``BatchEnd`` will be sent
         after the input has been processed. The intention is that a number of
@@ -106,17 +105,17 @@ class NanoNode:
     :ivar runtime_attrs_destinations: If set, this is a dictionary mapping
         the keys returned from the ``get_runtime_attrs`` function to the
         names of the attributes to which the values will be saved.
-    :ivar input_as_parameters: If ``True``, then when a dictionary-like
-        object is passed as input, the keys and values will be saved to the
-        node's attributes.
     :ivar throttle: For each input received, a delay of ``throttle`` seconds
         will be added.
     :ivar keep_alive: If ``True``, keep the node's thread alive after
         everything has been processed.
     :ivar name: The name of the node. Defaults to a randomly generated hash.
-
-    :ivar input_mapping: None
-    :ivar retrain_input: None
+        Note that this hash is not consistent from one run to the next.
+    :ivar input_mapping: When the node receives a dictionary-like object,
+        this dictionary will cause the keys of the dictionary to be remapped
+        to new keys.
+    :ivar retrain_input: If ``True``, then combine the dictionary-like input
+        with the output. If keys clash, the output value will be kept.
 
     '''
 
@@ -127,12 +126,11 @@ class NanoNode:
         get_runtime_attrs=no_op,
         get_runtime_attrs_args=None,
         get_runtime_attrs_kwargs=None,
-        input_as_parameters=False,  # Input is a dict-like set of attrs
         runtime_attrs_destinations=None,
         input_mapping=None,
         retain_input=False,
         throttle=0,
-        keep_alive=False,
+        keep_alive=True,
         name=None,
             **kwargs):
         self.name = name or uuid.uuid4().hex
@@ -142,11 +140,9 @@ class NanoNode:
         self.input_node_list = []
         self.output_node_list = []
         self.global_dict = None  # We'll add a dictionary upon startup
-        self.input_as_parameters = input_as_parameters
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
-        self.batch = batch
         self.keep_alive = keep_alive
         self.retain_input = retain_input  # Keep the input dictionary and send it downstream
         self.throttle = throttle
@@ -244,12 +240,16 @@ class NanoNode:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
-                    # print('=====>>>>> ', self.__class__.__name__, self.name)
 
                     time.sleep(self.throttle)
                     logging.debug('Got item: {one_item}'.format(
                         one_item=str(one_item)))
                     message_content = one_item.message_content
+                    if (
+                        isinstance(message_content, (dict,))
+                        and len(message_content) == 1
+                            and '__value__' in message_content):
+                        message_content = message_content['__value__']
                     # If we receive a ``PoisonPill`` object, kill the thread.
                     if isinstance(message_content, (PoisonPill,)):
                         logging.debug('received poision pill.')
@@ -261,8 +261,6 @@ class NanoNode:
                     # the ``NanoNode`` object's ``process_item`` method.
                     else:
                         self.message = message_content
-                        if 0 and self.name == 'user_service':
-                            import pdb; pdb.set_trace()
 
                         # Remap inputs; if input_mapping is a string,
                         # assume we're mapping to {input_mapping: value}, else
@@ -288,14 +286,12 @@ class NanoNode:
                         elif (
                             isinstance(self.input_mapping, (dict,)) and
                                 len(self.input_mapping) > 0):
-                            raise Exception('Bad case in input remmaping.')
+                            raise Exception('Bad case in input remapping.')
                         else:
                             pass
 
                         for output in self.process_item():
-                            if self.input_as_parameters:
-                                for key, value in self.message.items():
-                                    setattr(self, key, value)
+                            logging.info('one_item: ' + str(one_item))
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
@@ -400,6 +396,17 @@ class CounterOfThings(NanoNode):
                 assert False
 
 
+class SubstituteRegex(NanoNode):
+    def __init__(self, match_regex, substitute_string, *args, **kwargs):
+        self.match_regex = match_regex
+        self.substitute_string = substitute_string
+        self.regex_obj = re.compile(self.match_regex)
+        super(SubstituteRegex, self).__init__(*args, **kwargs)
+
+    def process_item(self):
+        pass
+
+
 class SequenceEmitter(NanoNode):
     '''
     Emits ``sequence`` ``max_sequences`` times, or forever if
@@ -436,6 +443,14 @@ class GetEnvironmentVariables(NanoNode):
                 for environment_variable in self.environment_variables}
         yield environment
 
+    def process_item(self):
+        environment = {
+            self.environment_mappings.get(
+                environment_variable, environment_variable): os.environ.get(
+                    environment_variable, None)
+                for environment_variable in self.environment_variables}
+        yield environment
+
 
 class StreamMySQLTable(NanoNode):
     def __init__(
@@ -448,7 +463,7 @@ class StreamMySQLTable(NanoNode):
         database=None,
         port=3306,
         to_row_obj=False,
-        batch=True,
+        send_batch_markers=True,
             **kwargs):
         self.host = host
         self.user = user
@@ -456,7 +471,6 @@ class StreamMySQLTable(NanoNode):
         self.password = password
         self.database = database
         self.port = port
-        self.batch = batch
         self.table = table
 
         super(StreamMySQLTable, self).__init__(**kwargs)
@@ -491,7 +505,7 @@ class StreamMySQLTable(NanoNode):
         return table_schema
 
     def generator(self):
-        if self.batch:
+        if self.send_batch_markers:
             yield BatchStart(schema=self.table_schema)
         self.cursor.execute(
             """SELECT * FROM {table};""".format(table=self.table))
@@ -501,7 +515,7 @@ class StreamMySQLTable(NanoNode):
                 result = Row.from_dict(result, type_system=MySQLTypeSystem)
             yield result
             result = self.cursor.fetchone()
-        if self.batch:
+        if self.send_batch_markers:
             yield BatchEnd()
 
 

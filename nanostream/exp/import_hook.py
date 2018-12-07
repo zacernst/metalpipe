@@ -27,16 +27,16 @@ class NoisyImportFinder:
 
         return None
 
+if __name__ == '__main__':
+    sys.path_hooks.append(NoisyImportFinder)
 
-sys.path_hooks.append(NoisyImportFinder)
+    for hook in sys.path_hooks:
+        print('Path hook: {}'.format(hook))
 
-for hook in sys.path_hooks:
-    print('Path hook: {}'.format(hook))
+    sys.path.insert(0, NoisyImportFinder.PATH_TRIGGER)
 
-sys.path.insert(0, NoisyImportFinder.PATH_TRIGGER)
-
-try:
-    print('importing target_module')
-    import __nanostream__.foo
-except Exception as e:
-    print('Import failed:', e)
+    try:
+        print('importing target_module')
+        import __nanostream__.foo
+    except Exception as e:
+        print('Import failed:', e)

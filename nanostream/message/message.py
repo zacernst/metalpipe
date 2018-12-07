@@ -28,7 +28,9 @@ class NanoStreamMessage(object):
     """
 
     def __init__(self, message_content):
-        self.message_content = message_content
+        self.message_content = (
+            message_content if isinstance(message_content, (dict,))
+            else {'__value__': message_content})
         self.history = []
         self.time_created = time.time()
         self.time_processed = None

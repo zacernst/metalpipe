@@ -43,31 +43,30 @@ class NanoStreamQueue:
             message = None
         return message
 
-    def put(self, message, *args, **kwargs):
+    def put(self, message, *args, previous_message=None, **kwargs):
         '''
-        '''
-        def _put(_message):
-            previous_message = kwargs.get('previous_message', None)
-            # Check if we need to retain the previous message in the keys of
-            # this message, assuming we have dictionaries, etc.
-            if self.source_node.retain_input:
-                for key, value in previous_message:
-                    _message[key] = value
+        Places a message on the output queues. If the message is ``None``,
+        then the queue is skipped.
 
-            if not isinstance(_message, NanoStreamMessage):
-                message_obj = NanoStreamMessage(_message)
-                message_obj.accumulator[self.source_node.name] = _message
-                if previous_message is not None:
-                    message_obj.accumulator.update(previous_message.accumulator)
-            logging.debug(
-                'Putting message on queue {queue_name}: {message_content}'.format(
-                    queue_name=self.name,
-                    message_content=message_obj.message_content))
-            if message_obj.message_content is not None:
-                self.queue.put(message_obj)
-            logging.debug('Put message on queue: ' + str(message_obj))
-            logging.debug('Message history: ' + str(message_obj.accumulator))
-        logging.debug('In Queue object --> ' + str(message))
-        if 0 and self.target_node.name == 'user_service':
-            import pdb; pdb.set_trace()
-        _put(message)
+        Messages are ``NanoStreamMessage`` objects; the payload of the
+        message is message.message_content.
+        '''
+        previous_message = kwargs.get('previous_message', None)
+        if previous_message is not None:
+            previous_message = previous_message.message_content
+        # Check if we need to retain the previous message in the keys of
+        # this message, assuming we have dictionaries, etc.
+        if self.source_node.retain_input:
+            logging.info(self.source_node.name)
+            for key, value in previous_message.items():
+                if key in message:
+                    logging.warn(
+                        'Key {key} is in the message. Skipping.'.format(key=key))
+                    continue
+                else:
+                    message[key] = value
+
+        if not isinstance(message, (NanoStreamMessage,)):
+            message_obj = NanoStreamMessage(message)
+        if message_obj.message_content is not None:
+            self.queue.put(message_obj)
