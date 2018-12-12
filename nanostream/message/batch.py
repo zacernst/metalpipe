@@ -1,4 +1,7 @@
 '''
+Batch module
+============
+
 We'll use markers to delimit batches of things, such as serialized
 files and that kind of thing.
 '''

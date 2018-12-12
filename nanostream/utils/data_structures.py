@@ -1,4 +1,7 @@
 '''
+Data structures module
+======================
+
 Data types (e.g. Rows, Records) for ETL.
 '''
 

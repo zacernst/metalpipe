@@ -1,27 +1,18 @@
 """
-Copyright (C) 2016 Zachary Ernst
-zac.ernst@gmail.com
+Node module
+===========
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+This is the node module.
 """
 
 import time
+import datetime
 import uuid
 import logging
 import os
 import threading
 import sys
+import copy
 import functools
 import csv
 import io
@@ -40,19 +31,31 @@ from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
+from nanostream.utils.paginated_get_requests import PaginatedHttpGetRequest, SafeMap
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 
 logging.basicConfig(level=logging.DEBUG)
 
 
+
 def no_op(*args, **kwargs):
     '''
-    No-op function to serve as default ``get_runtime_attrs``.  '''
+    No-op function to serve as default ``get_runtime_attrs``.
+    '''
     return None
 
 
 def get_environment_variables(*args):
+    '''
+    Retrieves the environment variables listed in ``*args``.
+
+    Args:
+        args (list of str): List of environment variables.
+    Returns:
+        dict: Dictionary of environment variables to values. If the environment
+            variable is not defined, the value is ``None``.
+    '''
     environment_variables = args or []
     environment = {
         environment_variable: os.environ.get(environment_variable, None)
@@ -161,6 +164,9 @@ class NanoNode:
         pass
 
     def __gt__(self, other):
+        '''
+        Convenience method so that we can link two nodes by ``node1 > node2``.
+        '''
         self.add_edge(other)
         return other
 
@@ -169,10 +175,18 @@ class NanoNode:
 
     @property
     def is_source(self):
+        '''
+        Tests whether the node is a source or not, i.e. whether there are no
+        inputs to the node.
+        '''
         return len(self.input_queue_list) == 0
 
     @property
     def is_sink(self):
+        '''
+        Tests whether the node is a sink or not, i.e. whether there are no
+        outputs from the node.
+        '''
         return len(self.output_queue_list) == 0
 
     def add_edge(self, target, **kwargs):
@@ -195,6 +209,10 @@ class NanoNode:
         self.output_queue_list.append(edge_queue)
 
     def start(self):
+        '''
+        Starts the node. This is called by ``NanoNode.global_start()``.
+        '''
+
         # Run pre-flight function and save output if necessary
         logging.debug('Starting node: {node}'.format(
             node=self.__class__.__name__))
@@ -319,6 +337,10 @@ class NanoNode:
             yield result
 
     def stream(self):
+        '''
+        Called in each ``NanoNode`` thread. This is a generator that yields
+        the output from the node.
+        '''
         for output, previous_message in self.start():
             logging.debug('In NanoNode.stream.stream() --> ' + str(output))
             for output_queue in self.output_queue_list:
@@ -329,6 +351,16 @@ class NanoNode:
                     previous_message=previous_message)
 
     def all_connected(self, seen=None):
+        '''
+        Returns all the nodes connected (directly or indirectly) to ``self``.
+
+        Args:
+            seen (set): A set of all the nodes that have been identified as
+                connected to ``self``.
+        Returns:
+            (set of ``NanoNode``): All the nodes connected to ``self``. This
+                includes ``self``.
+        '''
         seen = seen or set()
 
         if isinstance(self, (DynamicClassMediator, )):
@@ -346,11 +378,17 @@ class NanoNode:
         return seen
 
     def broadcast(self, broadcast_message):
+        '''
+        Puts the message into all the input queues for all connected nodes.
+        '''
         for node in self.all_connected():
             for input_queue in node.input_queue_list:
                 input_queue.put(broadcast_message)
 
     def global_start(self):
+        '''
+        Starts every node connected to ``self``.
+        '''
         # thread_dict = self.thread_dict
         global_dict = {}
         for node in self.all_connected():
@@ -841,12 +879,118 @@ def class_factory(raw_config):
     globals()[new_class.__name__] = new_class
     return new_class
 
+class HttpGetRequestPaginator(NanoNode):
+
+    def __init__(
+        self,
+        endpoint_dict=None,
+        json=True,
+        pagination_get_request_key=None,
+        endpoint_template=None,
+        additional_data_key=None,
+        pagination_key=None,
+        default_offset_value='',
+            **kwargs):
+        self.pagination_get_request_key = pagination_get_request_key
+        self.additional_data_key = additional_data_key
+        self.pagination_key = pagination_key
+        self.endpoint_dict = endpoint_dict or {}
+        self.endpoint_template = endpoint_template
+        self.default_offset_value = default_offset_value
+
+        self.endpoint_template = self.endpoint_template.format_map(SafeMap(**endpoint_dict))
+
+        # import pdb; pdb.set_trace()
+        super(HttpGetRequestPaginator, self).__init__(**kwargs)
+
+    def process_item(self):
+        self.requestor = PaginatedHttpGetRequest(
+            pagination_get_request_key=self.pagination_get_request_key,
+            endpoint_template=self.endpoint_template.format_map(SafeMap(**(self.message or {}))),
+            additional_data_key=self.additional_data_key,
+            pagination_key=self.pagination_key,
+            default_offset_value=self.default_offset_value)
+
+        for i in self.requestor.responses():
+            yield i
+
+
+def get_value(
+        dictionary, path, delimiter='.', default_value=None):
+    dictionary = copy.deepcopy(dictionary)
+    if isinstance(path, (str,)):
+        path = path.split(delimiter)
+    elif isinstance(path, (list, tuple,)):
+            pass
+    else:
+        raise Exception('what?')
+    for step in path:
+        dictionary = dictionary.get(step, default_value)
+    return dictionary
+
+
+def set_value(dictionary, path, value):
+    for step in path[:-1]:
+        dictionary = dictionary[step]
+    dictionary[path[-1]] = value
+
+
+def iterate_leaves(dictionary, keypath=None):
+    keypath = keypath or []
+    for key, value in dictionary.items():
+        if not isinstance(value, (dict,)):
+            yield keypath + [key], value
+        else:
+            for i in iterate_leaves(value, keypath=keypath + [key]):
+                yield i
+
+def remap_dictionary(source_dictionary, target_dictionary):
+    for path, value in iterate_leaves(target_dictionary):
+        set_value(target_dictionary, path, get_value(source_dictionary, value))
+
+d = {'foo': 'bar', 'baz': {'qux': 'foobar'}}
+e = {'hi': ['foo'], 'whatever': ['baz', 'qux']}
+
+remap_dictionary(d, e)
 
 if __name__ == '__main__':
-    globals().update(ds.make_types())  # Insert types into namespace
+    ONE_DAY = 3600 * 24 * 1000
+    NOW = int(float(time.time())) * 1000
+    TWO_WEEKS_AGO = str(
+        int(float(NOW - (ONE_DAY / 4))))
 
+    HUBSPOT_TEMPLATE = (
+        'https://api.hubapi.com/email/public/v1/'
+        'events?hapikey={HUBSPOT_API_KEY}&'
+        'startTimestamp={start_timestamp}&'
+        'endTimestamp={end_timestamp}&'
+        'limit=5000&'
+        'offset={offset}')
+
+    endpoint_dict = {
+        # 'hubspot_api_key': HUBSPOT_API_KEY,
+        'start_timestamp': TWO_WEEKS_AGO,
+        'end_timestamp': NOW}
+
+    paginator = HttpGetRequestPaginator(
+        endpoint_dict=endpoint_dict,
+        pagination_get_request_key='offset',
+        endpoint_template=HUBSPOT_TEMPLATE,
+        additional_data_key='hasMore',
+        pagination_key='offset',
+        name='Hubspot_paginator')
+
+    env_vars = GetEnvironmentVariables(
+        'HUBSPOT_API_KEY',
+        'HUBSPOT_USER_ID',
+        name='environment_variables')
+    printer = PrinterOfThings()
+    env_vars > paginator # > printer
+    env_vars.global_start()
+
+
+def foo():
     env_vars = GetEnvironmentVariables('MYSQL_USER', 'PYTHONPATH')
-
     employees_table = StreamMySQLTable(
         password='imadfs1',
         database='employees',

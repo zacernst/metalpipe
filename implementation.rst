@@ -1,5 +1,0 @@
-==============
-Implementation
-==============
-
-Nothing here yet.
