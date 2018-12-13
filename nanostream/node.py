@@ -19,6 +19,7 @@ import io
 import yaml
 import types
 import inspect
+import prettytable
 import MySQLdb
 import requests
 
@@ -32,9 +33,10 @@ from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
 from nanostream.utils.helpers import remap_dictionary, get_value
-from nanostream.utils.paginated_get_requests import PaginatedHttpGetRequest, SafeMap
 
-DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
+DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 4)
+MONITOR_INTERVAL = 1
+STATS_COUNTER_MODULO = 4
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -164,6 +166,8 @@ class NanoNode:
         self.messages_sent_counter = messages_sent_counter
         self.instantiated_at = datetime.datetime.now()
         self.started_at = None
+        self.finished = False
+        self.terminate = False
 
     def setup(self):
         '''
@@ -180,9 +184,6 @@ class NanoNode:
         '''
         self.add_edge(other)
         return other
-
-    def run_generator(self):
-        return any(queue.open_for_business for queue in self.output_queue_list)
 
     @property
     def is_source(self):
@@ -254,22 +255,24 @@ class NanoNode:
 
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
             for output in self.generator():
-                yield output, None
-                if not any(queue.open_for_business
-                           for queue in self.output_queue_list):
-                    logging.debug('shutting down.')
+                if self.terminate:
                     break
-            while self.keep_alive:
-                time.sleep(1)
+                yield output, None
+            self.finished = True
         else:
             logging.debug(
                 'About to enter loop for reading input queue in {node}.'.format(
                     node=str(self)))
-            while 1:
+            while not self.finished:
+                new_input_sentinal = False  # Set to ``True`` when we have a new input
                 for input_queue in self.input_queue_list:
+                    if self.terminate:
+                        self.finished
+                        continue
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
+                    new_input_sentinal = True
                     self.messages_received_counter += 1
 
                     time.sleep(self.throttle)
@@ -291,7 +294,8 @@ class NanoNode:
                     # If we receive a ``PoisonPill`` object, kill the thread.
                     if isinstance(message_content, (PoisonPill,)):
                         logging.debug('received poision pill.')
-                        self.kill_thread = True
+                        self.finished = True
+                        break
                     # If we receive ``None``, then pass.
                     elif message_content is None:
                         pass
@@ -333,9 +337,17 @@ class NanoNode:
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
-            for input_queue in self.input_queue_list:
-                input_queue.open_for_business = False
+                # Check input node(s) here to see if they're all ``.finished``
+                this_node_finished = (
+                    all(
+                        node.finished for node in self.input_node_list) and
+                    all(queue.empty for queue in self.input_queue_list))
+                if this_node_finished:
+                    self.finished = True
 
+    def terminate_pipeline(self):
+        for node in self.all_connected():
+            node.terminate = True
 
     def process_item(self, *args, **kwargs):
         '''
@@ -363,8 +375,8 @@ class NanoNode:
         '''
         for output, previous_message in self.start():
             logging.debug('In NanoNode.stream.stream() --> ' + str(output))
-            self.messages_sent_counter += 1
             for output_queue in self.output_queue_list:
+                self.messages_sent_counter += 1
                 output_queue.put(
                     output,
                     block=True,
@@ -423,18 +435,56 @@ class NanoNode:
             target=NanoNode.thread_monitor, args=(self, ))
         monitor_thread.start()
 
-    def thread_monitor(self):
-        while 1:
-            time.sleep(1)
-            for node_name, thread in self.thread_dict.items():
-                if not thread.isAlive():
-                    self.terminate()
-                    raise Exception(
-                        'Thread from node {node} dead. '
-                        'All nodes terminated.'.format(node=node_name))
+    @property
+    def input_queue_size(self):
+        return sum(
+            [input_queue.queue.qsize() for input_queue in self.input_queue_list])
 
-    def terminate(self):
-        self.broadcast(PoisonPill())
+    def thread_monitor(self):
+        counter = 0
+        pipeline_finished = all(
+            node.finished for node in self.all_connected())
+        while not pipeline_finished:
+            time.sleep(MONITOR_INTERVAL)
+            # Check no threads have unexpectedly crashed
+            #for node_name, thread in self.thread_dict.items():
+            #    if not thread.isAlive():
+            #        self.terminate()
+            #        raise Exception(
+            #            'Thread from node {node} dead. '
+            #            'Terminating all nodes.'.format(node=node_name))
+            counter += 1
+
+            # Check whether all the workers have ``.finished``
+            pipeline_finished = all(
+                node.finished for node in self.all_connected())
+            if pipeline_finished:
+                logging.info('Exiting successfully.')
+                for thread in threading.enumerate():
+                    if thread.name == 'MainThread':
+                        continue
+                    elif thread is threading.current_thread():
+                        continue
+                    else:
+                        print(thread)
+
+                sys.exit(0)
+
+
+
+            if counter % STATS_COUNTER_MODULO == 0:
+                table = prettytable.PrettyTable(['Node', 'Class', 'Alive', 'Received', 'Sent', 'Queued', 'Finshed'])
+                for node in self.all_connected():
+                    table.add_row(
+                        [
+                            node.name,
+                            node.__class__.__name__,
+                            self.thread_dict[node.name].isAlive(),
+                            node.messages_received_counter,
+                            node.messages_sent_counter,
+                            node.input_queue_size,
+                            node.finished])
+                print(table)
 
 
 class CounterOfThings(NanoNode):
@@ -522,8 +572,6 @@ class Serializer(NanoNode):
     def process_item(self):
         for item in self.message:
             yield item
-
-
 
 
 class StreamMySQLTable(NanoNode):
@@ -690,7 +738,7 @@ class LocalDirectoryWatchdog(NanoNode):
         super(LocalDirectoryWatchdog, self).__init__()
 
     def generator(self):
-        while self.run_generator():
+        while self.keep_alive:
             logging.debug('sleeping...')
             time.sleep(self.check_interval)
             time_in_interval = None
@@ -709,44 +757,7 @@ class LocalDirectoryWatchdog(NanoNode):
                 self.latest_arrival = time_in_interval
 
 
-class HttpGetRequest(NanoNode):
-    '''
-    Makes GET requests.
-    '''
 
-    def __init__(
-        self,
-        url=None,
-        endpoint='',
-        endpoint_dict=None,
-        json=True,
-            **kwargs):
-        self.endpoint = endpoint
-        self.url = url
-        self.endpoint_dict = endpoint_dict or {}
-        self.json = json
-        self.endpoint_dict.update(self.endpoint_dict)
-
-        super(HttpGetRequest, self).__init__(**kwargs)
-
-    def process_item(self):
-        '''
-        The input to this function will be a dictionary-like object with
-        parameters to be substituted into the endpoint string and a dictionary
-        with keys and values to be passed in the GET request.
-
-        Three use-cases:
-        1. Endpoint and parameters set initially and never changed.
-        2. Endpoint and parameters set once at runtime
-        3. Endpoint and parameters set by upstream messages
-        '''
-
-        # Hit the parameterized endpoint and yield back the results
-        logging.debug('HttpGetRequest --->' + str(self.message))
-        get_response = requests.get(
-            self.endpoint.format(**(self.message or {})))
-        output = get_response.json() if self.json else get_response.text
-        yield output
 
 
 class SimpleJoin(NanoNode):
@@ -916,39 +927,7 @@ def class_factory(raw_config):
     return new_class
 
 
-class HttpGetRequestPaginator(NanoNode):
 
-    def __init__(
-        self,
-        endpoint_dict=None,
-        json=True,
-        pagination_get_request_key=None,
-        endpoint_template=None,
-        additional_data_key=None,
-        pagination_key=None,
-        default_offset_value='',
-            **kwargs):
-        self.pagination_get_request_key = pagination_get_request_key
-        self.additional_data_key = additional_data_key
-        self.pagination_key = pagination_key
-        self.endpoint_dict = endpoint_dict or {}
-        self.endpoint_template = endpoint_template
-        self.default_offset_value = default_offset_value
-
-        self.endpoint_template = self.endpoint_template.format_map(SafeMap(**endpoint_dict))
-
-        super(HttpGetRequestPaginator, self).__init__(**kwargs)
-
-    def process_item(self):
-        self.requestor = PaginatedHttpGetRequest(
-            pagination_get_request_key=self.pagination_get_request_key,
-            endpoint_template=self.endpoint_template.format_map(SafeMap(**(self.message or {}))),
-            additional_data_key=self.additional_data_key,
-            pagination_key=self.pagination_key,
-            default_offset_value=self.default_offset_value)
-
-        for i in self.requestor.responses():
-            yield i
 
 
 class Remapper(NanoNode):
@@ -962,44 +941,4 @@ class Remapper(NanoNode):
 
 
 if __name__ == '__main__':
-
-    ONE_DAY = 3600 * 24 * 1000
-    NOW = int(float(time.time())) * 1000
-    TWO_WEEKS_AGO = str(
-        int(float(NOW - (ONE_DAY / 12))))
-
-    HUBSPOT_TEMPLATE = (
-        'https://api.hubapi.com/email/public/v1/'
-        'events?hapikey={HUBSPOT_API_KEY}&'
-        'startTimestamp={start_timestamp}&'
-        'endTimestamp={end_timestamp}&'
-        'limit=50&'
-        'offset={offset}')
-
-    endpoint_dict = {
-        # 'hubspot_api_key': HUBSPOT_API_KEY,
-        'start_timestamp': TWO_WEEKS_AGO,
-        'end_timestamp': NOW}
-
-    paginator = HttpGetRequestPaginator(
-        endpoint_dict=endpoint_dict,
-        pagination_get_request_key='offset',
-        endpoint_template=HUBSPOT_TEMPLATE,
-        additional_data_key='hasMore',
-        pagination_key='offset',
-        name='Hubspot_paginator')
-
-    env_vars = GetEnvironmentVariables(
-        'HUBSPOT_API_KEY',
-        'HUBSPOT_USER_ID',
-        name='environment_variables')
-
-    remap_output = Remapper({'thing': ['events']})
-    serialize_email_events = Serializer(input_message_keypath='thing', throttle=5)
-
-    printer = PrinterOfThings()
-    env_vars > paginator > remap_output > serialize_email_events > printer
-    env_vars.global_start()
-
-
-
+    pass

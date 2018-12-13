@@ -43,3 +43,9 @@ def remap_dictionary(source_dictionary, target_dictionary):
         set_value(
             target_dictionary, path, get_value(source_dictionary, value))
     return target_dictionary
+
+
+class SafeMap(dict):
+    def __missing__(self, key):
+        return '{' + str(key) + '}'
+

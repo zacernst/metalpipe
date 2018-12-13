@@ -59,4 +59,4 @@ def test_start_simple_graph(simple_graph):
     simple_graph.global_start()
     time.sleep(2)
     assert simple_graph.thread_dict['printer'].is_alive()
-    simple_graph.terminate()
+    simple_graph.terminate_pipeline()

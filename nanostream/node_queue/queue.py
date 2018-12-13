@@ -11,6 +11,7 @@ import logging
 from nanostream.message.message import NanoStreamMessage
 from nanostream.message.batch import BatchStart, BatchEnd
 
+
 logging.basicConfig(level=logging.ERROR)
 
 
@@ -21,9 +22,13 @@ class NanoStreamQueue:
     def __init__(self, max_queue_size, name=None):
         self.queue = queue.Queue(max_queue_size)
         self.name = name or uuid.uuid4().hex
-        self.open_for_business = True
         self.source_node = None
         self.target_node = None
+
+
+    @property
+    def empty(self):
+        return self.queue.empty()
 
     def get(self):
         try:
@@ -50,7 +55,8 @@ class NanoStreamQueue:
             for key, value in previous_message.items():
                 if key in message:
                     logging.warn(
-                        'Key {key} is in the message. Skipping.'.format(key=key))
+                        'Key {key} is in the message. Skipping.'.format(
+                            key=key))
                     continue
                 else:
                     message[key] = value
