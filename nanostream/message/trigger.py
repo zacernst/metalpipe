@@ -14,7 +14,7 @@ import re
 import hashlib
 import schedule
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 
 def hello_world():

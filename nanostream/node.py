@@ -31,11 +31,12 @@ from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
+from nanostream.utils.helpers import remap_dictionary, get_value
 from nanostream.utils.paginated_get_requests import PaginatedHttpGetRequest, SafeMap
 
 DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 
 
 
@@ -117,8 +118,10 @@ class NanoNode:
     :ivar input_mapping: When the node receives a dictionary-like object,
         this dictionary will cause the keys of the dictionary to be remapped
         to new keys.
-    :ivar retrain_input: If ``True``, then combine the dictionary-like input
+    :ivar retain_input: If ``True``, then combine the dictionary-like input
         with the output. If keys clash, the output value will be kept.
+    :ivar input_message_keypath: Read the value in this keypath as the content
+        of the incoming message.
 
     '''
 
@@ -135,12 +138,16 @@ class NanoNode:
         throttle=0,
         keep_alive=True,
         name=None,
+        input_message_keypath=None,
+        messages_received_counter=0,
+        messages_sent_counter=0,
             **kwargs):
         self.name = name or uuid.uuid4().hex
         self.input_mapping = input_mapping or {}
         self.input_queue_list = []
         self.output_queue_list = []
         self.input_node_list = []
+        self.input_message_keypath = input_message_keypath or []
         self.output_node_list = []
         self.global_dict = None  # We'll add a dictionary upon startup
         self.thread_dict = {}
@@ -153,6 +160,10 @@ class NanoNode:
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
         self.runtime_attrs_destinations = runtime_attrs_destinations or {}
+        self.messages_received_counter = messages_received_counter
+        self.messages_sent_counter = messages_sent_counter
+        self.instantiated_at = datetime.datetime.now()
+        self.started_at = None
 
     def setup(self):
         '''
@@ -214,6 +225,7 @@ class NanoNode:
         '''
 
         # Run pre-flight function and save output if necessary
+        self.started_at = datetime.datetime.now()
         logging.debug('Starting node: {node}'.format(
             node=self.__class__.__name__))
         # ``get_runtime_attrs`` returns a dict-like object whose keys and
@@ -258,11 +270,19 @@ class NanoNode:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
+                    self.messages_received_counter += 1
 
                     time.sleep(self.throttle)
                     logging.debug('Got item: {one_item}'.format(
                         one_item=str(one_item)))
-                    message_content = one_item.message_content
+                    # Get the content of a specific keypath, if one has
+                    # been defined in the ``NanoNode`` initialization.
+                    message_content = (
+                        get_value(
+                            one_item.message_content,
+                            self.input_message_keypath)
+                        if len(self.input_message_keypath) > 0
+                        else one_item.message_content)
                     if (
                         isinstance(message_content, (dict,))
                         and len(message_content) == 1
@@ -309,7 +329,7 @@ class NanoNode:
                             pass
 
                         for output in self.process_item():
-                            logging.info('one_item: ' + str(one_item))
+                            # logging.info('one_item: ' + str(one_item))
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
@@ -343,6 +363,7 @@ class NanoNode:
         '''
         for output, previous_message in self.start():
             logging.debug('In NanoNode.stream.stream() --> ' + str(output))
+            self.messages_sent_counter += 1
             for output_queue in self.output_queue_list:
                 output_queue.put(
                     output,
@@ -490,6 +511,21 @@ class GetEnvironmentVariables(NanoNode):
         yield environment
 
 
+class Serializer(NanoNode):
+    '''
+    Takes an iterable thing as input, and successively yields its items.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super(Serializer, self).__init__(**kwargs)
+
+    def process_item(self):
+        for item in self.message:
+            yield item
+
+
+
+
 class StreamMySQLTable(NanoNode):
     def __init__(
         self,
@@ -557,7 +593,6 @@ class StreamMySQLTable(NanoNode):
             yield BatchEnd()
 
 
-
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
@@ -567,6 +602,7 @@ class PrinterOfThings(NanoNode):
 
     def process_item(self):
         print(self.prepend + str(self.message))
+        print('\n')
         yield self.message
 
 
@@ -879,6 +915,7 @@ def class_factory(raw_config):
     globals()[new_class.__name__] = new_class
     return new_class
 
+
 class HttpGetRequestPaginator(NanoNode):
 
     def __init__(
@@ -900,7 +937,6 @@ class HttpGetRequestPaginator(NanoNode):
 
         self.endpoint_template = self.endpoint_template.format_map(SafeMap(**endpoint_dict))
 
-        # import pdb; pdb.set_trace()
         super(HttpGetRequestPaginator, self).__init__(**kwargs)
 
     def process_item(self):
@@ -915,56 +951,29 @@ class HttpGetRequestPaginator(NanoNode):
             yield i
 
 
-def get_value(
-        dictionary, path, delimiter='.', default_value=None):
-    dictionary = copy.deepcopy(dictionary)
-    if isinstance(path, (str,)):
-        path = path.split(delimiter)
-    elif isinstance(path, (list, tuple,)):
-            pass
-    else:
-        raise Exception('what?')
-    for step in path:
-        dictionary = dictionary.get(step, default_value)
-    return dictionary
+class Remapper(NanoNode):
 
+    def __init__(self, remapping_dict, **kwargs):
+        self.remapping_dict = remapping_dict
+        super(Remapper, self).__init__(**kwargs)
 
-def set_value(dictionary, path, value):
-    for step in path[:-1]:
-        dictionary = dictionary[step]
-    dictionary[path[-1]] = value
+    def process_item(self):
+        yield remap_dictionary(self.message, self.remapping_dict)
 
-
-def iterate_leaves(dictionary, keypath=None):
-    keypath = keypath or []
-    for key, value in dictionary.items():
-        if not isinstance(value, (dict,)):
-            yield keypath + [key], value
-        else:
-            for i in iterate_leaves(value, keypath=keypath + [key]):
-                yield i
-
-def remap_dictionary(source_dictionary, target_dictionary):
-    for path, value in iterate_leaves(target_dictionary):
-        set_value(target_dictionary, path, get_value(source_dictionary, value))
-
-d = {'foo': 'bar', 'baz': {'qux': 'foobar'}}
-e = {'hi': ['foo'], 'whatever': ['baz', 'qux']}
-
-remap_dictionary(d, e)
 
 if __name__ == '__main__':
+
     ONE_DAY = 3600 * 24 * 1000
     NOW = int(float(time.time())) * 1000
     TWO_WEEKS_AGO = str(
-        int(float(NOW - (ONE_DAY / 4))))
+        int(float(NOW - (ONE_DAY / 12))))
 
     HUBSPOT_TEMPLATE = (
         'https://api.hubapi.com/email/public/v1/'
         'events?hapikey={HUBSPOT_API_KEY}&'
         'startTimestamp={start_timestamp}&'
         'endTimestamp={end_timestamp}&'
-        'limit=5000&'
+        'limit=50&'
         'offset={offset}')
 
     endpoint_dict = {
@@ -984,58 +993,13 @@ if __name__ == '__main__':
         'HUBSPOT_API_KEY',
         'HUBSPOT_USER_ID',
         name='environment_variables')
+
+    remap_output = Remapper({'thing': ['events']})
+    serialize_email_events = Serializer(input_message_keypath='thing', throttle=5)
+
     printer = PrinterOfThings()
-    env_vars > paginator # > printer
+    env_vars > paginator > remap_output > serialize_email_events > printer
     env_vars.global_start()
 
 
-def foo():
-    env_vars = GetEnvironmentVariables('MYSQL_USER', 'PYTHONPATH')
-    employees_table = StreamMySQLTable(
-        password='imadfs1',
-        database='employees',
-        table='employees',
-        get_runtime_attrs=get_environment_variables,
-        get_runtime_attrs_args=('MYSQL_USER',),
-        runtime_attrs_destinations={'MYSQL_USER': 'user'})
-    printer = PrinterOfThings()
 
-    employees_table > printer
-    # employees_table.global_start()
-
-    post_counter = CounterOfThings()
-    printer = PrinterOfThings()
-    printer_2 = PrinterOfThings()
-    printer_3 = PrinterOfThings()
-    post_endpoint = 'https://jsonplaceholder.typicode.com/posts/{post_number}'
-    post_service = HttpGetRequest(
-        endpoint=post_endpoint, throttle=1, input_mapping='post_number')
-
-    user_endpoint = 'https://jsonplaceholder.typicode.com/users/{user_number}'
-    user_service = HttpGetRequest(
-        endpoint=user_endpoint,
-        throttle=1,
-        input_mapping={'userId': 'user_number'},
-        name='user_service')
-
-
-    # Need a way to remap inputs and outputs
-    post_counter > printer
-    post_counter > post_service > printer_2 > user_service > printer_3
-    post_counter.global_start()
-
-
-
-
-    #raw_config = yaml.load(
-    #    open('./__nanostream_modules__/csv_watcher.yaml', 'r'))
-    #class_factory(raw_config)
-    #csv_watcher = CSVWatcher(watch_directory='./sample_data')
-
-    #joiner = SimpleJoin(key='first_name')
-
-    #employees_table > joiner
-    #csv_watcher > joiner
-    #joiner > printer
-
-    #printer.global_start()
