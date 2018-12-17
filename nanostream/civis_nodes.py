@@ -75,7 +75,7 @@ if __name__ == '__main__':
     ONE_DAY = 3600 * 24 * 1000
     NOW = int(float(time.time())) * 1000
     TWO_WEEKS_AGO = str(
-        int(float(NOW - (ONE_DAY / 45))))
+        int(float(NOW - (14 * ONE_DAY))))
 
     HUBSPOT_TEMPLATE = (
         'https://api.hubapi.com/email/public/v1/'
@@ -96,12 +96,12 @@ if __name__ == '__main__':
         endpoint_template=HUBSPOT_TEMPLATE,
         additional_data_key='hasMore',
         pagination_key='offset',
-        name='Hubspot_paginator')
+        name='Hubspot paginator')
 
     env_vars = GetEnvironmentVariables(
         'HUBSPOT_API_KEY',
         'HUBSPOT_USER_ID',
-        name='environment_variables')
+        name='Environment variables')
 
     to_redshift = SendToCivis(
         database='Greenpeace',
@@ -109,12 +109,13 @@ if __name__ == '__main__':
         table_name='hubspot_test',
         block=False,
         input_message_keypath='thing',
-        include_columns=['recipient', 'created'])
+        include_columns=['recipient', 'created'],
+        name='To Redshift')
 
-    remap_output = Remapper({'thing': ['events']})
-    serialize_email_events = Serializer(input_message_keypath='thing', throttle=0)
+    remap_output = Remapper({'thing': ['events']}, name='Remap keys')
 
     printer = PrinterOfThings()
 
     env_vars > paginator > remap_output > to_redshift
-    env_vars.global_start()
+
+    env_vars.global_start(pipeline_name='Hubspot ingestion', datadog=False)

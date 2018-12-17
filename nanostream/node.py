@@ -2,7 +2,8 @@
 Node module
 ===========
 
-This is the node module.
+The ``node`` module contains the ``NanoNode`` class, which is the foundation
+for NanoStream.
 """
 
 import time
@@ -34,7 +35,10 @@ from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
 from nanostream.utils.helpers import remap_dictionary, get_value
 
-DEFAULT_MAX_QUEUE_SIZE = os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 4)
+from datadog import api, statsd, ThreadStats
+from datadog import initialize as initialize_datadog
+
+DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
 
@@ -332,7 +336,19 @@ class NanoNode:
                         else:
                             pass
 
+                        # Datadog
+                        if self.datadog:
+                            self.datadog_stats.increment(
+                                '{pipeline_name}.{node_name}.input_counter'.format(
+                                    pipeline_name=self.pipeline_name,
+                                    node_name=self.name))
+
                         for output in self.process_item():
+                            if self.datadog:
+                                self.datadog_stats.increment(
+                                    '{pipeline_name}.{node_name}.output_counter'.format(
+                                        pipeline_name=self.pipeline_name,
+                                        node_name=self.name))
                             # logging.info('one_item: ' + str(one_item))
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
@@ -418,13 +434,28 @@ class NanoNode:
             for input_queue in node.input_queue_list:
                 input_queue.put(broadcast_message)
 
-    def global_start(self):
+    def global_start(self, datadog=False, pipeline_name=None):
         '''
         Starts every node connected to ``self``.
         '''
         # thread_dict = self.thread_dict
         global_dict = {}
+
+        # Initialize datadog if we're doing that
+        datadog_stats = ThreadStats() if datadog else None
+        if datadog:
+            datadog_options = {
+                'api_key': os.environ['DATADOG_API_KEY'],
+                'app_key': os.environ['DATADOG_APP_KEY']}
+            initialize_datadog(**datadog_options)
+            datadog_stats.start()
+
         for node in self.all_connected():
+            # Set the pipeline name on the attribute of each node
+            node.pipeline_name = pipeline_name or uuid.uuid4().hex
+            node.datadog_stats = datadog_stats
+            # Tell each node whether they're logging to datadog
+            node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug('global_start:' + str(self))
             thread = threading.Thread(target=NanoNode.stream, args=(node, ))
@@ -469,8 +500,6 @@ class NanoNode:
                         print(thread)
 
                 sys.exit(0)
-
-
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(['Node', 'Class', 'Alive', 'Received', 'Sent', 'Queued', 'Finshed'])
