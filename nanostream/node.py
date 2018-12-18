@@ -568,9 +568,9 @@ class SequenceEmitter(NanoNode):
 
 
 class GetEnvironmentVariables(NanoNode):
-    def __init__(self, *args, mappings=None, **kwargs):
+    def __init__(self, mappings=None, environment_variables=None, **kwargs):
         self.environment_mappings = mappings or {}
-        self.environment_variables = args or []
+        self.environment_variables = environment_variables or []
         super(GetEnvironmentVariables, self).__init__(**kwargs)
 
     def generator(self):
@@ -961,8 +961,8 @@ def class_factory(raw_config):
 
 class Remapper(NanoNode):
 
-    def __init__(self, remapping_dict, **kwargs):
-        self.remapping_dict = remapping_dict
+    def __init__(self, mapping=None, **kwargs):
+        self.remapping_dict = mapping or {}
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):

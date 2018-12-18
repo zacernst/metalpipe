@@ -99,8 +99,8 @@ if __name__ == '__main__':
         name='Hubspot paginator')
 
     env_vars = GetEnvironmentVariables(
-        'HUBSPOT_API_KEY',
-        'HUBSPOT_USER_ID',
+        environment_variables=['HUBSPOT_API_KEY',
+        'HUBSPOT_USER_ID',],
         name='Environment variables')
 
     to_redshift = SendToCivis(

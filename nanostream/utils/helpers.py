@@ -5,7 +5,7 @@ Helper module
 Misc. helper functions for other classes.
 '''
 import copy
-
+import time
 
 def get_value(
         dictionary, path, delimiter='.', default_value=None):
@@ -43,6 +43,14 @@ def remap_dictionary(source_dictionary, target_dictionary):
         set_value(
             target_dictionary, path, get_value(source_dictionary, value))
     return target_dictionary
+
+
+def now_milliseconds():
+    return str(int(time.time() * 1000))
+
+
+def two_weeks_ago():
+    return str(int(time.time() * 1000 - (14 * (24 * 60 * 60 * 1000))))
 
 
 class SafeMap(dict):

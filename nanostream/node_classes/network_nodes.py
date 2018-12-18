@@ -49,13 +49,13 @@ class PaginatedHttpGetRequest:
         '''
         Generator. Yields each response until empty.
         '''
-
         offset_set = set()
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
         out = requests.get(endpoint_url).json()
+        print(out)
         offset = out[self.pagination_key]
         offset_set.add(offset)
 
@@ -129,7 +129,7 @@ class HttpGetRequestPaginator(NanoNode):
         self.additional_data_key = additional_data_key
         self.pagination_key = pagination_key
         self.endpoint_dict = endpoint_dict or {}
-        self.endpoint_template = endpoint_template
+        self.endpoint_template = endpoint_template or ''
         self.default_offset_value = default_offset_value
 
         self.endpoint_template = self.endpoint_template.format_map(
