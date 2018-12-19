@@ -276,6 +276,11 @@ class NanoNode:
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
+
+                    # Keep track of where the message came from, useful for
+                    # managing streaming joins, e.g.
+                    message_source = input_queue.source_node
+
                     new_input_sentinal = True
                     self.messages_received_counter += 1
 
@@ -307,7 +312,7 @@ class NanoNode:
                     # the ``NanoNode`` object's ``process_item`` method.
                     else:
                         self.message = message_content
-
+                        self.message_source = message_source
                         # Remap inputs; if input_mapping is a string,
                         # assume we're mapping to {input_mapping: value}, else
                         # assume we're renaming keys
@@ -599,6 +604,7 @@ class Serializer(NanoNode):
         super(Serializer, self).__init__(**kwargs)
 
     def process_item(self):
+        print(self.message)
         for item in self.message:
             yield item
 
@@ -673,8 +679,8 @@ class StreamMySQLTable(NanoNode):
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, prepend='printer: '):
-        super(PrinterOfThings, self).__init__()
+    def __init__(self, prepend='printer: ', **kwargs):
+        super(PrinterOfThings, self).__init__(**kwargs)
         logging.debug('Initialized printer...')
 
     def process_item(self):
@@ -786,38 +792,30 @@ class LocalDirectoryWatchdog(NanoNode):
                 self.latest_arrival = time_in_interval
 
 
-
-
-
-class SimpleJoin(NanoNode):
+class StreamingJoin(NanoNode):
     '''
     Joins two streams on a key, using exact match only. MVP.
     '''
 
-    def __init__(self, key, window=30):
-        self.key = key
+    def __init__(self, window=30, streams=None, *args, **kwargs):
         self.window = window
-        self.timed_dict = TimedDict(timeout=window)
-        super(SimpleJoin, self).__init__()
+        self.streams = streams
+        self.stream_paths = streams
+        self.buffers = {
+            stream_name: TimedDict(timeout=self.window)
+            for stream_name in self.stream_paths.keys()}
+        super(StreamingJoin, self).__init__(*args, **kwargs)
 
     def process_item(self):
         '''
-        Assumes that `message` is a `Row` object.
         '''
-
-        if isinstance(self.message, (
-                BatchStart,
-                BatchEnd,
-        )):
-            pass
-        else:
-            key = getattr(message, self.key).value
-            if isinstance(self.timed_dict[key], Row):
-                self.timed_dict[key] = self.timed_dict[key].concat(
-                    message, fail_on_duplicate=False)
-                yield self.timed_dict[key]
-            else:
-                self.timed_dict[key] = message
+        # import pdb; pdb.set_trace()
+        value_to_match = get_value(self.message, self.stream_paths[self.message_source.name])
+        # Check for matches in all other streams.
+        # If complete set of matches, yield the merged result
+        # If not, add it to the `TimedDict`.
+        print('hi')
+        yield('hi')
 
 
 class DynamicClassMediator(NanoNode):
@@ -956,9 +954,6 @@ def class_factory(raw_config):
     return new_class
 
 
-
-
-
 class Remapper(NanoNode):
 
     def __init__(self, mapping=None, **kwargs):
@@ -966,7 +961,9 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        yield remap_dictionary(self.message, self.remapping_dict)
+        print(self.message_source)
+        out = remap_dictionary(self.message, self.remapping_dict)
+        yield out
 
 
 if __name__ == '__main__':

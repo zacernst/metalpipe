@@ -13,11 +13,14 @@ def get_value(
     if isinstance(path, (str,)):
         path = path.split(delimiter)
     elif isinstance(path, (list, tuple,)):
-            pass
+        pass
     else:
         raise Exception('what?')
-    for step in path:
-        dictionary = dictionary.get(step, default_value)
+    if len(path) == 0:
+        dictionary = dictionary
+    else:
+        for step in path:
+            dictionary = dictionary.get(step, default_value)
     return dictionary
 
 

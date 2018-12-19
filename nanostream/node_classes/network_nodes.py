@@ -6,6 +6,7 @@ Classes that deal with sending and receiving data across the interwebs.
 '''
 
 import requests
+import json
 
 from nanostream.node import NanoNode
 from nanostream.utils.helpers import SafeMap
@@ -55,7 +56,6 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
         out = requests.get(endpoint_url).json()
-        print(out)
         offset = out[self.pagination_key]
         offset_set.add(offset)
 

@@ -57,6 +57,8 @@ def run_pipeline(config_file, module_paths=None):
 
     for node_name, node_config in pipeline_config_dict['nodes'].items():
         node_class = globals()[node_config['class']]
+        if 'options' not in node_config:
+            node_config['options'] = {}
         node_config['options'].update({'name': node_name})
         node = node_class(**node_config['options'])
         node_dict[node_name] = node

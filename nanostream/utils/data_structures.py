@@ -385,4 +385,3 @@ if __name__ == '__main__':
     t = Row(type_system=PythonTypeSystem)
     intermediate = bar.to_intermediate_type()
     converted_foo = MySQLTypeSystem.convert(intermediate)
-    print(converted_foo)
