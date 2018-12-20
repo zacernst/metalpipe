@@ -7,6 +7,7 @@ Classes that deal with sending and receiving data across the interwebs.
 
 import requests
 import json
+import logging
 
 from nanostream.node import NanoNode
 from nanostream.utils.helpers import SafeMap
@@ -55,7 +56,9 @@ class PaginatedHttpGetRequest:
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
-        out = requests.get(endpoint_url).json()
+        out = requests.get(endpoint_url)
+        out = out.json()
+        print(out)
         offset = out[self.pagination_key]
         offset_set.add(offset)
 
@@ -77,11 +80,11 @@ class HttpGetRequest(NanoNode):
     def __init__(
         self,
         url=None,
-        endpoint='',
+        endpoint_template='',
         endpoint_dict=None,
         json=True,
             **kwargs):
-        self.endpoint = endpoint
+        self.endpoint_template = endpoint_template
         self.url = url
         self.endpoint_dict = endpoint_dict or {}
         self.json = json
@@ -104,7 +107,7 @@ class HttpGetRequest(NanoNode):
         # Hit the parameterized endpoint and yield back the results
         logging.debug('HttpGetRequest --->' + str(self.message))
         get_response = requests.get(
-            self.endpoint.format(**(self.message or {})))
+            self.endpoint_template.format(**(self.message or {})))
         output = get_response.json() if self.json else get_response.text
         yield output
 
@@ -133,7 +136,7 @@ class HttpGetRequestPaginator(NanoNode):
         self.default_offset_value = default_offset_value
 
         self.endpoint_template = self.endpoint_template.format_map(
-            SafeMap(**endpoint_dict))
+            SafeMap(**self.endpoint_dict))
 
         super(HttpGetRequestPaginator, self).__init__(**kwargs)
 

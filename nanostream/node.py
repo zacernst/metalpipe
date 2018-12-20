@@ -23,6 +23,7 @@ import inspect
 import prettytable
 import MySQLdb
 import requests
+import graphviz
 
 from timed_dict.timed_dict import TimedDict
 from nanostream.message.batch import BatchStart, BatchEnd
@@ -476,6 +477,15 @@ class NanoNode:
         return sum(
             [input_queue.queue.qsize() for input_queue in self.input_queue_list])
 
+    def draw_pipeline(self):
+        dot = graphviz.Digraph()
+        for node in self.all_connected():
+            dot.node(node.name, node.name, shape='box')
+        for node in self.all_connected():
+            for target_node in node.output_node_list:
+                dot.edge(node.name, target_node.name)
+        dot.render('test-output/round-table.gv', view=True)
+
     def thread_monitor(self):
         counter = 0
         pipeline_finished = all(
@@ -507,7 +517,9 @@ class NanoNode:
                 sys.exit(0)
 
             if counter % STATS_COUNTER_MODULO == 0:
-                table = prettytable.PrettyTable(['Node', 'Class', 'Alive', 'Received', 'Sent', 'Queued', 'Finshed'])
+                table = prettytable.PrettyTable(
+                    ['Node', 'Class', 'Alive', 'Received', 'Sent',
+                     'Queued', 'Finished'])
                 for node in self.all_connected():
                     table.add_row(
                         [
@@ -695,9 +707,9 @@ class ConstantEmitter(NanoNode):
     '''
 
     @set_kwarg_attributes()
-    def __init__(self, thing=None, thing_key=None, delay=2):
+    def __init__(self, thing=None, thing_key=None, delay=2, **kwargs):
 
-        super(ConstantEmitter, self).__init__()
+        super(ConstantEmitter, self).__init__(**kwargs)
         logging.debug('init constant emitter with constant {thing}'.format(
             thing=str(thing)))
 
@@ -719,7 +731,7 @@ class TimeWindowAccumulator(NanoNode):
     '''
 
     @set_kwarg_attributes()
-    def __init__(self, time_window=None, send_interval=None):
+    def __init__(self, time_window=None, send_interval=None, **kwargs):
         pass
 
 
@@ -729,8 +741,9 @@ class LocalFileReader(NanoNode):
                  directory='.',
                  send_batch_markers=True,
                  serialize=False,
-                 read_mode='r'):
-        super(LocalFileReader, self).__init__()
+                 read_mode='r',
+                 **kwargs):
+        super(LocalFileReader, self).__init__(**kwargs)
 
     def process_item(self):
         filename = '/'.join([self.directory, self.message])
@@ -749,8 +762,8 @@ class LocalFileReader(NanoNode):
 
 class CSVReader(NanoNode):
     @set_kwarg_attributes()
-    def __init__(self, send_batch_markers=True, to_row_obj=True):
-        super(CSVReader, self).__init__()
+    def __init__(self, send_batch_markers=True, to_row_obj=True, **kwargs):
+        super(CSVReader, self).__init__(**kwargs)
 
     def process_item(self):
         file_obj = io.StringIO(self.message)
@@ -766,11 +779,11 @@ class CSVReader(NanoNode):
 
 
 class LocalDirectoryWatchdog(NanoNode):
-    def __init__(self, directory='.', check_interval=3):
+    def __init__(self, directory='.', check_interval=3, **kwargs):
         self.directory = directory
         self.latest_arrival = time.time()
         self.check_interval = check_interval
-        super(LocalDirectoryWatchdog, self).__init__()
+        super(LocalDirectoryWatchdog, self).__init__(**kwargs)
 
     def generator(self):
         while self.keep_alive:
@@ -814,7 +827,7 @@ class StreamingJoin(NanoNode):
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result
         # If not, add it to the `TimedDict`.
-        print('hi')
+        print(value_to_match)
         yield('hi')
 
 
@@ -961,7 +974,6 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        print(self.message_source)
         out = remap_dictionary(self.message, self.remapping_dict)
         yield out
 
