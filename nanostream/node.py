@@ -70,6 +70,15 @@ def get_environment_variables(*args):
         for environment_variable in environment_variables}
     return environment
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 class Parameters:
 
@@ -171,8 +180,10 @@ class NanoNode:
         self.messages_sent_counter = messages_sent_counter
         self.instantiated_at = datetime.datetime.now()
         self.started_at = None
+        self.stopped_at = None
         self.finished = False
         self.terminate = False
+        self.status = 'stopped'  # running, error, success
 
     def setup(self):
         '''
@@ -392,18 +403,34 @@ class NanoNode:
 
     def stream(self):
         '''
-        Called in each ``NanoNode`` thread. This is a generator that yields
-        the output from the node.
+        Called in each ``NanoNode`` thread.
         '''
-        for output, previous_message in self.start():
-            logging.debug('In NanoNode.stream.stream() --> ' + str(output))
-            for output_queue in self.output_queue_list:
-                self.messages_sent_counter += 1
-                output_queue.put(
-                    output,
-                    block=True,
-                    timeout=None,
-                    previous_message=previous_message)
+        self.status = 'running'
+        try:
+            for output, previous_message in self.start():
+                logging.debug('In NanoNode.stream.stream() --> ' + str(output))
+                for output_queue in self.output_queue_list:
+                    self.messages_sent_counter += 1
+                    output_queue.put(
+                        output,
+                        block=True,
+                        timeout=None,
+                        previous_message=previous_message)
+        except Exception as error:
+            self.status = 'error'
+            self.stopped_at = datetime.datetime.now()
+            raise error
+        self.status = 'success'
+        self.stopped_at = datetime.datetime.now()
+
+    @property
+    def time_running(self):
+        if self.status == 'stopped':
+            return None
+        elif self.status == 'running':
+            return datetime.datetime.now() - self.started_at
+        else:
+            return self.stopped_at - self.started_at
 
     def all_connected(self, seen=None):
         '''
@@ -518,18 +545,29 @@ class NanoNode:
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(
-                    ['Node', 'Class', 'Alive', 'Received', 'Sent',
-                     'Queued', 'Finished'])
+                    ['Node', 'Class', 'Received', 'Sent',
+                     'Queued', 'Status', 'Time'])
                 for node in self.all_connected():
+                    if node.status == 'running':
+                        status_color = bcolors.WARNING
+                    elif node.status == 'stopped':
+                        status_color = ''
+                    elif node.status == 'error':
+                        status_color = bcolors.FAIL
+                    elif node.status == 'success':
+                        status_color = bcolors.OKGREEN
+                    else:
+                        assert False
+
                     table.add_row(
                         [
                             node.name,
                             node.__class__.__name__,
-                            self.thread_dict[node.name].isAlive(),
                             node.messages_received_counter,
                             node.messages_sent_counter,
                             node.input_queue_size,
-                            node.finished])
+                            status_color + node.status + bcolors.ENDC,
+                            node.time_running])
                 print(table)
 
 
@@ -550,6 +588,12 @@ class CounterOfThings(NanoNode):
             if counter > 10:
                 assert False
 
+class RandomSample(NanoNode):
+    def __init__(self, sample=.1):
+        self.sample = sample
+
+    def process_item(self):
+        yield self.message if random.random() <= self.sample else None
 
 class SubstituteRegex(NanoNode):
     def __init__(self, match_regex, substitute_string, *args, **kwargs):
