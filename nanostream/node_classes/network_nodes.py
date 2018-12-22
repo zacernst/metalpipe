@@ -57,7 +57,8 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
         out = requests.get(endpoint_url)
-        out = out.json()
+        # out = out.json()
+        out = json.loads(out.text)
         print(out)
         offset = out[self.pagination_key]
         offset_set.add(offset)
@@ -126,6 +127,7 @@ class HttpGetRequestPaginator(NanoNode):
         endpoint_template=None,
         additional_data_key=None,
         pagination_key=None,
+        pagination_template_key=None,
         default_offset_value='',
             **kwargs):
         self.pagination_get_request_key = pagination_get_request_key

@@ -20,7 +20,7 @@ def get_value(
         dictionary = dictionary
     else:
         for step in path:
-            dictionary = dictionary.get(step, default_value)
+            dictionary = (dictionary or {}).get(step, default_value)
     return dictionary
 
 

@@ -9,6 +9,7 @@ import logging
 import os
 import tempfile
 import csv
+import uuid
 import civis
 
 from nanostream.node import *
@@ -26,8 +27,10 @@ class SendToCivis(NanoNode):
         civis_api_key_env_var='CIVIS_API_KEY',
         database=None,
         schema=None,
+        existing_table_rows='append',
         include_columns=None,
         block=False,
+        max_errors=0,
         table_name=None,
         remap=None,
             **kwargs):
@@ -35,6 +38,8 @@ class SendToCivis(NanoNode):
         self.include_columns = include_columns
         self.table_name = table_name
         self.schema = schema
+        self.max_errors = int(max_errors)
+        self.existing_table_rows = existing_table_rows
         self.database = database
         self.block = block
         self.remap = remap
@@ -54,14 +59,20 @@ class SendToCivis(NanoNode):
         '''
         Accept a bunch of dictionaries mapping column names to values.
         '''
-        with tempfile.NamedTemporaryFile(mode='w') as tmp:
+
+        #with tempfile.NamedTemporaryFile(mode='w') as tmp:
+        with open(uuid.uuid4().hex + '.csv', 'w') as tmp:
             if self.include_columns is not None:
                 fieldnames = self.include_columns
             elif self.remap is not None:
                 fieldnames = list(self.remap.keys())
             else:
-                fieldnames = self.message[0].keys()
-            writer = csv.DictWriter(tmp, fieldnames=fieldnames, extrasaction='ignore')
+                fieldnames = sorted(list(self.message[0].keys()))
+            writer = csv.DictWriter(
+                tmp,
+                fieldnames=fieldnames,
+                extrasaction='ignore',
+                quoting=csv.QUOTE_ALL)
             writer.writeheader()
             for row in self.message:
                 # Optionally remap row here
@@ -70,11 +81,56 @@ class SendToCivis(NanoNode):
                 writer.writerow(row)
             tmp.flush()
             fut = civis.io.csv_to_civis(
-                tmp.name, self.database, self.full_table_name, existing_table_rows='append')
+                tmp.name,
+                self.database,
+                self.full_table_name,
+                max_errors=self.max_errors,
+                headers=True,
+                existing_table_rows=self.existing_table_rows)
             if self.block:
                 result = fut.result()
         yield self.message
 
+
+class EnsureCivisRedshiftTableExists(NanoNode):
+
+    def __init__(
+        self,
+        on_failure='exit',
+        table_name=None,
+        schema_name=None,
+        columns=None,
+        block=True,
+            **kwargs):
+
+        self.on_failure = on_failure
+        self.table_name = table_name
+        self.schema_name = schema_name
+        self.columns = columns
+        self.block = block
+        if any(i is None for i in [
+                on_failure, table_name, schema_name, columns]):
+            raise Exception('Missing parameters.')
+        super(EnsureCivisRedshiftTableExists, self).__init__(**kwargs)
+
+    def process_item(self):
+        yield self.message
+
+    def generator(self):
+        columns_spec = ', '.join(
+            ['"{column_name}" {column_type} NULL'.format(
+                column_name=column['column_name'],
+                column_type=column['column_type']) for column in self.columns])
+        create_statement = (
+            '''CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" '''
+            '''({columns_spec});'''.format(
+                schema_name=self.schema_name,
+                table_name=self.table_name,
+                columns_spec=columns_spec))
+        fut = civis.io.query_civis(create_statement, 'Greenpeace')
+        result = fut.result()
+
+        yield columns_spec
 
 if __name__ == '__main__':
     pass

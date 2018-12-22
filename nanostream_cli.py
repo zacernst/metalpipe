@@ -50,7 +50,6 @@ def load_pipeline(config_file, module_paths=None):
 
     post_func_config = template_obj.render(**functions_dict)
     pipeline_config_dict = yaml.load(post_func_config)
-
     pipeline_name = pipeline_config_dict.get('pipeline_name', None)
 
     node_dict = {}
