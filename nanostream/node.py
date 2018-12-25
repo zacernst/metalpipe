@@ -284,6 +284,7 @@ class NanoNode:
                 for input_queue in self.input_queue_list:
                     if self.terminate:
                         self.finished = True
+                        self.stopped_at = datetime.datetime.now()
                         continue
                     one_item = input_queue.get()
                     if one_item is None:
@@ -380,6 +381,7 @@ class NanoNode:
 
     def terminate_pipeline(self):
         for node in self.all_connected():
+            node.finished = True
             node.terminate = True
 
     def process_item(self, *args, **kwargs):
@@ -433,6 +435,8 @@ class NanoNode:
         if self.status == 'stopped':
             return None
         elif self.status == 'running':
+            return datetime.datetime.now() - self.started_at
+        elif self.stopped_at is None:
             return datetime.datetime.now() - self.started_at
         else:
             return self.stopped_at - self.started_at
@@ -501,7 +505,7 @@ class NanoNode:
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
         monitor_thread = threading.Thread(
-            target=NanoNode.thread_monitor, args=(self, ))
+            target=NanoNode.thread_monitor, args=(self,), daemon=True)
         monitor_thread.start()
 
     @property
@@ -540,17 +544,8 @@ class NanoNode:
             # Check whether all the workers have ``.finished``
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
-            if pipeline_finished:
-                logging.info('Exiting successfully.')
-                for thread in threading.enumerate():
-                    if thread.name == 'MainThread':
-                        continue
-                    elif thread is threading.current_thread():
-                        continue
-                    else:
-                        print(thread)
 
-                sys.exit(0)
+
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(
@@ -580,12 +575,25 @@ class NanoNode:
                 logging.info('\n' + str(table))
 
 
-
+            # Check for errors:
+            if any(node.status == 'error' for node in self.all_connected()):
+                self.terminate_pipeline()
 
             # End
 
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
+
+        logging.info('Exiting successfully.')
+        for thread in threading.enumerate():
+            if thread.name == 'MainThread':
+                continue
+            elif thread is threading.current_thread():
+                continue
+            else:
+                print(thread)
+
+        sys.exit(0)
 
 
 class CounterOfThings(NanoNode):

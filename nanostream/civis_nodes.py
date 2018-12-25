@@ -58,7 +58,7 @@ class SendToCivis(NanoNode):
 
         super(SendToCivis, self).__init__(**kwargs)
         self.monitor_futures_thread = threading.Thread(
-            target=SendToCivis.monitor_futures, args=(self, ))
+            target=SendToCivis.monitor_futures, args=(self, ), daemon=True)
         self.monitor_futures_thread.start()
 
     def setup(self):
@@ -67,14 +67,16 @@ class SendToCivis(NanoNode):
         '''
 
     def monitor_futures(self):
-        while 1:
+        run = True
+        while run:
             for table_id, future_dict in list(self.recorded_tables.items()):
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
                 if future_obj.done():
                     if future_obj.failed():
                         logging.info(future_obj.exception())
-                        print(self.recorded_tables[table_id])
+                        self.status = 'error'
+                        run = False
             time.sleep(MONITOR_FUTURES_SLEEP)
 
     def process_item(self):
@@ -103,7 +105,7 @@ class SendToCivis(NanoNode):
                 if self.remap is not None:
                     row = remap_dictionary(row, self.remap)
                 #if 'is_contact' in row:
-                #    row['is_contact'] = 'foobar'   # Boom
+                #    row['is_contact'] = 'foobar'
                 writer.writerow(row)
                 row_list.append(row)  # Will this get too slow?
             tmp.flush()
