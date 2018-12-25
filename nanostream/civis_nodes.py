@@ -29,14 +29,17 @@ class SendToCivis(NanoNode):
         schema=None,
         existing_table_rows='append',
         include_columns=None,
+        dummy_run=False,
         block=False,
         max_errors=0,
         table_name=None,
+        columns=None,
         remap=None,
             **kwargs):
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.include_columns = include_columns
         self.table_name = table_name
+        self.dummy_run = dummy_run
         self.schema = schema
         self.max_errors = int(max_errors)
         self.existing_table_rows = existing_table_rows
@@ -44,6 +47,7 @@ class SendToCivis(NanoNode):
         self.block = block
         self.remap = remap
         self.full_table_name = '.'.join([self.schema, self.table_name])
+        self.columns = columns
 
         if self.civis_api_key is None or len(self.civis_api_key) == 0:
             raise Exception('Could not get a Civis API key.')
@@ -64,8 +68,8 @@ class SendToCivis(NanoNode):
         with open(uuid.uuid4().hex + '.csv', 'w') as tmp:
             if self.include_columns is not None:
                 fieldnames = self.include_columns
-            elif self.remap is not None:
-                fieldnames = list(self.remap.keys())
+            elif self.columns is not None:
+                fieldnames = self.columns
             else:
                 fieldnames = sorted(list(self.message[0].keys()))
             writer = csv.DictWriter(
@@ -80,15 +84,17 @@ class SendToCivis(NanoNode):
                     row = remap_dictionary(row, self.remap)
                 writer.writerow(row)
             tmp.flush()
-            fut = civis.io.csv_to_civis(
-                tmp.name,
-                self.database,
-                self.full_table_name,
-                max_errors=self.max_errors,
-                headers=True,
-                existing_table_rows=self.existing_table_rows)
-            if self.block:
-                result = fut.result()
+            if not self.dummy_run:
+                logging.info('Not sending to Redshift due to `dummy run`')
+                fut = civis.io.csv_to_civis(
+                    tmp.name,
+                    self.database,
+                    self.full_table_name,
+                    max_errors=self.max_errors,
+                    headers=True,
+                    existing_table_rows=self.existing_table_rows)
+                if self.block:
+                    result = fut.result()
         yield self.message
 
 

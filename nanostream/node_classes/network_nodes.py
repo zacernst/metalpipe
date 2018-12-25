@@ -28,14 +28,14 @@ class PaginatedHttpGetRequest:
         '''
         :ivar endpoint_template: (str) Template for endpoint URL, suitable
             for calling ``endpoint_template.format(**kwargs)``.
-        :ivar additional_data_key: Key in JSON payload whose value indicates
-            whether there are additional pages to request.
+        :ivar additional_data_key: Key in JSON payload whose value
+            indicates whether there are additional pages to request.
         :ivar pagination_key: Key in JSON payload where the current page
             (or next page) is indicated.
         :ivar pagination_get_request_key: Variable in URL GET request where
             we pass the offset for the next page.
-        :ivar default_offset_value: Offset value for the first request. Usually
-            this will be an empty string.
+        :ivar default_offset_value: Offset value for the first request.
+            Usually this will be an empty string.
         :ivar additional_data_test: Function that is passed the value of
             ``additional_data_key``. It should return ``True`` if there are
             additional pages to request, ``False`` otherwise.
@@ -55,22 +55,27 @@ class PaginatedHttpGetRequest:
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
-        endpoint_url = self.endpoint_template.format(**get_request_parameters)
+        endpoint_url = self.endpoint_template.format(
+            **get_request_parameters)
         out = requests.get(endpoint_url)
         # out = out.json()
         out = json.loads(out.text)
-        print(out)
         offset = out[self.pagination_key]
         offset_set.add(offset)
 
         while additional_data_test(out[self.additional_data_key]):
             get_request_parameters = {
                 self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(**get_request_parameters)
+            endpoint_url = self.endpoint_template.format(
+                **get_request_parameters)
             out = requests.get(endpoint_url).json()
-            offset = out[self.pagination_key]
             yield out
-            offset_set.add(offset)
+            try:
+                offset = out[self.pagination_key]
+                offset_set.add(offset)
+            except KeyError:
+                logging.info('No offset key. Assuming this is normal.')
+                break
 
 
 class HttpGetRequest(NanoNode):
@@ -96,8 +101,8 @@ class HttpGetRequest(NanoNode):
     def process_item(self):
         '''
         The input to this function will be a dictionary-like object with
-        parameters to be substituted into the endpoint string and a dictionary
-        with keys and values to be passed in the GET request.
+        parameters to be substituted into the endpoint string and a
+        dictionary with keys and values to be passed in the GET request.
 
         Three use-cases:
         1. Endpoint and parameters set initially and never changed.
