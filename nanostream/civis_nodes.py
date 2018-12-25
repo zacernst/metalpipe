@@ -8,16 +8,18 @@ This is where any classes specific to the Civis API live.
 import logging
 import os
 import tempfile
+import time
 import csv
+import sys
 import uuid
 import civis
 
 from nanostream.node import *
 from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
 from nanostream.utils.helpers import remap_dictionary
+from timed_dict.timed_dict import TimedDict
 
-logging.basicConfig(level=logging.ERROR)
-
+MONITOR_FUTURES_SLEEP = 2
 
 class SendToCivis(NanoNode):
     def __init__(
@@ -35,6 +37,7 @@ class SendToCivis(NanoNode):
         table_name=None,
         columns=None,
         remap=None,
+        recorded_tables=TimedDict(timeout=300),
             **kwargs):
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.include_columns = include_columns
@@ -46,6 +49,7 @@ class SendToCivis(NanoNode):
         self.database = database
         self.block = block
         self.remap = remap
+        self.recorded_tables = recorded_tables
         self.full_table_name = '.'.join([self.schema, self.table_name])
         self.columns = columns
 
@@ -53,19 +57,34 @@ class SendToCivis(NanoNode):
             raise Exception('Could not get a Civis API key.')
 
         super(SendToCivis, self).__init__(**kwargs)
+        self.monitor_futures_thread = threading.Thread(
+            target=SendToCivis.monitor_futures, args=(self, ))
+        self.monitor_futures_thread.start()
 
     def setup(self):
         '''
         Not sure if we'll need this. We could get a client and pass it around.
         '''
 
+    def monitor_futures(self):
+        while 1:
+            for table_id, future_dict in list(self.recorded_tables.items()):
+                future_obj = future_dict['future']
+                row_list = future_dict['row_list']
+                if future_obj.done():
+                    if future_obj.failed():
+                        logging.info(future_obj.exception())
+                        print(self.recorded_tables[table_id])
+            time.sleep(MONITOR_FUTURES_SLEEP)
+
     def process_item(self):
         '''
         Accept a bunch of dictionaries mapping column names to values.
         '''
 
-        #with tempfile.NamedTemporaryFile(mode='w') as tmp:
-        with open(uuid.uuid4().hex + '.csv', 'w') as tmp:
+        # with tempfile.NamedTemporaryFile(mode='w') as tmp:
+        row_list = []
+        with open(uuid.uuid4().hex + self.full_table_name + '.csv', 'w') as tmp:
             if self.include_columns is not None:
                 fieldnames = self.include_columns
             elif self.columns is not None:
@@ -78,14 +97,17 @@ class SendToCivis(NanoNode):
                 extrasaction='ignore',
                 quoting=csv.QUOTE_ALL)
             writer.writeheader()
+            row_list.append(fieldnames)
             for row in self.message:
                 # Optionally remap row here
                 if self.remap is not None:
                     row = remap_dictionary(row, self.remap)
+                #if 'is_contact' in row:
+                #    row['is_contact'] = 'foobar'   # Boom
                 writer.writerow(row)
+                row_list.append(row)  # Will this get too slow?
             tmp.flush()
             if not self.dummy_run:
-                logging.info('Not sending to Redshift due to `dummy run`')
                 fut = civis.io.csv_to_civis(
                     tmp.name,
                     self.database,
@@ -93,8 +115,15 @@ class SendToCivis(NanoNode):
                     max_errors=self.max_errors,
                     headers=True,
                     existing_table_rows=self.existing_table_rows)
+                table_id = uuid.uuid4()
+                self.recorded_tables[table_id.hex] = {
+                    'row_list': row_list,
+                    'future': fut}
                 if self.block:
-                    result = fut.result()
+                    while not fut.done():
+                        time.sleep(1)
+            else:
+                logging.info('Not sending to Redshift due to `dummy run`')
         yield self.message
 
 
@@ -138,5 +167,14 @@ class EnsureCivisRedshiftTableExists(NanoNode):
 
         yield columns_spec
 
+
 if __name__ == '__main__':
-    pass
+    # Test so that we can get a better view into errors
+    api_key = os.environ['CIVIS_API_KEY']
+    fut = civis.io.csv_to_civis(
+        'email_test_data.csv',
+        'Greenpeace',
+        'staging.email_raw',
+        max_errors=0,
+        headers=True,
+        existing_table_rows='append')

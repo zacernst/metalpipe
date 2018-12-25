@@ -12,9 +12,6 @@ from nanostream.message.message import NanoStreamMessage
 from nanostream.message.batch import BatchStart, BatchEnd
 
 
-logging.basicConfig(level=logging.ERROR)
-
-
 class NanoStreamQueue:
     """
     """

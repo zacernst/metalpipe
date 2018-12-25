@@ -12,6 +12,5 @@ import logging
 import re
 # from bowerbird.filesystem import LocalFileSystem
 
-logging.basicConfig(level=logging.INFO)
 
 

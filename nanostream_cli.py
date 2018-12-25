@@ -1,4 +1,5 @@
 import yaml
+import time
 import sys
 import logging
 import importlib
@@ -66,13 +67,16 @@ def load_pipeline(config_file, module_paths=None):
         node_dict[edge['source']] > node_dict[edge['target']]
     return node_dict
 
+
 def run_pipeline(config_file, module_paths=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
     list(node_dict.values())[0].global_start()
 
+
 def draw_pipeline(config_file, module_paths=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
     list(node_dict.values())[0].draw_pipeline()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a NanoStream pipeline.')

@@ -43,9 +43,6 @@ DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
 
-logging.basicConfig(level=logging.ERROR)
-
-
 
 def no_op(*args, **kwargs):
     '''
@@ -153,6 +150,7 @@ class NanoNode:
         retain_input=False,
         throttle=0,
         keep_alive=True,
+        max_errors=1,
         name=None,
         input_message_keypath=None,
         messages_received_counter=0,
@@ -183,6 +181,8 @@ class NanoNode:
         self.stopped_at = None
         self.finished = False
         self.terminate = False
+        self.error_counter = 0
+        self.max_errors = max_errors
         self.status = 'stopped'  # running, error, success
 
     def setup(self):
@@ -283,7 +283,7 @@ class NanoNode:
                 new_input_sentinal = False  # Set to ``True`` when we have a new input
                 for input_queue in self.input_queue_list:
                     if self.terminate:
-                        self.finished
+                        self.finished = True
                         continue
                     one_item = input_queue.get()
                     if one_item is None:
@@ -360,7 +360,7 @@ class NanoNode:
                                     pipeline_name=self.pipeline_name,
                                     node_name=self.name))
 
-                        for output in self.process_item():
+                        for output in self._process_item():
                             if self.datadog:
                                 self.datadog_stats.increment(
                                     '{pipeline_name}.{node_name}.output_counter'.format(
@@ -384,11 +384,16 @@ class NanoNode:
 
     def process_item(self, *args, **kwargs):
         '''
-        Default `process_item` method for broadcast queues. With this method
-        guaranteed to exist, we can handle poison pills and canaries in the
-        `_process_item` method.
         '''
         pass
+
+    def _process_item(self, *args, **kwargs):
+        '''
+        This extra indirection is so that we have a place to insert some
+        error handling later.
+        '''
+        for out in self.process_item(*args, **kwargs):
+            yield out
 
     def processor(self):
         """
@@ -504,6 +509,10 @@ class NanoNode:
         return sum(
             [input_queue.queue.qsize() for input_queue in self.input_queue_list])
 
+    def kill_pipeline(self):
+        for node in self.all_connected():
+            node.finished = True
+
     def draw_pipeline(self):
         dot = graphviz.Digraph()
         for node in self.all_connected():
@@ -568,7 +577,15 @@ class NanoNode:
                             node.input_queue_size,
                             status_color + node.status + bcolors.ENDC,
                             node.time_running])
-                print(table)
+                logging.info('\n' + str(table))
+
+
+
+
+            # End
+
+            pipeline_finished = all(
+                node.finished for node in self.all_connected())
 
 
 class CounterOfThings(NanoNode):
