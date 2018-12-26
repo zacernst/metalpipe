@@ -23,7 +23,10 @@ def get_value(
         dictionary = dictionary
     else:
         for step in path:
-            dictionary = (dictionary or {}).get(step, default_value)
+            if isinstance(dictionary, (dict,)):
+                dictionary = (dictionary or {}).get(step, default_value)
+            else:
+                dictionary = dictionary[step.index]
     return dictionary
 
 
@@ -108,6 +111,8 @@ def matching_tail_paths(target_path, structure):
     for path in all_paths(structure):
         if path in seen:
             continue
+        if isinstance(path[-1], (ListIndex,)):
+            continue
         seen.add(path)
         temp_list = tuple(
             step for step in path if not isinstance(step, (ListIndex,)))
@@ -117,7 +122,18 @@ def matching_tail_paths(target_path, structure):
             yield path
 
 if __name__ == '__main__':
-    d = {'foo': 'bar', 'bar': 'baz', 'baz': 'qux', 'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
+    d = {
+        'foo': 'bar',
+        'bar': 'baz',
+        'baz': 'qux',
+        'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
+
     target_path = ('foobar', 'hi',)
-    for i in matching_tail_paths(target_path, d):
-        print(i)
+
+    def replace_by_path(dictionary, target_path, target_value):
+        dictionary_clone = copy.deepcopy(dictionary)
+        for path in matching_tail_paths(target_path, dictionary_clone):
+            set_value(dictionary, path, target_value)
+
+    replace_by_path(d, ('foobar', 'hi',), 'foobardude')
+    print(d)
