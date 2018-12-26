@@ -71,8 +71,8 @@ def load_pipeline(config_file, module_paths=None):
 def run_pipeline(config_file, module_paths=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
     list(node_dict.values())[0].global_start()
-    time.sleep(10)
-    list(node_dict.values())[0].terminate_pipeline()
+    #time.sleep(10)
+    #list(node_dict.values())[0].terminate_pipeline()
 
 
 def draw_pipeline(config_file, module_paths=None):

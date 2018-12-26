@@ -65,19 +65,32 @@ class SendToCivis(NanoNode):
         '''
         Not sure if we'll need this. We could get a client and pass it around.
         '''
+        pass
 
     def monitor_futures(self):
+
+        class DummyResult:
+            def __init__(self):
+                self.state = 'done'
+
         run = True
         while run:
+            logging.debug('Checking future objects...')
             for table_id, future_dict in list(self.recorded_tables.items()):
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
+                logging.debug(future_obj.done())
                 if future_obj.done():
                     if future_obj.failed():
-                        logging.info(future_obj.exception())
-                        self.status = 'error'
+                        logging.debug(future_obj.exception())
+                        self.status = 'error'  # Needs to be caught by Node class
                         run = False
             time.sleep(MONITOR_FUTURES_SLEEP)
+        for table_id, future_dict in list(self.recorded_tables.items()):
+            setattr(future_dict['future'], 'done', lambda: True)
+            future_dict['future'].set_result(DummyResult())
+            # future_dict['future'].cleanup()
+            # CivisFuture object, not ``Future`` -- this is why the problems!
 
     def process_item(self):
         '''
@@ -104,8 +117,8 @@ class SendToCivis(NanoNode):
                 # Optionally remap row here
                 if self.remap is not None:
                     row = remap_dictionary(row, self.remap)
-                #if 'is_contact' in row:
-                #    row['is_contact'] = 'foobar'
+                if 'is_contact' in row:  # Boom
+                    row['is_contact'] = 'foobar'
                 writer.writerow(row)
                 row_list.append(row)  # Will this get too slow?
             tmp.flush()

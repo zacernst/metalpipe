@@ -157,4 +157,6 @@ class HttpGetRequestPaginator(NanoNode):
             default_offset_value=self.default_offset_value)
 
         for i in self.requestor.responses():
+            if self.finished:
+                break
             yield i

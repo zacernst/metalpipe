@@ -269,9 +269,9 @@ class NanoNode:
         self.setup()  # Setup function?
 
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
-            while not self.finished:
-                for output in self.generator():
-                    yield output, None
+            for output in self.generator():
+                yield output, None
+            self.finished = True
         else:
             logging.debug(
                 'About to enter loop for reading input queue in {node}.'.format(
@@ -523,6 +523,7 @@ class NanoNode:
         counter = 0
         pipeline_finished = all(
             node.finished for node in self.all_connected())
+        error = False
         while not pipeline_finished:
             time.sleep(MONITOR_INTERVAL)
             counter += 1
@@ -542,6 +543,7 @@ class NanoNode:
                         status_color = ''
                     elif node.status == 'error':
                         status_color = bcolors.FAIL
+                        error = True
                     elif node.status == 'success':
                         status_color = bcolors.OKGREEN
                     else:
@@ -557,6 +559,11 @@ class NanoNode:
                             status_color + node.status + bcolors.ENDC,
                             node.time_running])
                 logging.info('\n' + str(table))
+                if error:
+                    logging.info('Terminating due to error.')
+                    self.terminate_pipeline()
+                    pipeline_finished = True
+                    break
 
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
@@ -564,7 +571,7 @@ class NanoNode:
         logging.info('Pipeline finished.')
         logging.info('Sending terminate signal to nodes.')
         logging.info('Messages that are being processed will complete.')
-        node.terminate_pipeline()
+        #import pdb; pdb.set_trace()
 
         sys.exit(0)
 
