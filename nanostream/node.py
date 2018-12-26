@@ -9,6 +9,7 @@ for NanoStream.
 import time
 import datetime
 import uuid
+import importlib
 import logging
 import os
 import threading
@@ -34,7 +35,7 @@ from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
-from nanostream.utils.helpers import remap_dictionary, get_value
+from nanostream.utils.helpers import remap_dictionary, set_value, get_value
 
 from datadog import api, statsd, ThreadStats
 from datadog import initialize as initialize_datadog
@@ -654,6 +655,41 @@ class GetEnvironmentVariables(NanoNode):
                     environment_variable, None)
                 for environment_variable in self.environment_variables}
         yield environment
+
+
+class SimpleTransforms(NanoNode):
+    def __init__(self, missing_keypath_action='ignore', transform_mapping=None, **kwargs):
+        self.missing_keypath_action = missing_keypath_action
+        self.transform_mapping = transform_mapping or {}
+
+        self.functions_dict = {}
+        for function_name in self.transform_mapping.keys():
+            components = function_name.split('__')
+            if len(components) == 1:
+                module = None
+                function_name_str = components[0]
+                function_obj = globals()[function_name_str]
+            else:
+                module = '.'.join(components[:-1])
+                function_name_str = components[-1]
+                module = importlib.import_module(module)
+                function = getattr(module, function_name_str)
+            self.functions_dict[function_name] = function
+
+        super(SimpleTransforms, self).__init__(**kwargs)
+
+    def process_item(self):
+        logging.info('---------------')
+        logging.info(self.message)
+        for function_name, keypath in self.transform_mapping.items():
+            argument_value = get_value(self.message, keypath)
+            function = self.functions_dict[function_name]
+            replacement_value = function(argument_value)
+            set_value(self.message, keypath, replacement_value)
+        yield self.message
+
+
+
 
 
 class Serializer(NanoNode):

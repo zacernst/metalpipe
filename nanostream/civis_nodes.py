@@ -117,8 +117,8 @@ class SendToCivis(NanoNode):
                 # Optionally remap row here
                 if self.remap is not None:
                     row = remap_dictionary(row, self.remap)
-                if 'is_contact' in row:  # Boom
-                    row['is_contact'] = 'foobar'
+                #if 'is_contact' in row:  # Boom
+                #    row['is_contact'] = 'foobar'
                 writer.writerow(row)
                 row_list.append(row)  # Will this get too slow?
             tmp.flush()
