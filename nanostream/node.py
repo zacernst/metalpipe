@@ -180,7 +180,6 @@ class NanoNode:
         self.started_at = None
         self.stopped_at = None
         self.finished = False
-        self.terminate = False
         self.error_counter = 0
         self.max_errors = max_errors
         self.status = 'stopped'  # running, error, success
@@ -270,11 +269,9 @@ class NanoNode:
         self.setup()  # Setup function?
 
         if self.is_source and not isinstance(self, (DynamicClassMediator, )):
-            for output in self.generator():
-                if self.terminate:
-                    break
-                yield output, None
-            self.finished = True
+            while not self.finished:
+                for output in self.generator():
+                    yield output, None
         else:
             logging.debug(
                 'About to enter loop for reading input queue in {node}.'.format(
@@ -282,10 +279,6 @@ class NanoNode:
             while not self.finished:
                 new_input_sentinal = False  # Set to ``True`` when we have a new input
                 for input_queue in self.input_queue_list:
-                    if self.terminate:
-                        self.finished = True
-                        self.stopped_at = datetime.datetime.now()
-                        continue
                     one_item = input_queue.get()
                     if one_item is None:
                         continue
@@ -317,7 +310,6 @@ class NanoNode:
                     if isinstance(message_content, (PoisonPill,)):
                         logging.debug('received poision pill.')
                         self.finished = True
-                        break
                     # If we receive ``None``, then pass.
                     elif message_content is None:
                         pass
@@ -381,8 +373,9 @@ class NanoNode:
 
     def terminate_pipeline(self):
         for node in self.all_connected():
-            node.finished = True
-            node.terminate = True
+            if not node.finished:
+                node.stopped_at = datetime.datetime.now()
+                node.finished = True
 
     def process_item(self, *args, **kwargs):
         '''
@@ -532,20 +525,11 @@ class NanoNode:
             node.finished for node in self.all_connected())
         while not pipeline_finished:
             time.sleep(MONITOR_INTERVAL)
-            # Check no threads have unexpectedly crashed
-            #for node_name, thread in self.thread_dict.items():
-            #    if not thread.isAlive():
-            #        self.terminate()
-            #        raise Exception(
-            #            'Thread from node {node} dead. '
-            #            'Terminating all nodes.'.format(node=node_name))
             counter += 1
 
             # Check whether all the workers have ``.finished``
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
-
-
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(
@@ -574,24 +558,13 @@ class NanoNode:
                             node.time_running])
                 logging.info('\n' + str(table))
 
-
-            # Check for errors:
-            if any(node.status == 'error' for node in self.all_connected()):
-                self.terminate_pipeline()
-
-            # End
-
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
 
-        logging.info('Exiting successfully.')
-        for thread in threading.enumerate():
-            if thread.name == 'MainThread':
-                continue
-            elif thread is threading.current_thread():
-                continue
-            else:
-                print(thread)
+        logging.info('Pipeline finished.')
+        logging.info('Sending terminate signal to nodes.')
+        logging.info('Messages that are being processed will complete.')
+        node.terminate_pipeline()
 
         sys.exit(0)
 
