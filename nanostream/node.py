@@ -4,6 +4,7 @@ Node module
 
 The ``node`` module contains the ``NanoNode`` class, which is the foundation
 for NanoStream.
+
 """
 
 import time
