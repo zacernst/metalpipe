@@ -111,9 +111,10 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        logging.debug('HttpGetRequest --->' + str(self.message))
-        get_response = requests.get(
-            self.endpoint_template.format(**(self.message or {})))
+        formatted_endpoint = self.endpoint_template.format_map(SafeMap(**(self.message or {})))
+        formatted_endpoint = formatted_endpoint.format_map(SafeMap(**(self.endpoint_dict or {})))
+        logging.info('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
+        get_response = requests.get(formatted_endpoint)
         output = get_response.json() if self.json else get_response.text
         yield output
 

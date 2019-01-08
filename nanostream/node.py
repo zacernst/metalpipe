@@ -735,6 +735,52 @@ class Serializer(NanoNode):
         for item in self.message:
             yield item
 
+class Filter(NanoNode):
+    '''
+    Applies tests to each message and filters out messages that don't pass
+
+    Built-in tests:
+        key_exists
+        value_is_true
+        value_is_not_none
+
+    Example:
+        {'test': 'key_exists',
+         'key': mykey}
+
+    '''
+    def __init__(self, test=None, key=None, value=True, *args, **kwargs):
+        self.test = test
+        self.key = key
+        self.value = value
+        super(Filter, self).__init__(*args, **kwargs)
+
+    @staticmethod
+    def _key_exists(message, key):
+        return key in message
+
+    @staticmethod
+    def _value_is_not_none(message, key):
+        return message.get(key, None) is not None
+
+    @staticmethod
+    def _value_is_true(message, key):
+        return to_bool(message.get(key, False))
+
+    def process_item(self):
+        if self.test in ['key_exists', 'value_is_not_none', 'value_is_true']:
+            result = (
+                getattr(self, '_' + self.test)(
+                    self.message, self.key) == self.value)
+        else:
+            raise Exception('Unknown test: {test_name}'.format(
+                test_name=test))
+        if result:
+            logging.debug('Sending message through')
+            yield self.message
+        else:
+            logging.debug('Blocking message')
+
 
 class StreamMySQLTable(NanoNode):
     def __init__(

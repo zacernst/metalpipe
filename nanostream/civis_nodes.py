@@ -53,7 +53,7 @@ class SendToCivis(NanoNode):
         self.full_table_name = '.'.join([self.schema, self.table_name])
         self.columns = columns
 
-        if self.civis_api_key is None or len(self.civis_api_key) == 0:
+        if self.civis_api_key is None and len(self.civis_api_key) == 0:
             raise Exception('Could not get a Civis API key.')
 
         super(SendToCivis, self).__init__(**kwargs)
@@ -182,6 +182,50 @@ class EnsureCivisRedshiftTableExists(NanoNode):
         result = fut.result()
 
         yield columns_spec
+
+
+class CivisSQLExecute(NanoNode):
+    '''
+    Execute a SQL statement and return the results.
+    '''
+
+    def __init__(
+        self,
+        *args,
+        sql=None,
+        civis_api_key=None,
+        civis_api_key_env_var='CIVIS_API_KEY',
+        database=None,
+        dummy_run=False,
+        query_dict=None,
+            **kwargs):
+        self.sql = sql
+        self.query_dict = query_dict or {}
+        self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
+        self.dummy_run = dummy_run
+        self.database = database
+        self.full_table_name = '.'.join([self.schema, self.table_name])
+
+        if self.civis_api_key is None and len(self.civis_api_key) == 0:
+            raise Exception('Could not get a Civis API key.')
+
+        super(SendToCivis, self).__init__(*args, **kwargs)
+
+    def process_item(self):
+        '''
+        Execute a SQL statement and return the result.
+        '''
+        sql_query = self.sql.format_map(SafeMap(**self.query_dict))
+        sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
+        if not self.dummy_run:
+            fut = civis.io.query_civis(
+                self.sql,
+                self.database)
+            result = fut.result()
+        else:
+            logging.info('Not querying Redshift due to `dummy run`')
+            result = None
+        yield result
 
 
 if __name__ == '__main__':
