@@ -60,15 +60,10 @@ class PaginatedHttpGetRequest:
         out = requests.get(endpoint_url)
         # out = out.json()
         out = json.loads(out.text)
-        offset = out[self.pagination_key]
+        offset = out.get(self.pagination_key, None)
         offset_set.add(offset)
 
-        while additional_data_test(out[self.additional_data_key]):
-            get_request_parameters = {
-                self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(
-                **get_request_parameters)
-            out = requests.get(endpoint_url).json()
+        while self.additional_data_key in out and additional_data_test(out[self.additional_data_key]):
             yield out
             try:
                 offset = out[self.pagination_key]
@@ -76,6 +71,11 @@ class PaginatedHttpGetRequest:
             except KeyError:
                 logging.info('No offset key. Assuming this is normal.')
                 break
+            get_request_parameters = {
+                self.pagination_get_request_key: offset}
+            endpoint_url = self.endpoint_template.format(
+                **get_request_parameters)
+            out = requests.get(endpoint_url).json()
 
 
 class HttpGetRequest(NanoNode):

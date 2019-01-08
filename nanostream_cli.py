@@ -12,7 +12,7 @@ from nanostream.node_classes.network_nodes import *
 from nanostream.civis_nodes import *
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 def load_pipeline(config_file, module_paths=None):

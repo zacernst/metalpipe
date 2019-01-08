@@ -42,14 +42,16 @@ class NanoStreamQueue:
         Messages are ``NanoStreamMessage`` objects; the payload of the
         message is message.message_content.
         '''
-        previous_message = kwargs.get('previous_message', None)
+        previous_message = previous_message
+        print('--->' + str(previous_message))
         if previous_message is not None:
             previous_message = previous_message.message_content
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
         if self.source_node.retain_input:
             logging.info(self.source_node.name)
-            for key, value in previous_message.items():
+            keys_values = previous_message.items()
+            for key, value in keys_values:
                 if key in message:
                     logging.warn(
                         'Key {key} is in the message. Skipping.'.format(

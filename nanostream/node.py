@@ -36,7 +36,8 @@ from nanostream.message.poison_pill import PoisonPill
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
-from nanostream.utils.helpers import remap_dictionary, set_value, get_value
+from nanostream.utils.helpers import (
+    replace_by_path, remap_dictionary, set_value, get_value, to_bool)
 
 from datadog import api, statsd, ThreadStats
 from datadog import initialize as initialize_datadog
@@ -410,6 +411,8 @@ class NanoNode:
         self.status = 'running'
         try:
             for output, previous_message in self.start():
+                if self.retain_input:
+                    print(previous_message)
                 logging.debug('In NanoNode.stream.stream() --> ' + str(output))
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
@@ -573,7 +576,6 @@ class NanoNode:
         logging.info('Pipeline finished.')
         logging.info('Sending terminate signal to nodes.')
         logging.info('Messages that are being processed will complete.')
-        #import pdb; pdb.set_trace()
 
         sys.exit(0)
 
@@ -619,18 +621,29 @@ class SequenceEmitter(NanoNode):
     ``max_sequences`` is ``None``.
     '''
 
-    def __init__(self, sequence, *args, max_sequences=None, **kwargs):
+    def __init__(self, sequence, *args, max_sequences=1, output_key=None, **kwargs):
         self.sequence = sequence
         self.max_sequences = max_sequences
+        self.output_key = output_key
         super(SequenceEmitter, self).__init__(*args, **kwargs)
 
-    def generator(self):
+    def process_item(self):
         '''
         Emit the sequence ``max_sequences`` times.
         '''
+        type_dict = {
+            'int': int,
+            'integer': int,
+            'str': str,
+            'string': str,
+            'float': float,
+            'bool': to_bool}
         counter = 0
-        while self.max_sequences is None or counter < self.max_sequences:
+        while counter < self.max_sequences:
             for item in self.sequence:
+                if isinstance(item, (dict,)) and 'value' in item and 'type' in item:
+                    item = type_dict[item['type'].lower()](item['value'])
+                item = {self.output_key: item}
                 yield item
             counter += 1
 
@@ -659,38 +672,54 @@ class GetEnvironmentVariables(NanoNode):
 
 
 class SimpleTransforms(NanoNode):
-    def __init__(self, missing_keypath_action='ignore', transform_mapping=None, **kwargs):
-        self.missing_keypath_action = missing_keypath_action
-        self.transform_mapping = transform_mapping or {}
+    def __init__(self, missing_keypath_action='ignore',
+            transform_mapping=None, target_value=None, keypath=None, **kwargs):
 
+        self.missing_keypath_action = missing_keypath_action
+        self.transform_mapping = transform_mapping or []
         self.functions_dict = {}
-        for function_name in self.transform_mapping.keys():
-            components = function_name.split('__')
-            if len(components) == 1:
-                module = None
-                function_name_str = components[0]
-                function_obj = globals()[function_name_str]
-            else:
-                module = '.'.join(components[:-1])
-                function_name_str = components[-1]
-                module = importlib.import_module(module)
-                function = getattr(module, function_name_str)
-            self.functions_dict[function_name] = function
+
+        for transform in self.transform_mapping:
+            # Not doing the transforms; only loading the right functions here
+            function_name = transform.get('target_function', None)
+            if function_name is not None:
+                function_name.split('__')
+                if len(components) == 1:
+                    module = None
+                    function_name = components[0]
+                    function_obj = globals()[function_name]
+                else:
+                    module = '.'.join(components[:-1])
+                    function_name = components[-1]
+                    module = importlib.import_module(module)
+                    function = getattr(module, function_name)
+                self.functions_dict[function_name] = function
 
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('---------------')
+        logging.info('TRANSFORM')
         logging.info(self.message)
-        for function_name, keypath in self.transform_mapping.items():
-            argument_value = get_value(self.message, keypath)
-            function = self.functions_dict[function_name]
-            replacement_value = function(argument_value)
-            set_value(self.message, keypath, replacement_value)
+        for transform in self.transform_mapping:
+            path = transform['path']
+            target_value = transform.get('target_value', None)
+            function_name = transform.get('function', None)
+            if function_name is not None:
+                function = self.functions_dict[function_name]
+            else:
+                function = None
+            function_kwargs = transform.get('function_kwargs', None)
+            function_args = transform.get('function_args', None)
+
+            replace_by_path(
+                self.message,
+                tuple(path),
+                target_value=target_value,
+                function=function,
+                function_args=function_args,
+                function_kwargs=function_kwargs)
+        logging.info(self.message)
         yield self.message
-
-
-
 
 
 class Serializer(NanoNode):
@@ -908,7 +937,6 @@ class StreamingJoin(NanoNode):
     def process_item(self):
         '''
         '''
-        # import pdb; pdb.set_trace()
         value_to_match = get_value(self.message, self.stream_paths[self.message_source.name])
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result

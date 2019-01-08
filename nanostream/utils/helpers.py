@@ -4,12 +4,29 @@ Helper module
 
 Misc. helper functions for other classes.
 '''
+
 import copy
 import time
 import logging
 
+
+def to_bool(thing):
+    if isinstance(thing, (str,)):
+        value = len(thing) > 0 and thing[0].lower() in ['t', 'y']
+    elif isinstance(thing, (int, float,)):
+        return thing > 0
+    elif isinstance(thing, (bool,)):
+        return thing
+    else:
+        raise Exception(
+            'Do not know how to convert {thing} to bool'.format(
+                thing=str(thing)))
+
+
 def get_value(
-        dictionary, path, delimiter='.', default_value=None):
+    dictionary, path, delimiter='.',
+        use_default_value=False, default_value=None):
+
     dictionary = copy.deepcopy(dictionary)
     logging.debug(dictionary)
     logging.debug(path)
@@ -23,7 +40,7 @@ def get_value(
         dictionary = dictionary
     else:
         for step in path:
-            if isinstance(dictionary, (dict,)):
+            if dictionary is None or isinstance(dictionary, (dict,)):
                 dictionary = (dictionary or {}).get(step, default_value)
             else:
                 dictionary = dictionary[step.index]
@@ -37,6 +54,8 @@ def hi(*args, **kwargs):
 def set_value(dictionary, path, value):
     for step in path[:-1]:
         if not isinstance(step, (ListIndex,)):
+            if step not in dictionary:
+                break
             dictionary = dictionary[step]
         else:
             dictionary = dictionary[step.index]
@@ -53,11 +72,13 @@ def iterate_leaves(dictionary, keypath=None):
                 yield i
 
 
-def remap_dictionary(source_dictionary, target_dictionary):
+def remap_dictionary(
+    source_dictionary, target_dictionary,
+        use_default_value=False, default_value=None):
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
-            target_dictionary, path, get_value(source_dictionary, value))
+            target_dictionary, path, get_value(source_dictionary, value, use_default_value=use_default_value, default_value=default_value))
     return target_dictionary
 
 
@@ -121,19 +142,32 @@ def matching_tail_paths(target_path, structure):
         if temp_list[-1 * len(target_path):] == target_path:
             yield path
 
+
+def replace_by_path(
+    dictionary, target_path, target_value=None, function=None,
+        function_args=None, function_kwargs=None):
+
+    function = function or (lambda x: x)
+    function_args = function_args or tuple([])
+    function_kwargs = function_kwargs or {}
+    dictionary_clone = copy.deepcopy(dictionary)
+    for path in matching_tail_paths(target_path, dictionary_clone):
+        current_value = get_value(dictionary, path)
+        target_value = target_value or function(
+            current_value, *function_args, **function_kwargs)
+        set_value(dictionary, path, target_value)
+
+
 if __name__ == '__main__':
     d = {
         'foo': 'bar',
         'bar': 'baz',
         'baz': 'qux',
         'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
+    import json
+    d = json.load(open('./sample.json', 'r'))
 
-    target_path = ('foobar', 'hi',)
+    target_path = ('contacts', 'addedAt')
 
-    def replace_by_path(dictionary, target_path, target_value):
-        dictionary_clone = copy.deepcopy(dictionary)
-        for path in matching_tail_paths(target_path, dictionary_clone):
-            set_value(dictionary, path, target_value)
-
-    replace_by_path(d, ('foobar', 'hi',), 'foobardude')
+    replace_by_path(d, target_path, target_value='hithere')
     print(d)

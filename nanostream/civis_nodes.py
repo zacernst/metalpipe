@@ -76,7 +76,8 @@ class SendToCivis(NanoNode):
         run = True
         while run:
             logging.debug('Checking future objects...')
-            for table_id, future_dict in list(self.recorded_tables.items()):
+            all_items = list(self.recorded_tables.items())
+            for table_id, future_dict in all_items:
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
                 logging.debug(future_obj.done())
@@ -99,7 +100,7 @@ class SendToCivis(NanoNode):
 
         # with tempfile.NamedTemporaryFile(mode='w') as tmp:
         row_list = []
-        with open(uuid.uuid4().hex + self.full_table_name + '.csv', 'w') as tmp:
+        with tempfile.NamedTemporaryFile(mode='w') as tmp:
             if self.include_columns is not None:
                 fieldnames = self.include_columns
             elif self.columns is not None:
