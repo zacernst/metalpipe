@@ -876,7 +876,7 @@ class ConstantEmitter(NanoNode):
 
     def generator(self):
         logging.debug('starting constant emitter')
-        while 1:
+        while not self.finished:
             time.sleep(self.delay)
             output = ({
                 self.thing_key: self.thing

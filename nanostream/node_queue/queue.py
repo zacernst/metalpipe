@@ -43,7 +43,6 @@ class NanoStreamQueue:
         message is message.message_content.
         '''
         previous_message = previous_message
-        print('--->' + str(previous_message))
         if previous_message is not None:
             previous_message = previous_message.message_content
         # Check if we need to retain the previous message in the keys of
