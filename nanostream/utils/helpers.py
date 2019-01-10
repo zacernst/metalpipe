@@ -10,9 +10,17 @@ import time
 import logging
 
 
+def list_to_dict(some_list, list_of_keys):
+    if len(some_list) != len(list_of_keys):
+        raise Exception('Length of list elements and key list must be equal.')
+    out = {
+        list_of_keys[index]: item for index, item in enumerate(some_list)}
+    return out
+
+
 def to_bool(thing):
     if isinstance(thing, (str,)):
-        value = len(thing) > 0 and thing[0].lower() in ['t', 'y']
+        return len(thing) > 0 and thing[0].lower() in ['t', 'y']
     elif isinstance(thing, (int, float,)):
         return thing > 0
     elif isinstance(thing, (bool,)):
@@ -55,11 +63,13 @@ def set_value(dictionary, path, value):
     for step in path[:-1]:
         if not isinstance(step, (ListIndex,)):
             if step not in dictionary:
-                break
+                raise Exception('Path not found.')
             dictionary = dictionary[step]
         else:
             dictionary = dictionary[step.index]
-    dictionary[path[-1]] = value
+    dictionary[
+        path[-1] if not isinstance(path[-1], (ListIndex,))
+        else path[-1].index] = value
 
 
 def iterate_leaves(dictionary, keypath=None):
@@ -78,7 +88,12 @@ def remap_dictionary(
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
-            target_dictionary, path, get_value(source_dictionary, value, use_default_value=use_default_value, default_value=default_value))
+            target_dictionary, path,
+            get_value(
+                source_dictionary,
+                value,
+                use_default_value=use_default_value,
+                default_value=default_value))
     return target_dictionary
 
 

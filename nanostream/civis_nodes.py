@@ -16,7 +16,7 @@ import civis
 
 from nanostream.node import *
 from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
-from nanostream.utils.helpers import remap_dictionary
+from nanostream.utils.helpers import remap_dictionary, SafeMap, list_to_dict
 from timed_dict.timed_dict import TimedDict
 
 MONITOR_FUTURES_SLEEP = 2
@@ -198,18 +198,19 @@ class CivisSQLExecute(NanoNode):
         database=None,
         dummy_run=False,
         query_dict=None,
+        returned_columns=None,
             **kwargs):
         self.sql = sql
         self.query_dict = query_dict or {}
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.dummy_run = dummy_run
         self.database = database
-        self.full_table_name = '.'.join([self.schema, self.table_name])
+        self.returned_columns = returned_columns
 
         if self.civis_api_key is None and len(self.civis_api_key) == 0:
             raise Exception('Could not get a Civis API key.')
 
-        super(SendToCivis, self).__init__(*args, **kwargs)
+        super(CivisSQLExecute, self).__init__(**kwargs)
 
     def process_item(self):
         '''
@@ -225,7 +226,13 @@ class CivisSQLExecute(NanoNode):
         else:
             logging.info('Not querying Redshift due to `dummy run`')
             result = None
-        yield result
+        result_rows = result['result_rows']
+        if self.returned_columns is not None:
+            result_rows = [
+                list_to_dict(row, self.returned_columns) for row in result_rows]
+        else:
+            result_rows = result['result_rows']
+        yield {'result_rows': result_rows}
 
 
 if __name__ == '__main__':
