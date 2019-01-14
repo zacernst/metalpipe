@@ -38,7 +38,8 @@ from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
 from nanostream.utils.helpers import (
-    replace_by_path, remap_dictionary, set_value, get_value, to_bool)
+    replace_by_path, remap_dictionary, set_value, get_value, to_bool,
+    aggregate_values)
 
 from datadog import api, statsd, ThreadStats
 from datadog import initialize as initialize_datadog
@@ -168,7 +169,7 @@ class NanoNode:
         post_process_function=None,
         post_process_keypath=None,
         post_process_function_kwargs=None,
-        output_key='__value__',
+        output_key=None,
             **kwargs):
         self.name = name or uuid.uuid4().hex
         self.input_mapping = input_mapping or {}
@@ -430,6 +431,9 @@ class NanoNode:
         '''
         # Swap out the message if ``key`` is specified
         for out in self.process_item(*args, **kwargs):
+            if not isinstance(out, (dict,)) and self.output_key is None:
+                logging.info('Exception raised due to no key' + str(self.name))
+                raise Exception('Either message must be a dictionary or `output_key` must be specified. {name}'.format(self.name))
             # Apply post_process_function if it's defined
             if self.post_process_function is not None:
                 set_value(
@@ -760,8 +764,9 @@ class SimpleTransforms(NanoNode):
         for transform in self.transform_mapping:
             # Not doing the transforms; only loading the right functions here
             function_name = transform.get('target_function', None)
+            full_function_name = function_name
             if function_name is not None:
-                function_name.split('__')
+                components = function_name.split('__')
                 if len(components) == 1:
                     module = None
                     function_name = components[0]
@@ -771,7 +776,7 @@ class SimpleTransforms(NanoNode):
                     function_name = components[-1]
                     module = importlib.import_module(module)
                     function = getattr(module, function_name)
-                self.functions_dict[function_name] = function
+                self.functions_dict[full_function_name] = function
 
         super(SimpleTransforms, self).__init__(**kwargs)
 
@@ -781,13 +786,14 @@ class SimpleTransforms(NanoNode):
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
-            function_name = transform.get('function', None)
+            function_name = transform.get('target_function', None)
             if function_name is not None:
                 function = self.functions_dict[function_name]
             else:
                 function = None
             function_kwargs = transform.get('function_kwargs', None)
             function_args = transform.get('function_args', None)
+            print(['REPLACE BY PATH', str(path), str(target_value), str(function), str(function_args), str(function_kwargs)])
 
             replace_by_path(
                 self.message,
@@ -812,6 +818,21 @@ class Serializer(NanoNode):
         print(self.message)
         for item in self.message:
             yield item
+
+
+class AggregateValues(NanoNode):
+    '''
+    Does that.
+    '''
+
+    def __init__(self, tail_path=None, **kwargs):
+        self.tail_path = tail_path
+        super(AggregateValues, self).__init__(**kwargs)
+
+    def process_item(self):
+        values = aggregate_values(self.__message__, self.tail_path)
+        yield values
+
 
 class Filter(NanoNode):
     '''

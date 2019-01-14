@@ -13,6 +13,7 @@ import csv
 import sys
 import uuid
 import civis
+from civis.base import DONE
 
 from nanostream.node import *
 from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
@@ -76,16 +77,20 @@ class SendToCivis(NanoNode):
         run = True
         while run:
             logging.debug('Checking future objects...')
-            all_items = list(self.recorded_tables.items())
-            for table_id, future_dict in all_items:
+
+            table_lock = threading.Lock()
+            table_lock.acquire()
+            for table_id, future_dict in self.recorded_tables.items():
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
-                logging.debug(future_obj.done())
-                if future_obj.done():
+                # logging.debug(future_obj.done())
+                logging.info('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
+                if future_obj._state != 'RUNNING':
                     if future_obj.failed():
                         logging.debug(future_obj.exception())
                         self.status = 'error'  # Needs to be caught by Node class
                         run = False
+            table_lock.release()
             time.sleep(MONITOR_FUTURES_SLEEP)
         for table_id, future_dict in list(self.recorded_tables.items()):
             setattr(future_dict['future'], 'done', lambda: True)

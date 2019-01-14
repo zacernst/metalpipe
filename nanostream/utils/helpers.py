@@ -9,7 +9,9 @@ import copy
 import time
 import logging
 import datetime
+import pickle
 
+import uuid
 
 def list_to_dict(some_list, list_of_keys):
     if len(some_list) != len(list_of_keys):
@@ -67,6 +69,7 @@ def pdb(*args, **kwargs):
 def convert_date_format(date_string, source_format=None, target_format=None):
     return datetime.datetime.strptime(
         date_string, source_format).strftime(target_format)
+
 
 def engaging_networks_date(result, **kwargs):
     '''
@@ -162,6 +165,7 @@ def all_paths(thing, path=None):
 
 
 def matching_tail_paths(target_path, structure):
+    target_path = tuple(target_path)
     seen = set()
     for path in all_paths(structure):
         if path in seen:
@@ -173,7 +177,8 @@ def matching_tail_paths(target_path, structure):
             step for step in path if not isinstance(step, (ListIndex,)))
         if len(temp_list) < len(target_path):
             continue
-        if temp_list[-1 * len(target_path):] == target_path:
+        tail_of_path = temp_list[-1 * len(target_path):]
+        if tail_of_path == target_path:
             yield path
 
 
@@ -192,6 +197,19 @@ def replace_by_path(
         set_value(dictionary, path, target_value)
 
 
+def aggregate_values(dictionary, target_path):
+    aggregated_values = []
+    logging.info('Calling `aggregate_values`')
+    logging.info(str(dictionary))
+    with open(uuid.uuid4().hex + '.pickle', 'wb') as pfile:
+        pickle.dump(dictionary, pfile)
+    logging.info('TARGET PATH: ' + str(target_path))
+    for path in matching_tail_paths(target_path, dictionary):
+        print('found path: ' + str(path))
+        current_value = get_value(dictionary, path)
+        aggregated_values.append(current_value)
+    return aggregated_values
+
 if __name__ == '__main__':
     d = {
         'foo': 'bar',
@@ -199,9 +217,9 @@ if __name__ == '__main__':
         'baz': 'qux',
         'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
     import json
-    d = json.load(open('./sample.json', 'r'))
 
-    target_path = ('contacts', 'addedAt')
-
-    replace_by_path(d, target_path, target_value='hithere')
     print(d)
+    print(aggregate_values(d, tuple(['hi'])))
+
+    d = pickle.load(open('./2bc74c3dde084ffc808cdff79f3eb292.pickle', 'rb'))
+
