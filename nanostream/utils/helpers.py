@@ -8,6 +8,7 @@ Misc. helper functions for other classes.
 import copy
 import time
 import logging
+import datetime
 
 
 def list_to_dict(some_list, list_of_keys):
@@ -57,6 +58,24 @@ def get_value(
 
 def hi(*args, **kwargs):
     return 'hi'
+
+
+def pdb(*args, **kwargs):
+    import pdb; pdb.set_trace()
+
+
+def convert_date_format(date_string, source_format=None, target_format=None):
+    return datetime.datetime.strptime(
+        date_string, source_format).strftime(target_format)
+
+def engaging_networks_date(result, **kwargs):
+    '''
+    This is a very redundant function, but it's here mostly to test the
+    functionality of the ``post_process_function``.
+    '''
+    out = datetime.datetime.strptime(result[0]['date_modified'], '%Y-%m-%d')
+    out = out.strftime('%Y%m%d')
+    return out
 
 
 def set_value(dictionary, path, value):

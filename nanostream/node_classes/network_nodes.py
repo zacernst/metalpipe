@@ -160,4 +160,5 @@ class HttpGetRequestPaginator(NanoNode):
         for i in self.requestor.responses():
             if self.finished:
                 break
+            logging.info('paginator:' + str(i))
             yield i

@@ -1,6 +1,6 @@
 """
 NanoStreamQueue module
-======================
+=====================
 
 These are queues that form the directed edges between nodes.
 """
@@ -10,6 +10,7 @@ import uuid
 import logging
 from nanostream.message.message import NanoStreamMessage
 from nanostream.message.batch import BatchStart, BatchEnd
+from nanostream import node
 
 
 class NanoStreamQueue:
@@ -42,24 +43,22 @@ class NanoStreamQueue:
         Messages are ``NanoStreamMessage`` objects; the payload of the
         message is message.message_content.
         '''
-        previous_message = previous_message
-        if previous_message is not None:
+        if isinstance(message, (node.NothingToSeeHere,)):
+            return
+        elif previous_message is not None:
             previous_message = previous_message.message_content
+        else:
+            previous_message = {}
+        if not isinstance(message, (dict,)):
+            message = {self.source_node.output_key: message}
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
-        if self.source_node.retain_input:
-            logging.info(self.source_node.name)
-            keys_values = previous_message.items()
-            for key, value in keys_values:
-                if key in message:
-                    logging.warn(
-                        'Key {key} is in the message. Skipping.'.format(
-                            key=key))
-                    continue
-                else:
-                    message[key] = value
+        logging.info(
+            '--->' + self.source_node.name + '--->' +
+            str(previous_message) + '--->' + str(previous_message.items()
+                if previous_message is not None else None))
+        for key, value in previous_message.items():
+            message[key] = value
 
-        if not isinstance(message, (NanoStreamMessage,)):
-            message_obj = NanoStreamMessage(message)
-        if message_obj.message_content is not None:
-            self.queue.put(message_obj)
+        message_obj = NanoStreamMessage(message)
+        self.queue.put(message_obj)

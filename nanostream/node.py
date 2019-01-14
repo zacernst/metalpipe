@@ -18,6 +18,7 @@ import sys
 import copy
 import functools
 import csv
+import re
 import io
 import yaml
 import types
@@ -79,6 +80,11 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+class NothingToSeeHere:
+    pass
+
 
 class Parameters:
 
@@ -156,8 +162,13 @@ class NanoNode:
         max_errors=1,
         name=None,
         input_message_keypath=None,
+        key=None,
         messages_received_counter=0,
         messages_sent_counter=0,
+        post_process_function=None,
+        post_process_keypath=None,
+        post_process_function_kwargs=None,
+        output_key='__value__',
             **kwargs):
         self.name = name or uuid.uuid4().hex
         self.input_mapping = input_mapping or {}
@@ -170,6 +181,7 @@ class NanoNode:
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
+        self.output_key = output_key
         self.keep_alive = keep_alive
         self.retain_input = retain_input  # Keep the input dictionary and send it downstream
         self.throttle = throttle
@@ -177,6 +189,7 @@ class NanoNode:
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
         self.runtime_attrs_destinations = runtime_attrs_destinations or {}
+        self.key = key
         self.messages_received_counter = messages_received_counter
         self.messages_sent_counter = messages_sent_counter
         self.instantiated_at = datetime.datetime.now()
@@ -184,8 +197,29 @@ class NanoNode:
         self.stopped_at = None
         self.finished = False
         self.error_counter = 0
-        self.max_errors = max_errors
         self.status = 'stopped'  # running, error, success
+        self.max_errors = max_errors
+        self.post_process_function_name = post_process_function  # Function to be run on result
+        self.post_process_function_kwargs = post_process_function_kwargs or {}
+
+        # Get post process function if one is named
+        if self.post_process_function_name is not None:
+            components = self.post_process_function_name.split('__')
+            if len(components) == 1:
+                module = None
+                function_name = components[0]
+                self.post_process_function = globals()[function_name]
+            else:
+                module = '.'.join(components[:-1])
+                function_name = components[-1]
+                module = importlib.import_module(module)
+                self.post_process_function = getattr(module, function_name)
+        else:
+            self.post_process_function = None
+
+        self.post_process_keypath = (
+            post_process_keypath.split('.') if post_process_keypath is not None
+            else None)
 
     def setup(self):
         '''
@@ -385,12 +419,24 @@ class NanoNode:
         '''
         pass
 
+    @property
+    def __message__(self):
+        return self.message if self.key is None else self.message[self.key]
+
     def _process_item(self, *args, **kwargs):
         '''
         This extra indirection is so that we have a place to insert some
         error handling later.
         '''
+        # Swap out the message if ``key`` is specified
         for out in self.process_item(*args, **kwargs):
+            # Apply post_process_function if it's defined
+            if self.post_process_function is not None:
+                set_value(
+                    out,
+                    self.post_process_keypath,
+                    self.post_process_function(
+                        get_value(out, self.post_process_keypath), **self.post_process_function_kwargs))
             yield out
 
     def processor(self):
@@ -604,15 +650,28 @@ class RandomSample(NanoNode):
     def process_item(self):
         yield self.message if random.random() <= self.sample else None
 
+
 class SubstituteRegex(NanoNode):
-    def __init__(self, match_regex, substitute_string, *args, **kwargs):
+    def __init__(self, match_regex=None, substitute_string=None, *args, **kwargs):
         self.match_regex = match_regex
         self.substitute_string = substitute_string
         self.regex_obj = re.compile(self.match_regex)
         super(SubstituteRegex, self).__init__(*args, **kwargs)
 
     def process_item(self):
-        pass
+        out = self.regex_obj.sub(self.substitute_string, self.message[self.key])
+        yield out
+
+
+class CSVToDictionaryList(NanoNode):
+    def __init__(self, **kwargs):
+        super(CSVToDictionaryList, self).__init__(**kwargs)
+
+    def process_item(self):
+        csv_file_obj = io.StringIO(self.__message__)
+        csv_reader = csv.DictReader(csv_file_obj)
+        output = [row for row in csv_reader]
+        yield output
 
 
 class SequenceEmitter(NanoNode):
@@ -621,11 +680,30 @@ class SequenceEmitter(NanoNode):
     ``max_sequences`` is ``None``.
     '''
 
-    def __init__(self, sequence, *args, max_sequences=1, output_key=None, **kwargs):
+    def __init__(self, sequence, *args, max_sequences=1, **kwargs):
         self.sequence = sequence
         self.max_sequences = max_sequences
-        self.output_key = output_key
         super(SequenceEmitter, self).__init__(*args, **kwargs)
+
+    def generator(self):
+        '''
+        Emit the sequence ``max_sequences`` times.
+        '''
+        type_dict = {
+            'int': int,
+            'integer': int,
+            'str': str,
+            'string': str,
+            'float': float,
+            'bool': to_bool}
+        counter = 0
+        while counter < self.max_sequences:
+            for item in self.sequence:
+                if isinstance(item, (dict,)) and 'value' in item and 'type' in item:
+                    item = type_dict[item['type'].lower()](item['value'])
+                item = {self.output_key: item}
+                yield item
+            counter += 1
 
     def process_item(self):
         '''
@@ -1135,6 +1213,26 @@ class Remapper(NanoNode):
 
     def process_item(self):
         out = remap_dictionary(self.message, self.remapping_dict)
+        yield out
+
+
+class BatchMessages(NanoNode):
+    def __init__(
+        self, batch_size=None, batch_list=None,
+            counter=0, timeout=5, **kwargs):
+        self.batch_size = batch_size
+        self.timeout = timeout
+        self.counter = 0
+        self.batch_list = batch_list or []
+        super(BatchMessages, self).__init__(**kwargs)
+
+    def process_item(self):
+        self.counter += 1
+        self.batch_list.append(self.__message__)
+        out = NothingToSeeHere()
+        if self.counter % self.batch_size == 0:
+            out = self.batch_list
+            self.batch_list = []
         yield out
 
 
