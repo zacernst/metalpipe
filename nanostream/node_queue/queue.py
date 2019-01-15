@@ -49,12 +49,12 @@ class NanoStreamQueue:
             previous_message = previous_message.message_content
         else:
             previous_message = {}
-        if not isinstance(message, (dict,)):
+        if self.source_node.output_key is not None:
             message = {self.source_node.output_key: message}
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
         logging.info(
-            '--->' + self.source_node.name + '--->' +
+            '--->' + self.source_node.name + '--->' + str(self.source_node.output_key) + '--->' +
             str(previous_message) + '--->' + str(previous_message.items()
                 if previous_message is not None else None))
         for key, value in previous_message.items():

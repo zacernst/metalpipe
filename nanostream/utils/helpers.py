@@ -10,8 +10,9 @@ import time
 import logging
 import datetime
 import pickle
-
+import hashlib
 import uuid
+
 
 def list_to_dict(some_list, list_of_keys):
     if len(some_list) != len(list_of_keys):
@@ -210,16 +211,47 @@ def aggregate_values(dictionary, target_path):
         aggregated_values.append(current_value)
     return aggregated_values
 
+
+class UberDict(dict):
+
+    def rget(self, value):
+        for i in meets_condition(self, lambda x: isinstance(x, (dict,))):
+            for _key, _value in i.items():
+                if _value == value:
+                    yield _key
+
+
+def iterate(thing, path=None, seen=None):
+    hashed_thing = hashlib.md5(pickle.dumps(thing)).hexdigest()
+    path = path or []
+    seen = seen or set([])
+    if hashed_thing not in seen:
+        if isinstance(thing, (list, tuple, dict,)):
+            yield thing
+        seen.add(hashed_thing)
+    if isinstance(thing, (dict,)):
+        for key, value in thing.items():
+            for item in iterate(value, path=path + [key]):
+                yield item
+    elif isinstance(thing, (list, tuple,)):
+        for index, item in enumerate(thing):
+            for thingie in iterate(item, path=path + [ListIndex(index)]):
+                yield thingie
+    else:
+        yield thing
+
+
+def meets_condition(thing, func):
+    for item in iterate(thing):
+        if func(item):
+            yield item
+
+
 if __name__ == '__main__':
     d = {
-        'foo': 'bar',
-        'bar': 'baz',
-        'baz': 'qux',
-        'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
-    import json
+        '1': '2',
+        '3': '4',
+        '5': '6',
+        '7': ['8', {'9': '10'}, '11', {'12': '13'}]}
 
-    print(d)
-    print(aggregate_values(d, tuple(['hi'])))
-
-    d = pickle.load(open('./2bc74c3dde084ffc808cdff79f3eb292.pickle', 'rb'))
-
+    d = UberDict(d)

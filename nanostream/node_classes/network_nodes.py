@@ -118,6 +118,7 @@ class HttpGetRequest(NanoNode):
         logging.info('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
         get_response = requests.get(formatted_endpoint)
         output = get_response.json() if self.json else get_response.text
+        logging.info(formatted_endpoint + ' GET RESPONSE: ' + str(output) + str(type(output)))
         yield output
 
 

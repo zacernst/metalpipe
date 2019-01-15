@@ -289,7 +289,7 @@ class CivisToCSV(NanoNode):
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
         tmp_filename = uuid.uuid4().hex
         fut = civis.io.civis_to_csv(tmp_filename, sql_query, self.database)
-        while not fut.done():
+        while fut._state == 'RUNNING':
             time.sleep(1)
         csv_file = open(tmp_filename, 'r')
         csv_reader = csv.DictReader(csv_file)

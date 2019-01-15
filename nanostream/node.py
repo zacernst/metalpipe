@@ -811,13 +811,18 @@ class Serializer(NanoNode):
     Takes an iterable thing as input, and successively yields its items.
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, values=False, *args, **kwargs):
+        self.values = values
         super(Serializer, self).__init__(**kwargs)
 
     def process_item(self):
-        print(self.message)
-        for item in self.message:
-            yield item
+        print('SERIALIZER: ' + str(self.__message__))
+        if self.values:
+            for item in self.__message__.values():
+                yield item
+        else:
+            for item in self.__message__:
+                yield item
 
 
 class AggregateValues(NanoNode):
@@ -958,6 +963,8 @@ class PrinterOfThings(NanoNode):
     def process_item(self):
         print(self.prepend + str(self.message))
         print('\n')
+        print('------------')
+        print('KEYS: ' + str(self.message.keys()))
         yield self.message
 
 
