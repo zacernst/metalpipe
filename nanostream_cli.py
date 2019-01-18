@@ -13,6 +13,7 @@ from nanostream.civis_nodes import *
 
 
 logging.basicConfig(level=logging.DEBUG)
+# logging.disable(logging.CRITICAL)
 
 
 def load_pipeline(config_file, module_paths=None):

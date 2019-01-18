@@ -157,7 +157,7 @@ class NanoNode:
         get_runtime_attrs_kwargs=None,
         runtime_attrs_destinations=None,
         input_mapping=None,
-        retain_input=False,
+        retain_input=True,
         throttle=0,
         keep_alive=True,
         max_errors=1,
@@ -397,7 +397,6 @@ class NanoNode:
                                     '{pipeline_name}.{node_name}.output_counter'.format(
                                         pipeline_name=self.pipeline_name,
                                         node_name=self.name))
-                            # logging.info('one_item: ' + str(one_item))
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
@@ -432,7 +431,7 @@ class NanoNode:
         # Swap out the message if ``key`` is specified
         for out in self.process_item(*args, **kwargs):
             if not isinstance(out, (dict,)) and self.output_key is None:
-                logging.info('Exception raised due to no key' + str(self.name))
+                logging.debug('Exception raised due to no key' + str(self.name))
                 raise Exception('Either message must be a dictionary or `output_key` must be specified. {name}'.format(self.name))
             # Apply post_process_function if it's defined
             if self.post_process_function is not None:
@@ -461,8 +460,6 @@ class NanoNode:
         self.status = 'running'
         try:
             for output, previous_message in self.start():
-                if self.retain_input:
-                    print(previous_message)
                 logging.debug('In NanoNode.stream.stream() --> ' + str(output))
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
@@ -781,8 +778,8 @@ class SimpleTransforms(NanoNode):
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('TRANSFORM')
-        logging.info(self.message)
+        logging.debug('TRANSFORM')
+        logging.debug(self.message)
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
@@ -793,7 +790,6 @@ class SimpleTransforms(NanoNode):
                 function = None
             function_kwargs = transform.get('function_kwargs', None)
             function_args = transform.get('function_args', None)
-            print(['REPLACE BY PATH', str(path), str(target_value), str(function), str(function_args), str(function_kwargs)])
 
             replace_by_path(
                 self.message,
@@ -802,7 +798,7 @@ class SimpleTransforms(NanoNode):
                 function=function,
                 function_args=function_args,
                 function_kwargs=function_kwargs)
-        logging.info(self.message)
+        logging.debug(self.message)
         yield self.message
 
 
@@ -816,7 +812,6 @@ class Serializer(NanoNode):
         super(Serializer, self).__init__(**kwargs)
 
     def process_item(self):
-        print('SERIALIZER: ' + str(self.__message__))
         if self.values:
             for item in self.__message__.values():
                 yield item
@@ -830,12 +825,13 @@ class AggregateValues(NanoNode):
     Does that.
     '''
 
-    def __init__(self, tail_path=None, **kwargs):
+    def __init__(self, values=False, tail_path=None, **kwargs):
         self.tail_path = tail_path
+        self.values = values
         super(AggregateValues, self).__init__(**kwargs)
 
     def process_item(self):
-        values = aggregate_values(self.__message__, self.tail_path)
+        values = aggregate_values(self.__message__, self.tail_path, values=self.values)
         yield values
 
 
@@ -956,15 +952,16 @@ class StreamMySQLTable(NanoNode):
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, prepend='printer: ', **kwargs):
+    def __init__(self, disable=False, prepend='printer: ', **kwargs):
+        self.disable = disable
         super(PrinterOfThings, self).__init__(**kwargs)
         logging.debug('Initialized printer...')
 
     def process_item(self):
-        print(self.prepend + str(self.message))
-        print('\n')
-        print('------------')
-        print('KEYS: ' + str(self.message.keys()))
+        if not self.disable:
+            print(self.prepend + str(self.message))
+            print('\n')
+            print('------------')
         yield self.message
 
 
@@ -1093,7 +1090,6 @@ class StreamingJoin(NanoNode):
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result
         # If not, add it to the `TimedDict`.
-        print(value_to_match)
         yield('hi')
 
 
@@ -1260,6 +1256,7 @@ class BatchMessages(NanoNode):
         out = NothingToSeeHere()
         if self.counter % self.batch_size == 0:
             out = self.batch_list
+            logging.debug('BatchMessages: ' + str(out))
             self.batch_list = []
         yield out
 

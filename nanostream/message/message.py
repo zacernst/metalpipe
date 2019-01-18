@@ -25,6 +25,7 @@ class NanoStreamMessage(object):
         self.message_content = message_content
         self.history = []
         self.time_created = time.time()
+        self.time_queued = None
         self.time_processed = None
         self.uuid = uuid.uuid4()
         self.accumulator = {}

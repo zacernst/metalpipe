@@ -8,9 +8,13 @@ These are queues that form the directed edges between nodes.
 import queue
 import uuid
 import logging
+import time
 from nanostream.message.message import NanoStreamMessage
 from nanostream.message.batch import BatchStart, BatchEnd
 from nanostream import node
+
+
+QUEUE_TIME_WINDOW = 100
 
 
 class NanoStreamQueue:
@@ -22,6 +26,7 @@ class NanoStreamQueue:
         self.name = name or uuid.uuid4().hex
         self.source_node = None
         self.target_node = None
+        self.queue_times = []  # Time messages spend in queue
 
 
     @property
@@ -31,6 +36,8 @@ class NanoStreamQueue:
     def get(self):
         try:
             message = self.queue.get(block=False)
+            self.queue_times.append(time.time() - message.time_queued)
+            self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
         except queue.Empty:
             message = None
         return message
@@ -53,12 +60,14 @@ class NanoStreamQueue:
             message = {self.source_node.output_key: message}
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
-        logging.info(
+        logging.debug(
             '--->' + self.source_node.name + '--->' + str(self.source_node.output_key) + '--->' +
             str(previous_message) + '--->' + str(previous_message.items()
                 if previous_message is not None else None))
-        for key, value in previous_message.items():
-            message[key] = value
+        if self.source_node.retain_input:
+            for key, value in previous_message.items():
+                message[key] = value
 
         message_obj = NanoStreamMessage(message)
+        message_obj.time_queued = time.time()
         self.queue.put(message_obj)

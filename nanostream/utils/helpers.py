@@ -125,7 +125,7 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (14 * (24 * 60 * 60 * 1000))))
+    return str(int(time.time() * 1000 - (4 * (24 * 60 * 60 * 1000))))
 
 
 class SafeMap(dict):
@@ -198,18 +198,13 @@ def replace_by_path(
         set_value(dictionary, path, target_value)
 
 
-def aggregate_values(dictionary, target_path):
+def aggregate_values(dictionary, target_path, values=False):
     aggregated_values = []
-    logging.info('Calling `aggregate_values`')
-    logging.info(str(dictionary))
-    with open(uuid.uuid4().hex + '.pickle', 'wb') as pfile:
-        pickle.dump(dictionary, pfile)
-    logging.info('TARGET PATH: ' + str(target_path))
     for path in matching_tail_paths(target_path, dictionary):
-        print('found path: ' + str(path))
         current_value = get_value(dictionary, path)
-        aggregated_values.append(current_value)
-    return aggregated_values
+        aggregated_values.append(list(current_value.values()) if values else current_value)
+    logging.debug('aggregated_values: ' + str(aggregated_values))
+    return aggregated_values if not values else aggregated_values[0]
 
 
 class UberDict(dict):
@@ -222,23 +217,26 @@ class UberDict(dict):
 
 
 def iterate(thing, path=None, seen=None):
-    hashed_thing = hashlib.md5(pickle.dumps(thing)).hexdigest()
+    # json.dumps(d, sort_keys=True)
+    hashed_thing = hash(str(thing))
+    # json.dumps(thing, sort_keys=True))
+    # hashlib.md5(pickle.dumps(thing)).hexdigest()
     path = path or []
     seen = seen or set([])
     if hashed_thing not in seen:
         if isinstance(thing, (list, tuple, dict,)):
             yield thing
         seen.add(hashed_thing)
-    if isinstance(thing, (dict,)):
-        for key, value in thing.items():
-            for item in iterate(value, path=path + [key]):
-                yield item
-    elif isinstance(thing, (list, tuple,)):
-        for index, item in enumerate(thing):
-            for thingie in iterate(item, path=path + [ListIndex(index)]):
-                yield thingie
-    else:
-        yield thing
+        if isinstance(thing, (dict,)):
+            for key, value in thing.items():
+                for item in iterate(value, path=path + [key], seen=seen):
+                    yield item
+        elif isinstance(thing, (list, tuple,)):
+            for index, item in enumerate(thing):
+                for thingie in iterate(item, path=path + [ListIndex(index)], seen=seen):
+                    yield thingie
+        else:
+            yield thing
 
 
 def meets_condition(thing, func):

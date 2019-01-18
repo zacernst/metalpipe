@@ -20,7 +20,7 @@ from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
 from nanostream.utils.helpers import remap_dictionary, SafeMap, list_to_dict
 from timed_dict.timed_dict import TimedDict
 
-MONITOR_FUTURES_SLEEP = 2
+MONITOR_FUTURES_SLEEP = 5
 
 class SendToCivis(NanoNode):
     def __init__(
@@ -79,12 +79,19 @@ class SendToCivis(NanoNode):
             logging.debug('Checking future objects...')
 
             table_lock = threading.Lock()
-            table_lock.acquire()
-            for table_id, future_dict in self.recorded_tables.items():
+            table_lock.acquire(blocking=True)
+
+            try:
+                table_items = list(self.recorded_tables.items())
+            except RuntimeError:
+                logging.warning('Runtime error in dictionary comprehension. Continuing.')
+                continue
+
+            for table_id, future_dict in table_items:
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
                 # logging.debug(future_obj.done())
-                logging.info('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
+                logging.debug('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
                 if future_obj._state != 'RUNNING':
                     if future_obj.failed():
                         logging.debug(future_obj.exception())
@@ -191,7 +198,7 @@ class EnsureCivisRedshiftTableExists(NanoNode):
                 schema_name=self.schema_name,
                 table_name=self.table_name,
                 columns_spec=columns_spec))
-        logging.info('Ensuring table exists -- ' + create_statement)
+        logging.debug('Ensuring table exists -- ' + create_statement)
         fut = civis.io.query_civis(create_statement, 'Greenpeace')
         result = fut.result()
 
@@ -287,10 +294,11 @@ class CivisToCSV(NanoNode):
         '''
         sql_query = self.sql.format_map(SafeMap(**self.query_dict))
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
-        tmp_filename = uuid.uuid4().hex
+        tmp_filename = uuid.uuid4().hex + '_tmp.csv'
         fut = civis.io.civis_to_csv(tmp_filename, sql_query, self.database)
         while fut._state == 'RUNNING':
             time.sleep(1)
+        logging.info('future state: ' + str(fut._state))
         csv_file = open(tmp_filename, 'r')
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
