@@ -12,7 +12,7 @@ API Documentation
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.utils.paginated_get_requests
+.. automodule:: nanostream.node_classes.network_nodes
    :members:
    :undoc-members:
    :show-inheritance:

@@ -73,6 +73,11 @@ def get_environment_variables(*args):
     return environment
 
 class bcolors:
+    '''
+    This class holds the values for the various colors that are used in the
+    tables that monitor the status of the nodes.
+    '''
+
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -84,6 +89,9 @@ class bcolors:
 
 
 class NothingToSeeHere:
+    '''
+    Vacuous class used as a no-op message type.
+    '''
     pass
 
 
@@ -409,6 +417,10 @@ class NanoNode:
                     self.finished = True
 
     def terminate_pipeline(self):
+        '''
+        This method can be called on any node in a pipeline, and it will cause
+        all of the nodes to terminate.
+        '''
         for node in self.all_connected():
             if not node.finished:
                 node.stopped_at = datetime.datetime.now()
@@ -416,11 +428,17 @@ class NanoNode:
 
     def process_item(self, *args, **kwargs):
         '''
+        Default no-op for nodes.
         '''
         pass
 
     @property
     def __message__(self):
+        '''
+        If the node has an ``output_key`` defined, return the corresponding
+        value in the message dictionary. If it does not, return the entire
+        message dictionary.
+        '''
         return self.message if self.key is None else self.message[self.key]
 
     def _process_item(self, *args, **kwargs):
@@ -432,7 +450,9 @@ class NanoNode:
         for out in self.process_item(*args, **kwargs):
             if not isinstance(out, (dict,)) and self.output_key is None:
                 logging.debug('Exception raised due to no key' + str(self.name))
-                raise Exception('Either message must be a dictionary or `output_key` must be specified. {name}'.format(self.name))
+                raise Exception(
+                    'Either message must be a dictionary or `output_key` '
+                    'must be specified. {name}'.format(self.name))
             # Apply post_process_function if it's defined
             if self.post_process_function is not None:
                 set_value(
@@ -477,6 +497,11 @@ class NanoNode:
 
     @property
     def time_running(self):
+        '''
+        Return the number of wall-clock seconds elapsed since the node was
+        started.
+        '''
+
         if self.status == 'stopped':
             return None
         elif self.status == 'running':
@@ -555,6 +580,11 @@ class NanoNode:
 
     @property
     def input_queue_size(self):
+        '''
+        Return the total number of items in all of the queues that are inputs
+        to this node.
+        '''
+
         return sum(
             [input_queue.queue.qsize() for input_queue in self.input_queue_list])
 
@@ -563,6 +593,10 @@ class NanoNode:
             node.finished = True
 
     def draw_pipeline(self):
+        '''
+        Draw the pipeline structure using graphviz.
+        '''
+
         dot = graphviz.Digraph()
         for node in self.all_connected():
             dot.node(node.name, node.name, shape='box')
@@ -572,6 +606,12 @@ class NanoNode:
         dot.render('test-output/round-table.gv', view=True)
 
     def thread_monitor(self):
+        '''
+        This function loops over all of the threads in the pipeline, checking
+        that they are either ``finished`` or ``running``. If any have had an
+        abnormal exit, terminate the entire pipeline.
+        '''
+
         counter = 0
         pipeline_finished = all(
             node.finished for node in self.all_connected())
@@ -645,6 +685,11 @@ class CounterOfThings(NanoNode):
                 assert False
 
 class RandomSample(NanoNode):
+    '''
+    Lets through only a random sample of incoming messages. Might be useful
+    for testing, or when only approximate results are necessary.
+    '''
+
     def __init__(self, sample=.1):
         self.sample = sample
 
