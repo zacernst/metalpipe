@@ -65,7 +65,6 @@ def load_pipeline(config_file, module_paths=None):
         node_config['options'].update({'name': node_name})
         node = node_class(**(node_config['options'] or {}))
         node_dict[node_name] = node
-
     for edge in pipeline_config_dict['edges']:
         node_dict[edge['source']] > node_dict[edge['target']]
     return node_dict

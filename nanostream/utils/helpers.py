@@ -40,8 +40,6 @@ def get_value(
         use_default_value=False, default_value=None):
 
     dictionary = copy.deepcopy(dictionary)
-    logging.debug(dictionary)
-    logging.debug(path)
     if isinstance(path, (str,)):
         path = path.split(delimiter)
     elif isinstance(path, (list, tuple,)):
@@ -108,9 +106,6 @@ def iterate_leaves(dictionary, keypath=None):
 def remap_dictionary(
     source_dictionary, target_dictionary,
         use_default_value=False, default_value=None):
-    logging.info('in remap_dictionary')
-    logging.info(str(source_dictionary.keys()))
-    logging.info(str(target_dictionary))
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
@@ -128,7 +123,7 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (4 * (24 * 60 * 60 * 1000))))
+    return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
 
 
 class SafeMap(dict):

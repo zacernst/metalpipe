@@ -1306,7 +1306,6 @@ class Remapper(NanoNode):
 
     def process_item(self):
         out = remap_dictionary(self.__message__, self.remapping_dict)
-        logging.info('remapper:' + str(self.__message__['contact']))
         yield out
 
 

@@ -112,6 +112,9 @@ class SendToCivis(NanoNode):
 
         # with tempfile.NamedTemporaryFile(mode='w') as tmp:
         row_list = []
+        if self.name == 'send_email_to_redshift':
+            logging.info('send_email_to_redshift')
+            logging.info(str(self.__message__))
         if len(self.__message__) == 0:
             yield self.message
 
@@ -142,6 +145,8 @@ class SendToCivis(NanoNode):
                     writer.writerow(row)
                     row_list.append(row)  # Will this get too slow?
                 tmp.flush()
+                logging.info('to redshift: ' + str(self.name))
+                logging.info(str(row_list))
                 if not self.dummy_run:
                     fut = civis.io.csv_to_civis(
                         tmp.name,
@@ -299,11 +304,15 @@ class CivisToCSV(NanoNode):
         while fut._state == 'RUNNING':
             time.sleep(1)
         logging.info('future state: ' + str(fut._state))
-        csv_file = open(tmp_filename, 'r')
-        csv_reader = csv.DictReader(csv_file)
-        for row in csv_reader:
-            yield row
-        os.remove(tmp_filename)
+        try:
+            csv_file = open(tmp_filename, 'r')
+            csv_reader = csv.DictReader(csv_file)
+            for row in csv_reader:
+                yield row
+            os.remove(tmp_filename)
+        except FileNotFoundError:
+            yield None
+
 
 
 if __name__ == '__main__':
