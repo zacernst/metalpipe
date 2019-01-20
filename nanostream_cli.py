@@ -57,6 +57,8 @@ def load_pipeline(config_file, module_paths=None):
     node_dict = {}
 
     for node_name, node_config in pipeline_config_dict['nodes'].items():
+        summary = node_config.get('summary', '')
+        node_config['summary'] = summary
         node_class = globals()[node_config['class']]
         if 'options' not in node_config or node_config['options'] is None:
             node_config['options'] = {}

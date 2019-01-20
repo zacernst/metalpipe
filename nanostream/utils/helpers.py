@@ -108,6 +108,9 @@ def iterate_leaves(dictionary, keypath=None):
 def remap_dictionary(
     source_dictionary, target_dictionary,
         use_default_value=False, default_value=None):
+    logging.info('in remap_dictionary')
+    logging.info(str(source_dictionary.keys()))
+    logging.info(str(target_dictionary))
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(

@@ -14,6 +14,7 @@ import importlib
 import logging
 import os
 import threading
+import pprint
 import sys
 import copy
 import functools
@@ -176,6 +177,7 @@ class NanoNode:
         messages_sent_counter=0,
         post_process_function=None,
         post_process_keypath=None,
+        summary='',
         post_process_function_kwargs=None,
         output_key=None,
             **kwargs):
@@ -210,6 +212,7 @@ class NanoNode:
         self.max_errors = max_errors
         self.post_process_function_name = post_process_function  # Function to be run on result
         self.post_process_function_kwargs = post_process_function_kwargs or {}
+        self.summary = summary
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -415,6 +418,14 @@ class NanoNode:
                     all(queue.empty for queue in self.input_queue_list))
                 if this_node_finished:
                     self.finished = True
+            self.cleanup()
+
+    def cleanup(self):
+        self.log_info('Cleanup called after shutdown.')
+
+    def log_info(self, message=''):
+        logging.info('{node_name}: {message}'.format(
+            node_name=self.name, message=message))
 
     def terminate_pipeline(self):
         '''
@@ -439,7 +450,15 @@ class NanoNode:
         value in the message dictionary. If it does not, return the entire
         message dictionary.
         '''
-        return self.message if self.key is None else self.message[self.key]
+        if self.key is None:
+            out = self.message
+        elif isinstance(self.key, (str,)):
+            out = self.message[self.key]
+        elif isinstance(self.key, (list,)):
+            out = get_value(self.message, self.key)
+        else:
+            raise Exception('Bad type for input key.')
+        return out
 
     def _process_item(self, *args, **kwargs):
         '''
@@ -997,16 +1016,21 @@ class StreamMySQLTable(NanoNode):
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, disable=False, prepend='printer: ', **kwargs):
+    def __init__(self, disable=False, pretty=False,
+            prepend='printer: ', **kwargs):
         self.disable = disable
+        self.pretty = pretty
         super(PrinterOfThings, self).__init__(**kwargs)
         logging.debug('Initialized printer...')
 
     def process_item(self):
-        if not self.disable:
-            print(self.prepend + str(self.message))
-            print('\n')
-            print('------------')
+        print(self.prepend)
+        if self.pretty:
+            pprint.pprint(self.message, indent=2)
+        else:
+            print(str(self.message))
+        print('\n')
+        print('------------')
         yield self.message
 
 
@@ -1281,7 +1305,8 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        out = remap_dictionary(self.message, self.remapping_dict)
+        out = remap_dictionary(self.__message__, self.remapping_dict)
+        logging.info('remapper:' + str(self.__message__['contact']))
         yield out
 
 
@@ -1304,6 +1329,9 @@ class BatchMessages(NanoNode):
             logging.debug('BatchMessages: ' + str(out))
             self.batch_list = []
         yield out
+
+    def cleanup(self):
+        yield self.batch_list
 
 
 if __name__ == '__main__':

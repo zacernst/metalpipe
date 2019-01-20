@@ -94,7 +94,7 @@ class SendToCivis(NanoNode):
                 logging.debug('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
                 if future_obj._state != 'RUNNING':
                     if future_obj.failed():
-                        logging.debug(future_obj.exception())
+                        logging.info(future_obj.exception())
                         self.status = 'error'  # Needs to be caught by Node class
                         run = False
             table_lock.release()
