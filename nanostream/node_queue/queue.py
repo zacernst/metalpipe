@@ -1,6 +1,6 @@
 """
 NanoStreamQueue module
-======================
+=====================
 
 These are queues that form the directed edges between nodes.
 """
@@ -8,8 +8,13 @@ These are queues that form the directed edges between nodes.
 import queue
 import uuid
 import logging
+import time
 from nanostream.message.message import NanoStreamMessage
 from nanostream.message.batch import BatchStart, BatchEnd
+from nanostream import node
+
+
+QUEUE_TIME_WINDOW = 100
 
 
 class NanoStreamQueue:
@@ -21,6 +26,7 @@ class NanoStreamQueue:
         self.name = name or uuid.uuid4().hex
         self.source_node = None
         self.target_node = None
+        self.queue_times = []  # Time messages spend in queue
 
 
     @property
@@ -30,6 +36,8 @@ class NanoStreamQueue:
     def get(self):
         try:
             message = self.queue.get(block=False)
+            self.queue_times.append(time.time() - message.time_queued)
+            self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
         except queue.Empty:
             message = None
         return message
@@ -42,24 +50,24 @@ class NanoStreamQueue:
         Messages are ``NanoStreamMessage`` objects; the payload of the
         message is message.message_content.
         '''
-        previous_message = previous_message
-        if previous_message is not None:
+        if isinstance(message, (node.NothingToSeeHere,)):
+            return
+        elif previous_message is not None:
             previous_message = previous_message.message_content
+        else:
+            previous_message = {}
+        if self.source_node.output_key is not None:
+            message = {self.source_node.output_key: message}
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
+        logging.debug(
+            '--->' + self.source_node.name + '--->' + str(self.source_node.output_key) + '--->' +
+            str(previous_message) + '--->' + str(previous_message.items()
+                if previous_message is not None else None))
         if self.source_node.retain_input:
-            logging.info(self.source_node.name)
-            keys_values = previous_message.items()
-            for key, value in keys_values:
-                if key in message:
-                    logging.warn(
-                        'Key {key} is in the message. Skipping.'.format(
-                            key=key))
-                    continue
-                else:
-                    message[key] = value
+            for key, value in previous_message.items():
+                message[key] = value
 
-        if not isinstance(message, (NanoStreamMessage,)):
-            message_obj = NanoStreamMessage(message)
-        if message_obj.message_content is not None:
-            self.queue.put(message_obj)
+        message_obj = NanoStreamMessage(message)
+        message_obj.time_queued = time.time()
+        self.queue.put(message_obj)

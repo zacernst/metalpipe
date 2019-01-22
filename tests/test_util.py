@@ -10,6 +10,8 @@ import nanostream.message.poison_pill as poison_pill
 from nanostream.utils.required_arguments import (
     MissingRequiredArgument, required_arguments)
 from nanostream.utils.set_attributes import set_kwarg_attributes
+from nanostream.utils.helpers import (
+    list_to_dict, to_bool, get_value, set_value, ListIndex)
 
 
 os.environ['PYTHONPATH'] = '.'
@@ -23,7 +25,6 @@ def test_test_sanity():
 @pytest.fixture(scope='function')  # By function because we terminate it
 def simple_timed_dict():
     '''
-    Fixture. Returns a `ConstantEmitter` that feeds into a `PrinterOfThings`
     '''
     d = TimedDict(timeout=3)
     return d
@@ -83,3 +84,72 @@ def test_kwarg_attributes_set_to_kwarg(foo_class_set_kwarg_attributes):
     assert hasattr(foo, 'bar')
     assert foo.foo == 'baz'
     assert foo.bar == 'qux'
+
+
+def test_list_to_dict():
+    some_list = ['foo', 'bar', 'baz', 'qux']
+    list_of_things = ['foo_thing', 'bar_thing', 'baz_thing', 'qux_thing']
+    out = list_to_dict(list_of_things, some_list)
+    correct = {
+        'foo': 'foo_thing',
+        'bar': 'bar_thing',
+        'baz': 'baz_thing',
+        'qux': 'qux_thing'}
+    assert out == correct
+
+
+def test_list_to_dict_error():
+    some_list = ['foo', 'bar', 'baz', 'qux', 'oops']
+    list_of_things = ['foo_thing', 'bar_thing', 'baz_thing', 'qux_thing']
+    with pytest.raises(expected_exception=Exception):
+        out = list_to_dict(list_of_things, some_list)
+
+
+def test_to_bool():
+    true_things = ['t', 'T', 'True', 'yes', 'YES', 1, True]
+    false_things = ['f', 'F', 'False', 'no', 'NO', 0, False]
+    assert all([to_bool(i) for i in true_things])
+    assert not any([to_bool(i) for i in false_things])
+
+
+def test_to_bool_error():
+    with pytest.raises(expected_exception=Exception):
+        to_bool(['blargh'])
+
+
+@pytest.fixture(scope='function')
+def some_dictionary():
+
+    dictionary = {
+        'outer_1': 1,
+        'outer_2': 2,
+        'outer_3': {'level_2': 3},
+        'outer_4': [4, 5, 6],
+        'outer_5': [{'inner_1': 'value_1'}, {'inner_2': 'value_2'}]}
+    return dictionary
+
+
+def test_get_value(some_dictionary):
+    assert get_value(some_dictionary, 'outer_1') == 1
+    assert get_value(some_dictionary, 'outer_3.level_2') == 3
+    assert get_value(some_dictionary, ['outer_3', 'level_2']) == 3
+
+
+def test_get_value_error(some_dictionary):
+    with pytest.raises(expected_exception=Exception):
+        get_value(some_dictionary, {'foo': 'bar'})
+
+
+def test_set_value_1(some_dictionary):
+    set_value(some_dictionary, ['outer_3', 'level_2'], 'hi')
+    assert some_dictionary['outer_3']['level_2'] == 'hi'
+
+
+def test_set_value_2(some_dictionary):
+    set_value(some_dictionary, ['outer_4', ListIndex(1)], 'hi')
+    assert some_dictionary['outer_4'][1] == 'hi'
+
+
+def test_set_value_error(some_dictionary):
+    with pytest.raises(expected_exception=Exception):
+        set_value(some_dictionary, ['outer_4', 'doesnotexist'], 'noway')

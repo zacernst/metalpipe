@@ -18,11 +18,14 @@ class NanoStreamMessage(object):
     """
 
     def __init__(self, message_content):
-        self.message_content = (
-            message_content if isinstance(message_content, (dict,))
-            else {'__value__': message_content})
+        if not isinstance(message_content, (dict,)):
+            raise Exception(
+                'Message content must be a dictionary or '
+                '`output_keypath` must be specified.')
+        self.message_content = message_content
         self.history = []
         self.time_created = time.time()
+        self.time_queued = None
         self.time_processed = None
         self.uuid = uuid.uuid4()
         self.accumulator = {}

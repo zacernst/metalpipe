@@ -13,13 +13,14 @@ import csv
 import sys
 import uuid
 import civis
+from civis.base import DONE
 
 from nanostream.node import *
 from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
-from nanostream.utils.helpers import remap_dictionary
+from nanostream.utils.helpers import remap_dictionary, SafeMap, list_to_dict
 from timed_dict.timed_dict import TimedDict
 
-MONITOR_FUTURES_SLEEP = 2
+MONITOR_FUTURES_SLEEP = 5
 
 class SendToCivis(NanoNode):
     def __init__(
@@ -76,16 +77,27 @@ class SendToCivis(NanoNode):
         run = True
         while run:
             logging.debug('Checking future objects...')
-            all_items = list(self.recorded_tables.items())
-            for table_id, future_dict in all_items:
+
+            table_lock = threading.Lock()
+            table_lock.acquire(blocking=True)
+
+            try:
+                table_items = list(self.recorded_tables.items())
+            except RuntimeError:
+                logging.warning('Runtime error in dictionary comprehension. Continuing.')
+                continue
+
+            for table_id, future_dict in table_items:
                 future_obj = future_dict['future']
                 row_list = future_dict['row_list']
-                logging.debug(future_obj.done())
-                if future_obj.done():
+                # logging.debug(future_obj.done())
+                logging.debug('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
+                if future_obj._state != 'RUNNING':
                     if future_obj.failed():
                         logging.debug(future_obj.exception())
                         self.status = 'error'  # Needs to be caught by Node class
                         run = False
+            table_lock.release()
             time.sleep(MONITOR_FUTURES_SLEEP)
         for table_id, future_dict in list(self.recorded_tables.items()):
             setattr(future_dict['future'], 'done', lambda: True)
@@ -100,47 +112,54 @@ class SendToCivis(NanoNode):
 
         # with tempfile.NamedTemporaryFile(mode='w') as tmp:
         row_list = []
-        with tempfile.NamedTemporaryFile(mode='w') as tmp:
-            if self.include_columns is not None:
-                fieldnames = self.include_columns
-            elif self.columns is not None:
-                fieldnames = self.columns
-            else:
-                fieldnames = sorted(list(self.message[0].keys()))
-            writer = csv.DictWriter(
-                tmp,
-                fieldnames=fieldnames,
-                extrasaction='ignore',
-                quoting=csv.QUOTE_ALL)
-            writer.writeheader()
-            row_list.append(fieldnames)
-            for row in self.message:
-                # Optionally remap row here
-                if self.remap is not None:
-                    row = remap_dictionary(row, self.remap)
-                #if 'is_contact' in row:  # Boom
-                #    row['is_contact'] = 'foobar'
-                writer.writerow(row)
-                row_list.append(row)  # Will this get too slow?
-            tmp.flush()
-            if not self.dummy_run:
-                fut = civis.io.csv_to_civis(
-                    tmp.name,
-                    self.database,
-                    self.full_table_name,
-                    max_errors=self.max_errors,
-                    headers=True,
-                    existing_table_rows=self.existing_table_rows)
-                table_id = uuid.uuid4()
-                self.recorded_tables[table_id.hex] = {
-                    'row_list': row_list,
-                    'future': fut}
-                if self.block:
-                    while not fut.done():
-                        time.sleep(1)
-            else:
-                logging.info('Not sending to Redshift due to `dummy run`')
-        yield self.message
+        if len(self.__message__) == 0:
+            yield self.message
+
+        else:
+            with tempfile.NamedTemporaryFile(mode='w') as tmp:
+                if self.include_columns is not None:
+                    fieldnames = self.include_columns
+                elif self.columns is not None:
+                    fieldnames = self.columns
+                else:
+                    try:
+                        fieldnames = sorted(list(self.__message__[0].keys()))
+                    except:
+                        import pdb; pdb.set_trace()
+                writer = csv.DictWriter(
+                    tmp,
+                    fieldnames=fieldnames,
+                    extrasaction='ignore',
+                    quoting=csv.QUOTE_ALL)
+                writer.writeheader()
+                row_list.append(fieldnames)
+                for row in self.__message__:
+                    # Optionally remap row here
+                    if self.remap is not None:
+                        row = remap_dictionary(row, self.remap)
+                    #if 'is_contact' in row:  # Boom
+                    #    row['is_contact'] = 'foobar'
+                    writer.writerow(row)
+                    row_list.append(row)  # Will this get too slow?
+                tmp.flush()
+                if not self.dummy_run:
+                    fut = civis.io.csv_to_civis(
+                        tmp.name,
+                        self.database,
+                        self.full_table_name,
+                        max_errors=self.max_errors,
+                        headers=True,
+                        existing_table_rows=self.existing_table_rows)
+                    table_id = uuid.uuid4()
+                    self.recorded_tables[table_id.hex] = {
+                        'row_list': row_list,
+                        'future': fut}
+                    if self.block:
+                        while not fut.done():
+                            time.sleep(1)
+                else:
+                    logging.info('Not sending to Redshift due to `dummy run`')
+            yield self.message
 
 
 class EnsureCivisRedshiftTableExists(NanoNode):
@@ -165,7 +184,8 @@ class EnsureCivisRedshiftTableExists(NanoNode):
         super(EnsureCivisRedshiftTableExists, self).__init__(**kwargs)
 
     def process_item(self):
-        yield self.message
+        for i in self.generator():
+            yield i
 
     def generator(self):
         columns_spec = ', '.join(
@@ -178,6 +198,7 @@ class EnsureCivisRedshiftTableExists(NanoNode):
                 schema_name=self.schema_name,
                 table_name=self.table_name,
                 columns_spec=columns_spec))
+        logging.debug('Ensuring table exists -- ' + create_statement)
         fut = civis.io.query_civis(create_statement, 'Greenpeace')
         result = fut.result()
 
@@ -198,18 +219,19 @@ class CivisSQLExecute(NanoNode):
         database=None,
         dummy_run=False,
         query_dict=None,
+        returned_columns=None,
             **kwargs):
         self.sql = sql
         self.query_dict = query_dict or {}
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.dummy_run = dummy_run
         self.database = database
-        self.full_table_name = '.'.join([self.schema, self.table_name])
+        self.returned_columns = returned_columns
 
         if self.civis_api_key is None and len(self.civis_api_key) == 0:
             raise Exception('Could not get a Civis API key.')
 
-        super(SendToCivis, self).__init__(*args, **kwargs)
+        super(CivisSQLExecute, self).__init__(**kwargs)
 
     def process_item(self):
         '''
@@ -225,7 +247,63 @@ class CivisSQLExecute(NanoNode):
         else:
             logging.info('Not querying Redshift due to `dummy run`')
             result = None
-        yield result
+        result_rows = result['result_rows']
+        if self.returned_columns is not None:
+            result_rows = [
+                list_to_dict(row, self.returned_columns) for row in result_rows]
+        else:
+            result_rows = result['result_rows']
+        yield {'result_rows': result_rows}
+
+
+class CivisToCSV(NanoNode):
+    '''
+    Execute a SQL statement and return the results via a CSV file.
+    '''
+
+    def __init__(
+        self,
+        *args,
+        sql=None,
+        civis_api_key=None,
+        civis_api_key_env_var='CIVIS_API_KEY',
+        database=None,
+        dummy_run=False,
+        query_dict=None,
+        returned_columns=None,
+        include_headers=True,
+        delimiter=',',
+            **kwargs):
+        self.sql = sql
+        self.query_dict = query_dict or {}
+        self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
+        self.dummy_run = dummy_run
+        self.database = database
+        self.returned_columns = returned_columns
+        self.include_headers = include_headers
+        self.delimiter = delimiter
+
+        if self.civis_api_key is None and len(self.civis_api_key) == 0:
+            raise Exception('Could not get a Civis API key.')
+
+        super(CivisToCSV, self).__init__(**kwargs)
+
+    def process_item(self):
+        '''
+        Execute a SQL statement and return the result.
+        '''
+        sql_query = self.sql.format_map(SafeMap(**self.query_dict))
+        sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
+        tmp_filename = uuid.uuid4().hex + '_tmp.csv'
+        fut = civis.io.civis_to_csv(tmp_filename, sql_query, self.database)
+        while fut._state == 'RUNNING':
+            time.sleep(1)
+        logging.info('future state: ' + str(fut._state))
+        csv_file = open(tmp_filename, 'r')
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            yield row
+        os.remove(tmp_filename)
 
 
 if __name__ == '__main__':

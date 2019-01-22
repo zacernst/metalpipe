@@ -18,6 +18,7 @@ import sys
 import copy
 import functools
 import csv
+import re
 import io
 import yaml
 import types
@@ -37,7 +38,8 @@ from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.data_structures import Row, MySQLTypeSystem
 from nanostream.utils import data_structures as ds
 from nanostream.utils.helpers import (
-    replace_by_path, remap_dictionary, set_value, get_value, to_bool)
+    replace_by_path, remap_dictionary, set_value, get_value, to_bool,
+    aggregate_values)
 
 from datadog import api, statsd, ThreadStats
 from datadog import initialize as initialize_datadog
@@ -71,6 +73,11 @@ def get_environment_variables(*args):
     return environment
 
 class bcolors:
+    '''
+    This class holds the values for the various colors that are used in the
+    tables that monitor the status of the nodes.
+    '''
+
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -79,6 +86,14 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+class NothingToSeeHere:
+    '''
+    Vacuous class used as a no-op message type.
+    '''
+    pass
+
 
 class Parameters:
 
@@ -150,14 +165,19 @@ class NanoNode:
         get_runtime_attrs_kwargs=None,
         runtime_attrs_destinations=None,
         input_mapping=None,
-        retain_input=False,
+        retain_input=True,
         throttle=0,
         keep_alive=True,
         max_errors=1,
         name=None,
         input_message_keypath=None,
+        key=None,
         messages_received_counter=0,
         messages_sent_counter=0,
+        post_process_function=None,
+        post_process_keypath=None,
+        post_process_function_kwargs=None,
+        output_key=None,
             **kwargs):
         self.name = name or uuid.uuid4().hex
         self.input_mapping = input_mapping or {}
@@ -170,6 +190,7 @@ class NanoNode:
         self.thread_dict = {}
         self.kill_thread = False
         self.accumulator = {}
+        self.output_key = output_key
         self.keep_alive = keep_alive
         self.retain_input = retain_input  # Keep the input dictionary and send it downstream
         self.throttle = throttle
@@ -177,6 +198,7 @@ class NanoNode:
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
         self.runtime_attrs_destinations = runtime_attrs_destinations or {}
+        self.key = key
         self.messages_received_counter = messages_received_counter
         self.messages_sent_counter = messages_sent_counter
         self.instantiated_at = datetime.datetime.now()
@@ -184,8 +206,29 @@ class NanoNode:
         self.stopped_at = None
         self.finished = False
         self.error_counter = 0
-        self.max_errors = max_errors
         self.status = 'stopped'  # running, error, success
+        self.max_errors = max_errors
+        self.post_process_function_name = post_process_function  # Function to be run on result
+        self.post_process_function_kwargs = post_process_function_kwargs or {}
+
+        # Get post process function if one is named
+        if self.post_process_function_name is not None:
+            components = self.post_process_function_name.split('__')
+            if len(components) == 1:
+                module = None
+                function_name = components[0]
+                self.post_process_function = globals()[function_name]
+            else:
+                module = '.'.join(components[:-1])
+                function_name = components[-1]
+                module = importlib.import_module(module)
+                self.post_process_function = getattr(module, function_name)
+        else:
+            self.post_process_function = None
+
+        self.post_process_keypath = (
+            post_process_keypath.split('.') if post_process_keypath is not None
+            else None)
 
     def setup(self):
         '''
@@ -362,7 +405,6 @@ class NanoNode:
                                     '{pipeline_name}.{node_name}.output_counter'.format(
                                         pipeline_name=self.pipeline_name,
                                         node_name=self.name))
-                            # logging.info('one_item: ' + str(one_item))
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
@@ -375,6 +417,10 @@ class NanoNode:
                     self.finished = True
 
     def terminate_pipeline(self):
+        '''
+        This method can be called on any node in a pipeline, and it will cause
+        all of the nodes to terminate.
+        '''
         for node in self.all_connected():
             if not node.finished:
                 node.stopped_at = datetime.datetime.now()
@@ -382,15 +428,38 @@ class NanoNode:
 
     def process_item(self, *args, **kwargs):
         '''
+        Default no-op for nodes.
         '''
         pass
+
+    @property
+    def __message__(self):
+        '''
+        If the node has an ``output_key`` defined, return the corresponding
+        value in the message dictionary. If it does not, return the entire
+        message dictionary.
+        '''
+        return self.message if self.key is None else self.message[self.key]
 
     def _process_item(self, *args, **kwargs):
         '''
         This extra indirection is so that we have a place to insert some
         error handling later.
         '''
+        # Swap out the message if ``key`` is specified
         for out in self.process_item(*args, **kwargs):
+            if not isinstance(out, (dict,)) and self.output_key is None:
+                logging.debug('Exception raised due to no key' + str(self.name))
+                raise Exception(
+                    'Either message must be a dictionary or `output_key` '
+                    'must be specified. {name}'.format(self.name))
+            # Apply post_process_function if it's defined
+            if self.post_process_function is not None:
+                set_value(
+                    out,
+                    self.post_process_keypath,
+                    self.post_process_function(
+                        get_value(out, self.post_process_keypath), **self.post_process_function_kwargs))
             yield out
 
     def processor(self):
@@ -411,8 +480,6 @@ class NanoNode:
         self.status = 'running'
         try:
             for output, previous_message in self.start():
-                if self.retain_input:
-                    print(previous_message)
                 logging.debug('In NanoNode.stream.stream() --> ' + str(output))
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
@@ -430,6 +497,11 @@ class NanoNode:
 
     @property
     def time_running(self):
+        '''
+        Return the number of wall-clock seconds elapsed since the node was
+        started.
+        '''
+
         if self.status == 'stopped':
             return None
         elif self.status == 'running':
@@ -508,6 +580,11 @@ class NanoNode:
 
     @property
     def input_queue_size(self):
+        '''
+        Return the total number of items in all of the queues that are inputs
+        to this node.
+        '''
+
         return sum(
             [input_queue.queue.qsize() for input_queue in self.input_queue_list])
 
@@ -516,6 +593,10 @@ class NanoNode:
             node.finished = True
 
     def draw_pipeline(self):
+        '''
+        Draw the pipeline structure using graphviz.
+        '''
+
         dot = graphviz.Digraph()
         for node in self.all_connected():
             dot.node(node.name, node.name, shape='box')
@@ -525,6 +606,12 @@ class NanoNode:
         dot.render('test-output/round-table.gv', view=True)
 
     def thread_monitor(self):
+        '''
+        This function loops over all of the threads in the pipeline, checking
+        that they are either ``finished`` or ``running``. If any have had an
+        abnormal exit, terminate the entire pipeline.
+        '''
+
         counter = 0
         pipeline_finished = all(
             node.finished for node in self.all_connected())
@@ -598,21 +685,39 @@ class CounterOfThings(NanoNode):
                 assert False
 
 class RandomSample(NanoNode):
+    '''
+    Lets through only a random sample of incoming messages. Might be useful
+    for testing, or when only approximate results are necessary.
+    '''
+
     def __init__(self, sample=.1):
         self.sample = sample
 
     def process_item(self):
         yield self.message if random.random() <= self.sample else None
 
+
 class SubstituteRegex(NanoNode):
-    def __init__(self, match_regex, substitute_string, *args, **kwargs):
+    def __init__(self, match_regex=None, substitute_string=None, *args, **kwargs):
         self.match_regex = match_regex
         self.substitute_string = substitute_string
         self.regex_obj = re.compile(self.match_regex)
         super(SubstituteRegex, self).__init__(*args, **kwargs)
 
     def process_item(self):
-        pass
+        out = self.regex_obj.sub(self.substitute_string, self.message[self.key])
+        yield out
+
+
+class CSVToDictionaryList(NanoNode):
+    def __init__(self, **kwargs):
+        super(CSVToDictionaryList, self).__init__(**kwargs)
+
+    def process_item(self):
+        csv_file_obj = io.StringIO(self.__message__)
+        csv_reader = csv.DictReader(csv_file_obj)
+        output = [row for row in csv_reader]
+        yield output
 
 
 class SequenceEmitter(NanoNode):
@@ -621,11 +726,30 @@ class SequenceEmitter(NanoNode):
     ``max_sequences`` is ``None``.
     '''
 
-    def __init__(self, sequence, *args, max_sequences=1, output_key=None, **kwargs):
+    def __init__(self, sequence, *args, max_sequences=1, **kwargs):
         self.sequence = sequence
         self.max_sequences = max_sequences
-        self.output_key = output_key
         super(SequenceEmitter, self).__init__(*args, **kwargs)
+
+    def generator(self):
+        '''
+        Emit the sequence ``max_sequences`` times.
+        '''
+        type_dict = {
+            'int': int,
+            'integer': int,
+            'str': str,
+            'string': str,
+            'float': float,
+            'bool': to_bool}
+        counter = 0
+        while counter < self.max_sequences:
+            for item in self.sequence:
+                if isinstance(item, (dict,)) and 'value' in item and 'type' in item:
+                    item = type_dict[item['type'].lower()](item['value'])
+                item = {self.output_key: item}
+                yield item
+            counter += 1
 
     def process_item(self):
         '''
@@ -682,8 +806,9 @@ class SimpleTransforms(NanoNode):
         for transform in self.transform_mapping:
             # Not doing the transforms; only loading the right functions here
             function_name = transform.get('target_function', None)
+            full_function_name = function_name
             if function_name is not None:
-                function_name.split('__')
+                components = function_name.split('__')
                 if len(components) == 1:
                     module = None
                     function_name = components[0]
@@ -693,17 +818,17 @@ class SimpleTransforms(NanoNode):
                     function_name = components[-1]
                     module = importlib.import_module(module)
                     function = getattr(module, function_name)
-                self.functions_dict[function_name] = function
+                self.functions_dict[full_function_name] = function
 
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('TRANSFORM')
-        logging.info(self.message)
+        logging.debug('TRANSFORM')
+        logging.debug(self.message)
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
-            function_name = transform.get('function', None)
+            function_name = transform.get('target_function', None)
             if function_name is not None:
                 function = self.functions_dict[function_name]
             else:
@@ -718,7 +843,7 @@ class SimpleTransforms(NanoNode):
                 function=function,
                 function_args=function_args,
                 function_kwargs=function_kwargs)
-        logging.info(self.message)
+        logging.debug(self.message)
         yield self.message
 
 
@@ -727,13 +852,33 @@ class Serializer(NanoNode):
     Takes an iterable thing as input, and successively yields its items.
     '''
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, values=False, *args, **kwargs):
+        self.values = values
         super(Serializer, self).__init__(**kwargs)
 
     def process_item(self):
-        print(self.message)
-        for item in self.message:
-            yield item
+        if self.values:
+            for item in self.__message__.values():
+                yield item
+        else:
+            for item in self.__message__:
+                yield item
+
+
+class AggregateValues(NanoNode):
+    '''
+    Does that.
+    '''
+
+    def __init__(self, values=False, tail_path=None, **kwargs):
+        self.tail_path = tail_path
+        self.values = values
+        super(AggregateValues, self).__init__(**kwargs)
+
+    def process_item(self):
+        values = aggregate_values(self.__message__, self.tail_path, values=self.values)
+        yield values
+
 
 class Filter(NanoNode):
     '''
@@ -852,13 +997,16 @@ class StreamMySQLTable(NanoNode):
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, prepend='printer: ', **kwargs):
+    def __init__(self, disable=False, prepend='printer: ', **kwargs):
+        self.disable = disable
         super(PrinterOfThings, self).__init__(**kwargs)
         logging.debug('Initialized printer...')
 
     def process_item(self):
-        print(self.prepend + str(self.message))
-        print('\n')
+        if not self.disable:
+            print(self.prepend + str(self.message))
+            print('\n')
+            print('------------')
         yield self.message
 
 
@@ -987,7 +1135,6 @@ class StreamingJoin(NanoNode):
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result
         # If not, add it to the `TimedDict`.
-        print(value_to_match)
         yield('hi')
 
 
@@ -1135,6 +1282,27 @@ class Remapper(NanoNode):
 
     def process_item(self):
         out = remap_dictionary(self.message, self.remapping_dict)
+        yield out
+
+
+class BatchMessages(NanoNode):
+    def __init__(
+        self, batch_size=None, batch_list=None,
+            counter=0, timeout=5, **kwargs):
+        self.batch_size = batch_size
+        self.timeout = timeout
+        self.counter = 0
+        self.batch_list = batch_list or []
+        super(BatchMessages, self).__init__(**kwargs)
+
+    def process_item(self):
+        self.counter += 1
+        self.batch_list.append(self.__message__)
+        out = NothingToSeeHere()
+        if self.counter % self.batch_size == 0:
+            out = self.batch_list
+            logging.debug('BatchMessages: ' + str(out))
+            self.batch_list = []
         yield out
 
 

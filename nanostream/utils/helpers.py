@@ -8,11 +8,23 @@ Misc. helper functions for other classes.
 import copy
 import time
 import logging
+import datetime
+import pickle
+import hashlib
+import uuid
+
+
+def list_to_dict(some_list, list_of_keys):
+    if len(some_list) != len(list_of_keys):
+        raise Exception('Length of list elements and key list must be equal.')
+    out = {
+        list_of_keys[index]: item for index, item in enumerate(some_list)}
+    return out
 
 
 def to_bool(thing):
     if isinstance(thing, (str,)):
-        value = len(thing) > 0 and thing[0].lower() in ['t', 'y']
+        return len(thing) > 0 and thing[0].lower() in ['t', 'y']
     elif isinstance(thing, (int, float,)):
         return thing > 0
     elif isinstance(thing, (bool,)):
@@ -51,15 +63,36 @@ def hi(*args, **kwargs):
     return 'hi'
 
 
+def pdb(*args, **kwargs):
+    import pdb; pdb.set_trace()
+
+
+def convert_date_format(date_string, source_format=None, target_format=None):
+    return datetime.datetime.strptime(
+        date_string, source_format).strftime(target_format)
+
+
+def engaging_networks_date(result, **kwargs):
+    '''
+    This is a very redundant function, but it's here mostly to test the
+    functionality of the ``post_process_function``.
+    '''
+    out = datetime.datetime.strptime(result[0]['date_modified'], '%Y-%m-%d')
+    out = out.strftime('%Y%m%d')
+    return out
+
+
 def set_value(dictionary, path, value):
     for step in path[:-1]:
         if not isinstance(step, (ListIndex,)):
             if step not in dictionary:
-                break
+                raise Exception('Path not found.')
             dictionary = dictionary[step]
         else:
             dictionary = dictionary[step.index]
-    dictionary[path[-1]] = value
+    dictionary[
+        path[-1] if not isinstance(path[-1], (ListIndex,))
+        else path[-1].index] = value
 
 
 def iterate_leaves(dictionary, keypath=None):
@@ -78,7 +111,12 @@ def remap_dictionary(
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
-            target_dictionary, path, get_value(source_dictionary, value, use_default_value=use_default_value, default_value=default_value))
+            target_dictionary, path,
+            get_value(
+                source_dictionary,
+                value,
+                use_default_value=use_default_value,
+                default_value=default_value))
     return target_dictionary
 
 
@@ -87,7 +125,7 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (14 * (24 * 60 * 60 * 1000))))
+    return str(int(time.time() * 1000 - (4 * (24 * 60 * 60 * 1000))))
 
 
 class SafeMap(dict):
@@ -128,6 +166,7 @@ def all_paths(thing, path=None):
 
 
 def matching_tail_paths(target_path, structure):
+    target_path = tuple(target_path)
     seen = set()
     for path in all_paths(structure):
         if path in seen:
@@ -139,7 +178,8 @@ def matching_tail_paths(target_path, structure):
             step for step in path if not isinstance(step, (ListIndex,)))
         if len(temp_list) < len(target_path):
             continue
-        if temp_list[-1 * len(target_path):] == target_path:
+        tail_of_path = temp_list[-1 * len(target_path):]
+        if tail_of_path == target_path:
             yield path
 
 
@@ -158,16 +198,58 @@ def replace_by_path(
         set_value(dictionary, path, target_value)
 
 
+def aggregate_values(dictionary, target_path, values=False):
+    aggregated_values = []
+    for path in matching_tail_paths(target_path, dictionary):
+        current_value = get_value(dictionary, path)
+        aggregated_values.append(list(current_value.values()) if values else current_value)
+    logging.debug('aggregated_values: ' + str(aggregated_values))
+    return aggregated_values if not values else aggregated_values[0]
+
+
+class UberDict(dict):
+
+    def rget(self, value):
+        for i in meets_condition(self, lambda x: isinstance(x, (dict,))):
+            for _key, _value in i.items():
+                if _value == value:
+                    yield _key
+
+
+def iterate(thing, path=None, seen=None):
+    # json.dumps(d, sort_keys=True)
+    hashed_thing = hash(str(thing))
+    # json.dumps(thing, sort_keys=True))
+    # hashlib.md5(pickle.dumps(thing)).hexdigest()
+    path = path or []
+    seen = seen or set([])
+    if hashed_thing not in seen:
+        if isinstance(thing, (list, tuple, dict,)):
+            yield thing
+        seen.add(hashed_thing)
+        if isinstance(thing, (dict,)):
+            for key, value in thing.items():
+                for item in iterate(value, path=path + [key], seen=seen):
+                    yield item
+        elif isinstance(thing, (list, tuple,)):
+            for index, item in enumerate(thing):
+                for thingie in iterate(item, path=path + [ListIndex(index)], seen=seen):
+                    yield thingie
+        else:
+            yield thing
+
+
+def meets_condition(thing, func):
+    for item in iterate(thing):
+        if func(item):
+            yield item
+
+
 if __name__ == '__main__':
     d = {
-        'foo': 'bar',
-        'bar': 'baz',
-        'baz': 'qux',
-        'foobar': [1, {'hi': 'there'}, 3, {'hi': 'dude'}]}
-    import json
-    d = json.load(open('./sample.json', 'r'))
+        '1': '2',
+        '3': '4',
+        '5': '6',
+        '7': ['8', {'9': '10'}, '11', {'12': '13'}]}
 
-    target_path = ('contacts', 'addedAt')
-
-    replace_by_path(d, target_path, target_value='hithere')
-    print(d)
+    d = UberDict(d)

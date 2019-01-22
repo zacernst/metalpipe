@@ -40,7 +40,6 @@ parse==1.8.4
 parse-type==0.4.2
 pathlib2==2.3.2
 pathtools==0.1.2
-pkg-resources==0.0.0
 pkginfo==1.4.2
 pluggy==0.7.1
 pockets==0.6.2
