@@ -17,6 +17,7 @@ import threading
 import pprint
 import sys
 import copy
+import random
 import functools
 import csv
 import re
@@ -466,20 +467,30 @@ class NanoNode:
         error handling later.
         '''
         # Swap out the message if ``key`` is specified
-        for out in self.process_item(*args, **kwargs):
-            if not isinstance(out, (dict,)) and self.output_key is None:
-                logging.debug('Exception raised due to no key' + str(self.name))
-                raise Exception(
-                    'Either message must be a dictionary or `output_key` '
-                    'must be specified. {name}'.format(self.name))
-            # Apply post_process_function if it's defined
-            if self.post_process_function is not None:
-                set_value(
-                    out,
-                    self.post_process_keypath,
-                    self.post_process_function(
-                        get_value(out, self.post_process_keypath), **self.post_process_function_kwargs))
-            yield out
+        try:
+            for out in self.process_item(*args, **kwargs):
+                if not isinstance(out, (dict,)) and self.output_key is None:
+                    logging.debug('Exception raised due to no key' + str(self.name))
+                    raise Exception(
+                        'Either message must be a dictionary or `output_key` '
+                        'must be specified. {name}'.format(self.name))
+                # Apply post_process_function if it's defined
+                if self.post_process_function is not None:
+                    set_value(
+                        out,
+                        self.post_process_keypath,
+                        self.post_process_function(
+                            get_value(
+                                out,
+                                self.post_process_keypath),
+                            **self.post_process_function_kwargs))
+                yield out
+        except Exception as err:
+            self.error_counter += 1
+            if self.error_counter > self.max_errors:
+                raise err
+            else:
+                logging.warning('oops')
 
     def processor(self):
         """
@@ -1026,11 +1037,14 @@ class PrinterOfThings(NanoNode):
     def process_item(self):
         print(self.prepend)
         if self.pretty:
-            pprint.pprint(self.message, indent=2)
+            pprint.pprint(self.__message__, indent=2)
         else:
-            print(str(self.message))
+            print(str(self.__message__))
         print('\n')
         print('------------')
+        if random.random() < -.1:
+            print('!!!!!!!!!!!')
+            assert False
         yield self.message
 
 
@@ -1039,23 +1053,17 @@ class ConstantEmitter(NanoNode):
     Send a thing every n seconds
     '''
 
-    @set_kwarg_attributes()
-    def __init__(self, thing=None, thing_key=None, delay=2, **kwargs):
-
+    def __init__(self, thing=None, delay=2, **kwargs):
+        self.thing = thing
+        self.delay = delay
         super(ConstantEmitter, self).__init__(**kwargs)
-        logging.debug('init constant emitter with constant {thing}'.format(
-            thing=str(thing)))
 
     def generator(self):
-        logging.debug('starting constant emitter')
-        while not self.finished:
+        while 1:
+            if random.random() < -.1:
+                assert False
             time.sleep(self.delay)
-            output = ({
-                self.thing_key: self.thing
-            } if self.thing_key is not None else self.thing)
-            logging.debug('output:' + str(output))
-            yield output
-            logging.debug('yielded output: {output}'.format(output=output))
+            yield self.thing
 
 
 class TimeWindowAccumulator(NanoNode):
@@ -1133,7 +1141,6 @@ class LocalDirectoryWatchdog(NanoNode):
                         time_in_interval = last_modified_time
                         logging.debug('time_in_interval: ' +
                                       str(time_in_interval))
-            logging.debug('done looping over filenames')
             if time_in_interval is not None:
                 self.latest_arrival = time_in_interval
 
@@ -1155,7 +1162,8 @@ class StreamingJoin(NanoNode):
     def process_item(self):
         '''
         '''
-        value_to_match = get_value(self.message, self.stream_paths[self.message_source.name])
+        value_to_match = get_value(
+            self.message, self.stream_paths[self.message_source.name])
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result
         # If not, add it to the `TimedDict`.
