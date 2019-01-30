@@ -38,7 +38,7 @@ class SendToCivis(NanoNode):
         table_name=None,
         columns=None,
         remap=None,
-        recorded_tables=TimedDict(timeout=300),
+        recorded_tables=TimedDict(timeout=30),
             **kwargs):
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.include_columns = include_columns
@@ -244,9 +244,10 @@ class CivisSQLExecute(NanoNode):
         '''
         sql_query = self.sql.format_map(SafeMap(**self.query_dict))
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
+        logging.info(sql_query)
         if not self.dummy_run:
             fut = civis.io.query_civis(
-                self.sql,
+                sql_query,
                 self.database)
             result = fut.result()
         else:
@@ -311,7 +312,8 @@ class CivisToCSV(NanoNode):
                 yield row
             os.remove(tmp_filename)
         except FileNotFoundError:
-            yield None
+            logging.info('FileNotFoundError in CivisToCSV')
+            yield NothingToSeeHere()
 
 
 

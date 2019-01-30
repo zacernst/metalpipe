@@ -170,7 +170,7 @@ class NanoNode:
         retain_input=True,
         throttle=0,
         keep_alive=True,
-        max_errors=1,
+        max_errors=0,
         name=None,
         input_message_keypath=None,
         key=None,
@@ -469,7 +469,7 @@ class NanoNode:
         # Swap out the message if ``key`` is specified
         try:
             for out in self.process_item(*args, **kwargs):
-                if not isinstance(out, (dict,)) and self.output_key is None:
+                if not isinstance(out, (dict, NothingToSeeHere)) and self.output_key is None:
                     logging.debug('Exception raised due to no key' + str(self.name))
                     raise Exception(
                         'Either message must be a dictionary or `output_key` '
@@ -488,6 +488,7 @@ class NanoNode:
         except Exception as err:
             self.error_counter += 1
             if self.error_counter > self.max_errors:
+                logging.warning('message: ' + str(err.args) + str(self.__class__.__name__))
                 raise err
             else:
                 logging.warning('oops')
@@ -592,10 +593,13 @@ class NanoNode:
             initialize_datadog(**datadog_options)
             datadog_stats.start()
 
+        run_id = uuid.uuid4().hex
         for node in self.all_connected():
             # Set the pipeline name on the attribute of each node
             node.pipeline_name = pipeline_name or uuid.uuid4().hex
             node.datadog_stats = datadog_stats
+            # Set a unique run_id
+            node.run_id = run_id
             # Tell each node whether they're logging to datadog
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
@@ -633,7 +637,7 @@ class NanoNode:
         for node in self.all_connected():
             for target_node in node.output_node_list:
                 dot.edge(node.name, target_node.name)
-        dot.render('test-output/round-table.gv', view=True)
+        dot.render('pipeline_drawing.gv', view=True)
 
     def thread_monitor(self):
         '''
@@ -713,6 +717,23 @@ class CounterOfThings(NanoNode):
             counter += 1
             if counter > 10:
                 assert False
+
+class InsertData(NanoNode):
+
+    def __init__(self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs):
+        self.overwrite = overwrite
+        self.overwrite_if_null = overwrite_if_null
+        self.value_dict = value_dict or {}
+        super(InsertData, self).__init__(**kwargs)
+
+    def process_item(self):
+        for key, value in self.value_dict.items():
+            if (key not in self.__message__) or overwrite or (
+                self.__message__.get(key) == None and
+                     iself.overwrite_if_null):
+                self.__message__[key] = value
+        yield self.__message__
+
 
 class RandomSample(NanoNode):
     '''

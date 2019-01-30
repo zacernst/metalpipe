@@ -14,12 +14,28 @@ import hashlib
 import uuid
 
 
+UNIX_EPOCH = datetime.datetime(month=1, year=1970, day=1)
+
+
 def list_to_dict(some_list, list_of_keys):
     if len(some_list) != len(list_of_keys):
         raise Exception('Length of list elements and key list must be equal.')
     out = {
         list_of_keys[index]: item for index, item in enumerate(some_list)}
     return out
+
+
+def timestamp_to_redshift(timestamp):
+    return timestamp.strftime('%b %d,%Y  %H:%M:%S')
+
+
+def milliseconds_epoch_to_datetime(milliseconds_epoch):
+    return UNIX_EPOCH + datetime.timedelta(seconds=(
+        int(milliseconds_epoch)/1000))
+
+
+def seconds_epoch_to_datetime(seconds_epoch):
+    return UNIX_EPOCH + datetime.timedelta(seconds=(seconds))
 
 
 def to_bool(thing):
@@ -126,6 +142,10 @@ def two_weeks_ago():
     return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
 
 
+def now_redshift():
+    return datetime.datetime.now().strftime('%b %d,%Y  %H:%M:%S')
+
+
 class SafeMap(dict):
     def __missing__(self, key):
         return '{' + str(key) + '}'
@@ -200,7 +220,8 @@ def aggregate_values(dictionary, target_path, values=False):
     aggregated_values = []
     for path in matching_tail_paths(target_path, dictionary):
         current_value = get_value(dictionary, path)
-        aggregated_values.append(list(current_value.values()) if values else current_value)
+        aggregated_values.append(
+            list(current_value.values()) if values else current_value)
     logging.debug('aggregated_values: ' + str(aggregated_values))
     return aggregated_values if not values else aggregated_values[0]
 
@@ -214,12 +235,13 @@ class UberDict(dict):
                     yield _key
 
 
-def iterate(thing, path=None, seen=None):
-    # json.dumps(d, sort_keys=True)
+def iterate(thing, path=None, seen=None, start_path=None):
+    '''
+    TODO: allow specification of `start_path` to speed this up.
+    '''
     hashed_thing = hash(str(thing))
-    # json.dumps(thing, sort_keys=True))
-    # hashlib.md5(pickle.dumps(thing)).hexdigest()
     path = path or []
+    start_path = start_path or []
     seen = seen or set([])
     if hashed_thing not in seen:
         if isinstance(thing, (list, tuple, dict,)):

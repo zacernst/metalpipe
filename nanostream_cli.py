@@ -65,16 +65,21 @@ def load_pipeline(config_file, module_paths=None):
         node_config['options'].update({'name': node_name})
         node = node_class(**(node_config['options'] or {}))
         node_dict[node_name] = node
-    for edge in pipeline_config_dict['edges']:
+    for edge in pipeline_config_dict.get('edges', []):
         node_dict[edge['source']] > node_dict[edge['target']]
+    for path in pipeline_config_dict.get('paths', []):
+        if len(path) < 2:
+            raise Exception('Path must have at least two elements')
+        for index, node in enumerate(path[:-1]):
+            source = node_dict[node]
+            target = node_dict[path[index + 1]]
+            source > target
     return node_dict
 
 
 def run_pipeline(config_file, module_paths=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
     list(node_dict.values())[0].global_start()
-    #time.sleep(10)
-    #list(node_dict.values())[0].terminate_pipeline()
 
 
 def draw_pipeline(config_file, module_paths=None):
