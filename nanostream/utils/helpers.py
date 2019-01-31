@@ -14,12 +14,35 @@ import hashlib
 import uuid
 
 
+UNIX_EPOCH = datetime.datetime(month=1, year=1970, day=1)
+
+
 def list_to_dict(some_list, list_of_keys):
     if len(some_list) != len(list_of_keys):
         raise Exception('Length of list elements and key list must be equal.')
     out = {
         list_of_keys[index]: item for index, item in enumerate(some_list)}
     return out
+
+
+def timestamp_to_redshift(timestamp):
+    if isinstance(timestamp, (str,)):
+        return timestamp
+    return timestamp.strftime('%b %d,%Y  %H:%M:%S')
+
+
+def milliseconds_epoch_to_datetime(milliseconds_epoch):
+    if isinstance(milliseconds_epoch, (datetime.datetime, str,)):
+        return milliseconds_epoch
+    logging.info('milliseconds_epoch_to_datetime: ' + str(milliseconds_epoch))
+    out = UNIX_EPOCH + datetime.timedelta(seconds=(
+        int(milliseconds_epoch)/1000))
+    logging.info('milliseconds_epoch_to_datetime output: ' + str(out))
+    return out
+
+
+def seconds_epoch_to_datetime(seconds_epoch):
+    return UNIX_EPOCH + datetime.timedelta(seconds=(seconds))
 
 
 def to_bool(thing):
@@ -39,9 +62,7 @@ def get_value(
     dictionary, path, delimiter='.',
         use_default_value=False, default_value=None):
 
-    dictionary = copy.deepcopy(dictionary)
-    logging.debug(dictionary)
-    logging.debug(path)
+    # dictionary = copy.deepcopy(dictionary)
     if isinstance(path, (str,)):
         path = path.split(delimiter)
     elif isinstance(path, (list, tuple,)):
@@ -125,7 +146,11 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (4 * (24 * 60 * 60 * 1000))))
+    return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
+
+
+def now_redshift():
+    return datetime.datetime.now().strftime('%b %d,%Y  %H:%M:%S')
 
 
 class SafeMap(dict):
@@ -147,9 +172,11 @@ class ListIndex:
         return self.index
 
 
-def all_paths(thing, path=None):
-
+def all_paths(thing, path=None, starting_path=None):
     path = path or tuple()
+    starting_path = starting_path or []
+    thing = get_value(thing, starting_path)
+
     if isinstance(thing, (dict,)):
         for key, value in thing.items():
             yield path + (key,)
@@ -165,33 +192,54 @@ def all_paths(thing, path=None):
         yield path
 
 
-def matching_tail_paths(target_path, structure):
+def last_element_list_index(path):
+    return isinstance(path[-1], (ListIndex,))
+
+def remove_list_indexes(path):
+    return tuple(step for step in path if not isinstance(step, (ListIndex,)))
+
+def matching_tail_paths(target_path, structure, starting_path=None):
     target_path = tuple(target_path)
+    if starting_path is not None:
+        starting_path = tuple(starting_path)
     seen = set()
-    for path in all_paths(structure):
+    for path in all_paths(structure, starting_path=starting_path):
         if path in seen:
             continue
-        if isinstance(path[-1], (ListIndex,)):
+        else:
+            seen.add(path)
+        if last_element_list_index(path):
             continue
-        seen.add(path)
-        temp_list = tuple(
-            step for step in path if not isinstance(step, (ListIndex,)))
+
+        temp_list = remove_list_indexes(path)
+
         if len(temp_list) < len(target_path):
             continue
         tail_of_path = temp_list[-1 * len(target_path):]
-        if tail_of_path == target_path:
-            yield path
+        if lists_equal(tail_of_path, target_path):
+            logging.info('tail path: ' + str(target_path) + ' ' + str(path))
+            yield (starting_path or tuple([])) + path
 
+def lists_equal(l1, l2):
+    return l1 == l2
+
+def nevermind(thing):
+    return thing
 
 def replace_by_path(
     dictionary, target_path, target_value=None, function=None,
-        function_args=None, function_kwargs=None):
+        function_args=None, function_kwargs=None, starting_path=None):
 
-    function = function or (lambda x: x)
+    function = function or nevermind
     function_args = function_args or tuple([])
     function_kwargs = function_kwargs or {}
-    dictionary_clone = copy.deepcopy(dictionary)
-    for path in matching_tail_paths(target_path, dictionary_clone):
+    #dictionary_clone = copy.deepcopy(dictionary)
+    dictionary_clone = dictionary
+    for path in matching_tail_paths(target_path, dictionary_clone, starting_path=starting_path):
+        #logging.info('replace_by_path log:')
+        #logging.info(str(dictionary))
+        #logging.info(str(target_path))
+        #logging.info('-----------------------------------')
         current_value = get_value(dictionary, path)
         target_value = target_value or function(
             current_value, *function_args, **function_kwargs)
@@ -202,7 +250,8 @@ def aggregate_values(dictionary, target_path, values=False):
     aggregated_values = []
     for path in matching_tail_paths(target_path, dictionary):
         current_value = get_value(dictionary, path)
-        aggregated_values.append(list(current_value.values()) if values else current_value)
+        aggregated_values.append(
+            list(current_value.values()) if values else current_value)
     logging.debug('aggregated_values: ' + str(aggregated_values))
     return aggregated_values if not values else aggregated_values[0]
 
@@ -216,12 +265,13 @@ class UberDict(dict):
                     yield _key
 
 
-def iterate(thing, path=None, seen=None):
-    # json.dumps(d, sort_keys=True)
+def iterate(thing, path=None, seen=None, start_path=None):
+    '''
+    TODO: allow specification of `start_path` to speed this up.
+    '''
     hashed_thing = hash(str(thing))
-    # json.dumps(thing, sort_keys=True))
-    # hashlib.md5(pickle.dumps(thing)).hexdigest()
     path = path or []
+    start_path = start_path or []
     seen = seen or set([])
     if hashed_thing not in seen:
         if isinstance(thing, (list, tuple, dict,)):
@@ -246,10 +296,11 @@ def meets_condition(thing, func):
 
 
 if __name__ == '__main__':
-    d = {
-        '1': '2',
-        '3': '4',
-        '5': '6',
-        '7': ['8', {'9': '10'}, '11', {'12': '13'}]}
+    import json
+    d = json.load(open('./sample.json', 'r'))
+    counter = 0
+    while counter < 100:
+        replace_by_path(d, ['vid'], target_value='hithere')
+        counter += 1
+        print(counter)
 
-    d = UberDict(d)

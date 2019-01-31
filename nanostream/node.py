@@ -14,8 +14,10 @@ import importlib
 import logging
 import os
 import threading
+import pprint
 import sys
 import copy
+import random
 import functools
 import csv
 import re
@@ -168,7 +170,7 @@ class NanoNode:
         retain_input=True,
         throttle=0,
         keep_alive=True,
-        max_errors=1,
+        max_errors=0,
         name=None,
         input_message_keypath=None,
         key=None,
@@ -176,6 +178,7 @@ class NanoNode:
         messages_sent_counter=0,
         post_process_function=None,
         post_process_keypath=None,
+        summary='',
         post_process_function_kwargs=None,
         output_key=None,
             **kwargs):
@@ -210,6 +213,7 @@ class NanoNode:
         self.max_errors = max_errors
         self.post_process_function_name = post_process_function  # Function to be run on result
         self.post_process_function_kwargs = post_process_function_kwargs or {}
+        self.summary = summary
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -415,6 +419,14 @@ class NanoNode:
                     all(queue.empty for queue in self.input_queue_list))
                 if this_node_finished:
                     self.finished = True
+            self.cleanup()
+
+    def cleanup(self):
+        self.log_info('Cleanup called after shutdown.')
+
+    def log_info(self, message=''):
+        logging.info('{node_name}: {message}'.format(
+            node_name=self.name, message=message))
 
     def terminate_pipeline(self):
         '''
@@ -439,7 +451,15 @@ class NanoNode:
         value in the message dictionary. If it does not, return the entire
         message dictionary.
         '''
-        return self.message if self.key is None else self.message[self.key]
+        if self.key is None:
+            out = self.message
+        elif isinstance(self.key, (str,)):
+            out = self.message[self.key]
+        elif isinstance(self.key, (list,)):
+            out = get_value(self.message, self.key)
+        else:
+            raise Exception('Bad type for input key.')
+        return out
 
     def _process_item(self, *args, **kwargs):
         '''
@@ -447,20 +467,31 @@ class NanoNode:
         error handling later.
         '''
         # Swap out the message if ``key`` is specified
-        for out in self.process_item(*args, **kwargs):
-            if not isinstance(out, (dict,)) and self.output_key is None:
-                logging.debug('Exception raised due to no key' + str(self.name))
-                raise Exception(
-                    'Either message must be a dictionary or `output_key` '
-                    'must be specified. {name}'.format(self.name))
-            # Apply post_process_function if it's defined
-            if self.post_process_function is not None:
-                set_value(
-                    out,
-                    self.post_process_keypath,
-                    self.post_process_function(
-                        get_value(out, self.post_process_keypath), **self.post_process_function_kwargs))
-            yield out
+        try:
+            for out in self.process_item(*args, **kwargs):
+                if not isinstance(out, (dict, NothingToSeeHere)) and self.output_key is None:
+                    logging.debug('Exception raised due to no key' + str(self.name))
+                    raise Exception(
+                        'Either message must be a dictionary or `output_key` '
+                        'must be specified. {name}'.format(self.name))
+                # Apply post_process_function if it's defined
+                if self.post_process_function is not None:
+                    set_value(
+                        out,
+                        self.post_process_keypath,
+                        self.post_process_function(
+                            get_value(
+                                out,
+                                self.post_process_keypath),
+                            **self.post_process_function_kwargs))
+                yield out
+        except Exception as err:
+            self.error_counter += 1
+            if self.error_counter > self.max_errors:
+                logging.warning('message: ' + str(err.args) + str(self.__class__.__name__) + str(self.name))
+                raise err
+            else:
+                logging.warning('oops')
 
     def processor(self):
         """
@@ -562,10 +593,13 @@ class NanoNode:
             initialize_datadog(**datadog_options)
             datadog_stats.start()
 
+        run_id = uuid.uuid4().hex
         for node in self.all_connected():
             # Set the pipeline name on the attribute of each node
             node.pipeline_name = pipeline_name or uuid.uuid4().hex
             node.datadog_stats = datadog_stats
+            # Set a unique run_id
+            node.run_id = run_id
             # Tell each node whether they're logging to datadog
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
@@ -603,7 +637,7 @@ class NanoNode:
         for node in self.all_connected():
             for target_node in node.output_node_list:
                 dot.edge(node.name, target_node.name)
-        dot.render('test-output/round-table.gv', view=True)
+        dot.render('pipeline_drawing.gv', view=True)
 
     def thread_monitor(self):
         '''
@@ -683,6 +717,23 @@ class CounterOfThings(NanoNode):
             counter += 1
             if counter > 10:
                 assert False
+
+class InsertData(NanoNode):
+
+    def __init__(self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs):
+        self.overwrite = overwrite
+        self.overwrite_if_null = overwrite_if_null
+        self.value_dict = value_dict or {}
+        super(InsertData, self).__init__(**kwargs)
+
+    def process_item(self):
+        for key, value in self.value_dict.items():
+            if (key not in self.__message__) or overwrite or (
+                self.__message__.get(key) == None and
+                     iself.overwrite_if_null):
+                self.__message__[key] = value
+        yield self.__message__
+
 
 class RandomSample(NanoNode):
     '''
@@ -796,12 +847,13 @@ class GetEnvironmentVariables(NanoNode):
 
 
 class SimpleTransforms(NanoNode):
-    def __init__(self, missing_keypath_action='ignore',
+    def __init__(self, missing_keypath_action='ignore', starting_path=None,
             transform_mapping=None, target_value=None, keypath=None, **kwargs):
 
         self.missing_keypath_action = missing_keypath_action
         self.transform_mapping = transform_mapping or []
         self.functions_dict = {}
+        self.starting_path = starting_path
 
         for transform in self.transform_mapping:
             # Not doing the transforms; only loading the right functions here
@@ -829,6 +881,7 @@ class SimpleTransforms(NanoNode):
             path = transform['path']
             target_value = transform.get('target_value', None)
             function_name = transform.get('target_function', None)
+            starting_path = transform.get('starting_path', None)
             if function_name is not None:
                 function = self.functions_dict[function_name]
             else:
@@ -842,6 +895,7 @@ class SimpleTransforms(NanoNode):
                 target_value=target_value,
                 function=function,
                 function_args=function_args,
+                starting_path=starting_path,
                 function_kwargs=function_kwargs)
         logging.debug(self.message)
         yield self.message
@@ -997,16 +1051,24 @@ class StreamMySQLTable(NanoNode):
 class PrinterOfThings(NanoNode):
 
     @set_kwarg_attributes()
-    def __init__(self, disable=False, prepend='printer: ', **kwargs):
+    def __init__(self, disable=False, pretty=False,
+            prepend='printer: ', **kwargs):
         self.disable = disable
+        self.pretty = pretty
         super(PrinterOfThings, self).__init__(**kwargs)
         logging.debug('Initialized printer...')
 
     def process_item(self):
-        if not self.disable:
-            print(self.prepend + str(self.message))
-            print('\n')
-            print('------------')
+        print(self.prepend)
+        if self.pretty:
+            pprint.pprint(self.__message__, indent=2)
+        else:
+            print(str(self.__message__))
+        print('\n')
+        print('------------')
+        if random.random() < -.1:
+            print('!!!!!!!!!!!')
+            assert False
         yield self.message
 
 
@@ -1015,23 +1077,17 @@ class ConstantEmitter(NanoNode):
     Send a thing every n seconds
     '''
 
-    @set_kwarg_attributes()
-    def __init__(self, thing=None, thing_key=None, delay=2, **kwargs):
-
+    def __init__(self, thing=None, delay=2, **kwargs):
+        self.thing = thing
+        self.delay = delay
         super(ConstantEmitter, self).__init__(**kwargs)
-        logging.debug('init constant emitter with constant {thing}'.format(
-            thing=str(thing)))
 
     def generator(self):
-        logging.debug('starting constant emitter')
-        while not self.finished:
+        while 1:
+            if random.random() < -.1:
+                assert False
             time.sleep(self.delay)
-            output = ({
-                self.thing_key: self.thing
-            } if self.thing_key is not None else self.thing)
-            logging.debug('output:' + str(output))
-            yield output
-            logging.debug('yielded output: {output}'.format(output=output))
+            yield self.thing
 
 
 class TimeWindowAccumulator(NanoNode):
@@ -1109,7 +1165,6 @@ class LocalDirectoryWatchdog(NanoNode):
                         time_in_interval = last_modified_time
                         logging.debug('time_in_interval: ' +
                                       str(time_in_interval))
-            logging.debug('done looping over filenames')
             if time_in_interval is not None:
                 self.latest_arrival = time_in_interval
 
@@ -1131,7 +1186,8 @@ class StreamingJoin(NanoNode):
     def process_item(self):
         '''
         '''
-        value_to_match = get_value(self.message, self.stream_paths[self.message_source.name])
+        value_to_match = get_value(
+            self.message, self.stream_paths[self.message_source.name])
         # Check for matches in all other streams.
         # If complete set of matches, yield the merged result
         # If not, add it to the `TimedDict`.
@@ -1281,7 +1337,7 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        out = remap_dictionary(self.message, self.remapping_dict)
+        out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
 
 
@@ -1304,6 +1360,9 @@ class BatchMessages(NanoNode):
             logging.debug('BatchMessages: ' + str(out))
             self.batch_list = []
         yield out
+
+    def cleanup(self):
+        yield self.batch_list
 
 
 if __name__ == '__main__':

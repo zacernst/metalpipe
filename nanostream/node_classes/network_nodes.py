@@ -8,6 +8,8 @@ Classes that deal with sending and receiving data across the interwebs.
 import requests
 import json
 import logging
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 from nanostream.node import NanoNode
 from nanostream.utils.helpers import SafeMap
@@ -52,13 +54,17 @@ class PaginatedHttpGetRequest:
         Generator. Yields each response until empty.
         '''
         offset_set = set()
+        session = requests.Session()
+        retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+
+        session.mount('http://', HTTPAdapter(max_retries=retries))
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(
             **get_request_parameters)
         logging.debug('paginator url: ' + endpoint_url)
-        out = requests.get(endpoint_url)
+        out = session.get(endpoint_url)
         # out = out.json()
         out = json.loads(out.text)
         offset = out.get(self.pagination_key, None)
@@ -78,10 +84,11 @@ class PaginatedHttpGetRequest:
                 **get_request_parameters)
             logging.debug('paginator url: ' + endpoint_url)
             try:
-                response = requests.get(endpoint_url)
+                response = session.get(endpoint_url)
                 out = response.json()
             except:
-                raise Exception(response.text)
+                logging.warning('Error parsing. Assuming this is the end of the responses.')
+                break
 
 
 class HttpGetRequest(NanoNode):
@@ -125,7 +132,10 @@ class HttpGetRequest(NanoNode):
             raise Exception()
         logging.debug('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
         get_response = requests.get(formatted_endpoint)
-        output = get_response.json() if self.json else get_response.text
+        try:
+            output = get_response.json()
+        except JSONDecodeError:
+            output = get_response.text
         logging.debug(formatted_endpoint + ' GET RESPONSE: ' + str(output) + str(type(output)))
         yield output
 
