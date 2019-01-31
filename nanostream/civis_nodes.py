@@ -35,14 +35,14 @@ class SendToCivis(NanoNode):
         dummy_run=False,
         block=False,
         max_errors=0,
-        table_name=None,
+        table=None,
         columns=None,
         remap=None,
         recorded_tables=TimedDict(timeout=30),
             **kwargs):
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.include_columns = include_columns
-        self.table_name = table_name
+        self.table = table
         self.dummy_run = dummy_run
         self.schema = schema
         self.max_errors = int(max_errors)
@@ -51,7 +51,7 @@ class SendToCivis(NanoNode):
         self.block = block
         self.remap = remap
         self.recorded_tables = recorded_tables
-        self.full_table_name = '.'.join([self.schema, self.table_name])
+        self.full_table_name = '.'.join([self.schema, self.table])
         self.columns = columns
 
         if self.civis_api_key is None and len(self.civis_api_key) == 0:
@@ -94,7 +94,7 @@ class SendToCivis(NanoNode):
                 logging.debug('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
                 if future_obj._state != 'RUNNING':
                     if future_obj.failed():
-                        logging.info(future_obj.exception())
+                        logging.info('failer in SendToCivis: ' + str(future_obj.exception()))
                         self.status = 'error'  # Needs to be caught by Node class
                         run = False
             table_lock.release()
@@ -172,19 +172,19 @@ class EnsureCivisRedshiftTableExists(NanoNode):
     def __init__(
         self,
         on_failure='exit',
-        table_name=None,
-        schema_name=None,
+        table=None,
+        schema=None,
         columns=None,
         block=True,
             **kwargs):
 
         self.on_failure = on_failure
-        self.table_name = table_name
-        self.schema_name = schema_name
+        self.table = table
+        self.schema = schema
         self.columns = columns
         self.block = block
         if any(i is None for i in [
-                on_failure, table_name, schema_name, columns]):
+                on_failure, table, schema, columns]):
             raise Exception('Missing parameters.')
         super(EnsureCivisRedshiftTableExists, self).__init__(**kwargs)
 
@@ -198,16 +198,60 @@ class EnsureCivisRedshiftTableExists(NanoNode):
                 column_name=column['column_name'],
                 column_type=column['column_type']) for column in self.columns])
         create_statement = (
-            '''CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" '''
+            '''CREATE TABLE IF NOT EXISTS "{schema}"."{table}" '''
             '''({columns_spec});'''.format(
-                schema_name=self.schema_name,
-                table_name=self.table_name,
+                schema=self.schema,
+                table=self.table,
                 columns_spec=columns_spec))
         logging.debug('Ensuring table exists -- ' + create_statement)
         fut = civis.io.query_civis(create_statement, 'Greenpeace')
         result = fut.result()
 
         yield columns_spec
+
+
+class FindValueInRedshiftColumn(NanoNode):
+
+    def __init__(
+        self,
+        on_failure='exit',
+        table=None,
+        database=None,
+        schema=None,
+        column=None,
+        choice='max',
+            **kwargs):
+
+        self.on_failure = on_failure
+        self.table = table
+        self.schema = schema
+        self.database = database
+        self.column = column
+        self.database = database
+        self.choice = choice.upper()
+
+        if self.choice not in ['MAX', 'MIN']:
+            raise Exception(
+                'The `choice` parameter must be one of [MAX, MIN].')
+        super(FindValueInRedshiftColumn, self).__init__(**kwargs)
+
+    def process_item(self):
+        for i in self.generator():
+            yield i
+
+    def generator(self):
+        create_statement = (
+            '''SELECT {choice}({column}) FROM {schema}.{table};'''.format(
+                schema=self.schema,
+                table=self.table,
+                column=self.column,
+                choice=self.choice.upper()))
+        fut = civis.io.query_civis(create_statement, self.database)
+        result = fut.result()
+        value = (
+            result['result_rows'][0][0]
+            if len(result['result_rows']) > 0 and len(result['result_rows'][0]) > 0 else None)
+        yield value
 
 
 class CivisSQLExecute(NanoNode):
@@ -302,9 +346,10 @@ class CivisToCSV(NanoNode):
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
         tmp_filename = uuid.uuid4().hex + '_tmp.csv'
         fut = civis.io.civis_to_csv(tmp_filename, sql_query, self.database)
-        while fut._state == 'RUNNING':
-            time.sleep(1)
-        logging.info('future state: ' + str(fut._state))
+        fut.result()
+        #while fut._result == 'RUNNING':
+        #    time.sleep(1)
+        #logging.info('future state: ' + str(fut._state))
         try:
             csv_file = open(tmp_filename, 'r')
             csv_reader = csv.DictReader(csv_file)
@@ -314,7 +359,6 @@ class CivisToCSV(NanoNode):
         except FileNotFoundError:
             logging.info('FileNotFoundError in CivisToCSV')
             yield NothingToSeeHere()
-
 
 
 if __name__ == '__main__':

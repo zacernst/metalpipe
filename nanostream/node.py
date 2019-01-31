@@ -488,7 +488,7 @@ class NanoNode:
         except Exception as err:
             self.error_counter += 1
             if self.error_counter > self.max_errors:
-                logging.warning('message: ' + str(err.args) + str(self.__class__.__name__))
+                logging.warning('message: ' + str(err.args) + str(self.__class__.__name__) + str(self.name))
                 raise err
             else:
                 logging.warning('oops')
@@ -847,12 +847,13 @@ class GetEnvironmentVariables(NanoNode):
 
 
 class SimpleTransforms(NanoNode):
-    def __init__(self, missing_keypath_action='ignore',
+    def __init__(self, missing_keypath_action='ignore', starting_path=None,
             transform_mapping=None, target_value=None, keypath=None, **kwargs):
 
         self.missing_keypath_action = missing_keypath_action
         self.transform_mapping = transform_mapping or []
         self.functions_dict = {}
+        self.starting_path = starting_path
 
         for transform in self.transform_mapping:
             # Not doing the transforms; only loading the right functions here
@@ -880,6 +881,7 @@ class SimpleTransforms(NanoNode):
             path = transform['path']
             target_value = transform.get('target_value', None)
             function_name = transform.get('target_function', None)
+            starting_path = transform.get('starting_path', None)
             if function_name is not None:
                 function = self.functions_dict[function_name]
             else:
@@ -893,6 +895,7 @@ class SimpleTransforms(NanoNode):
                 target_value=target_value,
                 function=function,
                 function_args=function_args,
+                starting_path=starting_path,
                 function_kwargs=function_kwargs)
         logging.debug(self.message)
         yield self.message
