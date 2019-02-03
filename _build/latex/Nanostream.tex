@@ -53,7 +53,7 @@
 
 
 \title{Nanostream Documentation}
-\date{Oct 12, 2018}
+\date{Feb 03, 2019}
 \release{0.1}
 \author{Zachary Ernst}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -73,107 +73,321 @@
 \chapter{Overview}
 \label{\detokenize{overview:overview}}\label{\detokenize{overview::doc}}
 
-\section{What is it? Why is it?}
-\label{\detokenize{overview:what-is-it-why-is-it}}
-We love stream processing. It’s a great model for lots of work,
-especially ETL. There are excellent stream processing tools such as
-Spark, Flink, and Storm. They’re designed for handling huge amounts of
-Big Data(tm). But they carry a lot of overhead because they’re Big
-Data(tm) tools.
+\section{Why?}
+\label{\detokenize{overview:why}}
+Tolstoy said that every happy family is the same, but every unhappy family is
+unhappy in its own way. ETL pipelines are unhappy families.
 
-Most of our data problems are not Big Data(tm). They’re also not Small
-Data. They’re Medium Data \textendash{} that is, data that’s big enough to require
-some planning, but not so big as to justify the infrastructure and
-complexity overhead that come with Spark and its cousins.
+Why are they so unhappy? Every engineer who does more than one project involving
+ETL eventually goes through the same stages of ETL grief. First, they thing it’s
+not so bad. Then they do another project and discover that they have to rewrite
+very similar code. Then they think, “Surely, I could have just written a few
+library functions and reused that code, saving lots of time.” But when they try
+to do this, they discover that although their ETL projects are very similar,
+they are just different enough that their code isn’t reusable. So they resign
+themselves to rewriting code over and over again. The code is unreliable,
+difficult to maintain, and usually poorly tested and documented because it’s
+such a pain to write in the first place. The task of writing ETL pipelines is
+so lousy that engineering best practices tend to go out the window because
+the engineer has beter things to do.
 
-NanoStream lets you deploy a streaming application with no overhead.
-It’s entirely self-contained, and runs on a single core (which, let’s
-face is, is more than enough processing power for 99\% of your work).
-NanoStream sets up each step in your pipeline in its own thread, so
-there are no bottlenecks. It monitors all the threads and queues, and
-logs any problems. If the data comes in faster than NanoStream can
-handle, it applies back-pressure to the data stream. But in reality,
-because NanoStream doesn’t have any of the overhead of distributed
-systems, it’s pretty fast.
+NanoStream is an ETL framework written in Python that tries to thread the ETL
+needle. It is opinionated about how ETL pipelines ought to be written; it
+provides a number of highly reusable and well-documented modules that are
+useful in ETL tasks; and it has just enough flexibility to allow an engineer
+to accommodate the strange idiosyncratic requirements of real-world ETL tasks.
+
+The overall idea of NanoStream is simple. It is a streaming framework that
+resembles stream-processing patterns such as those found in Spark, Storm, and
+others. But unlike those tools, it requires no special infrastructure or
+server because it runs entirely within one process. It also differs from
+high-powered stream processing tools in that it is designed from the ground
+up with ETL in mind.
+
+Despite its superficial similarity to Spark and Storm, it is not intended to
+compete with them in any way. NanoStream is not suitable for huge analytic
+pipelines that require massive amounts of computation. You won’t want to
+analyze the Twitter firehose with NanoStream.
 
 
-\subsection{Using NanoStream}
-\label{\detokenize{overview:using-nanostream}}
-You use NanoStream by specifying one or more \sphinxcode{\sphinxupquote{NanoNode}} objects,
-linking them together into a pipeline (an acyclic directed graph), and
-starting them. Several \sphinxcode{\sphinxupquote{NanoNode}} classes are provided, and it’s easy
-to create new ones. Here are some types of examples:
+\section{NanoStream pipelines}
+\label{\detokenize{overview:nanostream-pipelines}}
+An ETL pipeline in NanoStream is a series of nodes connected by queues. Data
+is generated or processed in each node, and the output is placed on a queue to
+be picked up by downstream nodes.
+
+\begin{figure}[htbp]
+\centering
+\capstart
+
+\noindent\sphinxincludegraphics[width=600\sphinxpxdimen]{{30k_view}.png}
+\caption{Very high-level view of a NanoStream pipeline}\label{\detokenize{overview:id1}}\end{figure}
+
+For the sake of convenience, we distinguish between three types of nodes
+(although there’s no real difference in their use or implementation):
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+Source nodes. These are nodes that generate data and send it to the rest
+of the pipeline. They might, for example, read data from an external
+data source such as an API endpoint or a database.
+
+\item {} 
+Worker nodes. The workers process data by picking up messages from their
+incoming queues. Their output is placed onto any number of outgoing queues
+to be further processed by downstream nodes.
+
+\item {} 
+Sink nodes. These are worker nodes with no outgoing queue. They will
+typically perform tasks such as inserting data into a database or generating
+statistics to be sent somewhere outside the pipeline.
+
+\end{enumerate}
+
+All pipelines are implemented in pure Python (version \textgreater{}=3.5). Each node is
+instantiated from a class that inherits from the \sphinxcode{\sphinxupquote{NanoNode}} class. Queues
+are never instantiated directly by the user; they are created automatically
+whenever two nodes are linked together.
+
+There is a large (and growing) number of specialized \sphinxcode{\sphinxupquote{NanoNode}} subclasses,
+each geared toward a specific task. Such tasks include:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+Querying a table in a SQL database and sending the results downstream.
+
+\item {} 
+Making a request to a REST API, paging through the responses until there are
+no more results.
+
+\item {} 
+Ingesting individual messages from an upstream node and batching them
+together into a single message, or doing the reverse.
+
+\item {} 
+Reading environment variables.
+
+\item {} 
+Watching a directory for new files and sending the names of those files
+down the pipeline when they appear.
+
+\item {} 
+Filtering messages, letting them through the pipeline only if a particular
+test is passed.
+
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\capstart
+
+\noindent\sphinxincludegraphics[width=600\sphinxpxdimen]{{10k_view}.png}
+\caption{Somewhat high-level view of a NanoStream pipeline}\label{\detokenize{overview:id2}}\end{figure}
+
+All results and messages passed among the nodes must be dictionary-like
+objects. By default, messages hold the entire history of all the earlier
+messages that led to its being generated.
+
+The goal is for NanoStream to be fully “batteries included”, with built-in
+\sphinxcode{\sphinxupquote{NanoNode}} subclasses for every necessary ETL task. But because this is
+actually impossible, we try to make it easy to roll your own node classes.
 
 
 \section{Using built-in \sphinxstyleliteralintitle{\sphinxupquote{NanoNode}} classes}
 \label{\detokenize{overview:using-built-in-nanonode-classes}}
-Let’s say you want to watch a directory for new CSV files, read them
-when they appear, iterate over all the rows, and print those rows as
-they arrive. You can do so by importing a few classes, instantiating
-them, and running them in a pipeline like so:
+The most straightforward use of NanoStream actually requires no coding, per se.
+You write a simple configuration file in YAML, and run the pipeline with the
+built-in command line tool, \sphinxcode{\sphinxupquote{nanostream\_cli}}. The tool reads the
+configuration file, instantiates the pipeline, and runs it.
+
+The configuration file has two parts. The first specifies the nodes; the second
+specifies how they are linked together. Here is an example of a very simple
+configuration file:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{c+c1}{\PYGZsh{} Instantiate the classes:}
-\PYG{n}{watchdog} \PYG{o}{=} \PYG{n}{LocalDirectoryWatchdog}\PYG{p}{(}\PYG{n}{directory}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{./data\PYGZus{}directory}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
-\PYG{n}{file\PYGZus{}reader} \PYG{o}{=} \PYG{n}{LocalFileReader}\PYG{p}{(}\PYG{n}{serialize}\PYG{o}{=}\PYG{k+kc}{False}\PYG{p}{)}
-\PYG{n}{csv\PYGZus{}reader} \PYG{o}{=} \PYG{n}{CSVReader}\PYG{p}{(}\PYG{p}{)}
-\PYG{n}{printer} \PYG{o}{=} \PYG{n}{PrinterOfThings}\PYG{p}{(}\PYG{p}{)}
+\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}
+\PYG{n}{pipeline\PYGZus{}name}\PYG{p}{:} \PYG{n}{Sample} \PYG{n}{NanoStream} \PYG{n}{configuration}
+\PYG{n}{pipeline\PYGZus{}description}\PYG{p}{:} \PYG{n}{Reads} \PYG{n}{some} \PYG{n}{environment} \PYG{n}{variables} \PYG{o+ow}{and} \PYG{n}{prints} \PYG{n}{them}
 
-\PYG{c+c1}{\PYGZsh{} Use \PYGZdq{}\PYGZgt{}\PYGZdq{} to create connections between the nodes}
-\PYG{n}{watchdog} \PYG{o}{\PYGZgt{}} \PYG{n}{file\PYGZus{}reader} \PYG{o}{\PYGZgt{}} \PYG{n}{csv\PYGZus{}reader} \PYG{o}{\PYGZgt{}} \PYG{n}{printer}
+\PYG{n}{nodes}\PYG{p}{:}
+  \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}\PYG{p}{:}
+    \PYG{n}{class}\PYG{p}{:} \PYG{n}{GetEnvironmentVariables}
+    \PYG{n}{summary}\PYG{p}{:} \PYG{n}{Gets} \PYG{n+nb}{all} \PYG{n}{the} \PYG{n}{necessary} \PYG{n}{environment} \PYG{n}{variables}
+    \PYG{n}{options}\PYG{p}{:}
+      \PYG{n}{environment\PYGZus{}variables}\PYG{p}{:}
+        \PYG{o}{\PYGZhy{}} \PYG{n}{API\PYGZus{}KEY}
+        \PYG{o}{\PYGZhy{}} \PYG{n}{API\PYGZus{}USER\PYGZus{}ID}
 
-\PYG{c+c1}{\PYGZsh{} Start it}
-\PYG{c+c1}{\PYGZsh{} You can run the {}`global\PYGZus{}start{}` method on any of the connected nodes;}
-\PYG{c+c1}{\PYGZsh{} it will automatically start all of them.}
-\PYG{n}{watchdog}\PYG{o}{.}\PYG{n}{global\PYGZus{}start}\PYG{p}{(}\PYG{p}{)}
+  \PYG{n}{print\PYGZus{}variables}\PYG{p}{:}
+    \PYG{n}{class}\PYG{p}{:} \PYG{n}{PrinterOfThings}
+    \PYG{n}{summary}\PYG{p}{:} \PYG{n}{Prints} \PYG{n}{the} \PYG{n}{environment} \PYG{n}{variables} \PYG{n}{to} \PYG{n}{the} \PYG{n}{terminal}
+    \PYG{n}{options}\PYG{p}{:}
+      \PYG{n}{prepend}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Environment variables: }\PYG{l+s+s2}{\PYGZdq{}}
+
+\PYG{n}{paths}\PYG{p}{:}
+  \PYG{o}{\PYGZhy{}}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{print\PYGZus{}variables}
 \end{sphinxVerbatim}
 
-The result will be a streaming pipeline that monitors
-\sphinxcode{\sphinxupquote{data\_directory/}}, printing the rows of any CSV file that appears
-there (or is modified).
+Let’s look at this config file one part at a time.
+
+Other than the optional \sphinxcode{\sphinxupquote{pipeline\_name}} and \sphinxcode{\sphinxupquote{pipeline\_description}} fields,
+there are two top-level keys: \sphinxcode{\sphinxupquote{nodes}} and \sphinxcode{\sphinxupquote{paths}}. Each entry in the
+\sphinxcode{\sphinxupquote{node}} section corresponds to a specific node in the pipeline. Their
+top-level key is whatever name you would like to use to refer to that node \textendash{}
+it should be something short, descriptive, and Python-y. We recommend naming
+these as simple verb-noun phrases such as \sphinxcode{\sphinxupquote{get\_environment\_variable}},
+\sphinxcode{\sphinxupquote{print\_variables}}, \sphinxcode{\sphinxupquote{light\_candle}}, \sphinxcode{\sphinxupquote{curse\_darkness}}, etc.
+
+There are three keys under each node configuration: \sphinxcode{\sphinxupquote{class}}, \sphinxcode{\sphinxupquote{summary}}, and
+\sphinxcode{\sphinxupquote{options}}. The \sphinxcode{\sphinxupquote{class}} key is the only one that’s required. It is the name
+of the node’s class. The \sphinxcode{\sphinxupquote{summary}} key is just an optional arbitrary string.
+
+All nodes share a certain number of common options that are important for any
+node. Depending on the node, there may also be one or more options specific to
+it. For example, a node that reads from a SQL database will likely have the
+table name as an option. In the above configuration, the
+\sphinxcode{\sphinxupquote{GetEnvironmentVariables}} node has (reasonably enough) an option
+\sphinxcode{\sphinxupquote{environment\_variables}}, which contains a list of the environment variables
+that are to be retrieved. The \sphinxcode{\sphinxupquote{PrinterOfThings}} node has an optional
+\sphinxcode{\sphinxupquote{prepend}} value, which is a string that will be prepended to anything the
+node prints to the terminal.
+
+The structure of the pipeline is given in the \sphinxcode{\sphinxupquote{paths}} section, which contains
+a list of lists. Each list is a set of nodes that are to be linked together in
+order. In our example, the \sphinxcode{\sphinxupquote{paths}} value says that
+\sphinxcode{\sphinxupquote{get\_environment\_variables}} will send its output to \sphinxcode{\sphinxupquote{print\_variables}}.
+Paths can be arbitrarily long.
+
+If you wanted to send the environment variables down two different execution
+paths, you add another list to the \sphinxcode{\sphinxupquote{paths}}, like so:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{paths}\PYG{p}{:}
+  \PYG{o}{\PYGZhy{}}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{print\PYGZus{}variables}
+  \PYG{o}{\PYGZhy{}}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{do\PYGZus{}something\PYGZus{}else}
+    \PYG{o}{\PYGZhy{}} \PYG{n}{and\PYGZus{}then\PYGZus{}do\PYGZus{}this}
+\end{sphinxVerbatim}
+
+With this set of \sphinxcode{\sphinxupquote{paths}}, the pipeline looks like a very simple tree, with
+\sphinxcode{\sphinxupquote{get\_environment\_variables}} at the root, which branches to
+\sphinxcode{\sphinxupquote{print\_variables}} and \sphinxcode{\sphinxupquote{do\_something\_else}}.
+
+When you have written the configuration file, you’re ready to use the
+NanoStream CLI. It accepts a command, followed by some options. As of now, the
+commands it accepts are \sphinxcode{\sphinxupquote{run}}, which executes the pipeline, and \sphinxcode{\sphinxupquote{draw}},
+which generates a diagram of the pipeline. The relevant command(s) are:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{python} \PYG{n}{nanostream\PYGZus{}cli}\PYG{o}{.}\PYG{n}{py} \PYG{p}{[}\PYG{n}{run} \PYG{o}{\textbar{}} \PYG{n}{draw}\PYG{p}{]} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{n}{filename} \PYG{n}{my\PYGZus{}sample\PYGZus{}config}\PYG{o}{.}\PYG{n}{yaml}
+\end{sphinxVerbatim}
+
+It is also possible to skip using the configuration file and define your
+pipelines directly in code. In general, it’s better to use the configuration
+file for a variety of reasons, but you always have the option of doing this
+in Python.
+
+Nodes are defined in code by instantiating classes that inherit from
+\sphinxcode{\sphinxupquote{NanoNode}}. Upon instantiation, the constructor takes the same set of
+keyword arguments as you see in the configuration. Nodes are linked together
+by the \sphinxcode{\sphinxupquote{\textgreater{}}} operator, as in \sphinxcode{\sphinxupquote{node\_1 \textgreater{} node\_2}}. After the pipeline has been
+built in this way, it is started by calling \sphinxcode{\sphinxupquote{node.global\_start()}} on any
+of the nodes in the pipeline.
+
+The code corresponding to the configuration file above would look like this:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{\PYGZsh{} Define the nodes using the various subclasses of NanoNode}
+\PYG{n}{get\PYGZus{}environment\PYGZus{}variables} \PYG{o}{=}
+\PYG{n}{GetEnvironmentVariables}\PYG{p}{(}
+    \PYG{n}{environment\PYGZus{}variables}\PYG{o}{=}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}KEY}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}USER\PYGZus{}ID}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{)}
+\PYG{n}{print\PYGZus{}variables} \PYG{o}{=} \PYG{n}{PrinterOfThings}\PYG{p}{(}\PYG{n}{prepend}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Environment variables: }\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+
+\PYG{c+c1}{\PYGZsh{} The \PYGZsq{}\PYGZgt{}\PYGZsq{} operator can also be chained, as in:}
+\PYG{c+c1}{\PYGZsh{} node\PYGZus{}1 \PYGZgt{} node\PYGZus{}2 \PYGZgt{} node\PYGZus{}3 \PYGZgt{} ...}
+\PYG{n}{get\PYGZus{}environment\PYGZus{}variables} \PYG{o}{\PYGZgt{}} \PYG{n}{print\PYGZus{}variables}
+
+\PYG{c+c1}{\PYGZsh{} Run the pipeline. This command will not block.}
+\PYG{n}{get\PYGZus{}environment\PYGZus{}variables}\PYG{o}{.}\PYG{n}{global\PYGZus{}start}\PYG{p}{(}\PYG{p}{)}
+\end{sphinxVerbatim}
 
 
 \section{Rolling your own \sphinxstyleliteralintitle{\sphinxupquote{NanoNode}} class}
 \label{\detokenize{overview:rolling-your-own-nanonode-class}}
-\sphinxcode{\sphinxupquote{NanoNode}} objects fall into one of two categories, depending on
-whether they ingest data from other nodes, or generate data another way.
-If they accept data from an upstream \sphinxcode{\sphinxupquote{NanoNode}}, then you specify a
-\sphinxcode{\sphinxupquote{process\_item}} method; if they generate their own data (i.e. they’re
-at the beginning of the pipeline), then you specify a \sphinxcode{\sphinxupquote{generator}}
-method. Your class should inherit from \sphinxcode{\sphinxupquote{NanoNode}}, and you provide the
-appropriate method (\sphinxcode{\sphinxupquote{process\_item}} or \sphinxcode{\sphinxupquote{generator}}), and if
-necessary, define an \sphinxcode{\sphinxupquote{\_\_init\_\_}} method.
+If there are no built-in \sphinxcode{\sphinxupquote{NanoNode}} classes suitable for your ETL pipeline,
+it is easy to write your own.
 
 For example, suppose you want to create a source node for your pipeline
-that simply emits the word \sphinxcode{\sphinxupquote{foo}} every few seconds, and the user
-specifies how many seconds between each \sphinxcode{\sphinxupquote{foo}}. Then the class would be
-defined like so:
+that simply emits a user-defined string every few seconds forever. The user
+would be able to specify the string and the number of seconds to pause after
+each message has been sent. The class could be defined like so:
 
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{k}{class} \PYG{n+nc}{FooEmitter}\PYG{p}{(}\PYG{n}{NanoNode}\PYG{p}{)}\PYG{p}{:}  \PYG{c+c1}{\PYGZsh{} inherit from NanoNode}
-    \PYG{k}{def} \PYG{n+nf}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{message}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{interval}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{p}{:}
-        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{message} \PYG{o}{=} \PYG{n}{message}
+    \PYG{l+s+sd}{\PYGZsq{}\PYGZsq{}\PYGZsq{}}
+\PYG{l+s+sd}{    Sends {}`{}`self.output\PYGZus{}string{}`{}` every {}`{}`self.interval{}`{}` seconds.}
+\PYG{l+s+sd}{    \PYGZsq{}\PYGZsq{}\PYGZsq{}}
+    \PYG{k}{def} \PYG{n+nf}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{output\PYGZus{}string}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{interval}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{o}{*}\PYG{o}{*}\PYG{n}{kwargs}\PYG{p}{)}\PYG{p}{:}
+        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{output\PYGZus{}string} \PYG{o}{=} \PYG{n}{output\PYGZus{}string}
         \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{interval} \PYG{o}{=} \PYG{n}{interval}
         \PYG{n+nb}{super}\PYG{p}{(}\PYG{n}{FooEmitter}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{o}{.}\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} Must call the {}`NanoNode{}` \PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}
 
     \PYG{k}{def} \PYG{n+nf}{generator}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
-        \PYG{k}{while} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{run\PYGZus{}generator}\PYG{p}{(}\PYG{p}{)}\PYG{p}{:}
+        \PYG{k}{while} \PYG{k+kc}{True}\PYG{p}{:}
             \PYG{n}{time}\PYG{o}{.}\PYG{n}{sleep}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{interval}\PYG{p}{)}
-            \PYG{k}{yield} \PYG{n}{message}  \PYG{c+c1}{\PYGZsh{} Output must be yielded, not returned}
+            \PYG{k}{yield} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{output\PYGZus{}string}  \PYG{c+c1}{\PYGZsh{} Output must be yielded, not returned}
 \end{sphinxVerbatim}
 
-Of course, the example is trivial because you generally won’t want to
-keep sending the same string over and over again forever. More realistic
-uses of this pattern would include reading lines from a file, connecting
-to an external API, and so on.
+Let’s look at each part of this class.
 
-Note that the code inside the \sphinxcode{\sphinxupquote{generator}} function is wrapped inside a
-\sphinxcode{\sphinxupquote{while}} loop that tests the value of \sphinxcode{\sphinxupquote{self.run\_generator()}}. You’ll
-want to ensure that your generator methods follow the same pattern because
+The first thing to note is that the class inherits from \sphinxcode{\sphinxupquote{NanoNode}} \textendash{} this
+is the mix-in class that gives the node all of its functionality within the
+NanoStream framework.
 
-Now let’s suppose you want to create a node that is passed a string as a
+The \sphinxcode{\sphinxupquote{\_\_init\_\_}} method should take only keyword arguments, not positional
+arguments. This restriction is to guarantee that the configuration files have
+names for any options that are specified in the pipeline. In the \sphinxcode{\sphinxupquote{\_\_init\_\_}}
+function, you should also be sure to accept \sphinxcode{\sphinxupquote{**kwargs}}, because options that
+are common to all \sphinxcode{\sphinxupquote{NanoNode}} objects are expected to be there.
+
+After any attributes have been defined, the \sphinxcode{\sphinxupquote{\_\_init\_\_}} method \sphinxstylestrong{must}
+invoke the parent class’s constructor through the use of the \sphinxcode{\sphinxupquote{super}}
+function. Be sure to pass the \sphinxcode{\sphinxupquote{**kwargs}} argument into the function as
+shown in the example.
+
+If the node class is intended to be used as a source node, then you need to
+define a \sphinxcode{\sphinxupquote{generator}} method. This method can be virtually anything, so long
+as it sends its output via a \sphinxcode{\sphinxupquote{yield}} statement.
+
+If you need to define a worker node (that is, a node that accepts input
+from a queue), you will provide a \sphinxcode{\sphinxupquote{process\_item}} method instead of a
+\sphinxcode{\sphinxupquote{generator}}. But the structure of that method is the same, with the single
+exception that you will have access to a \sphinxcode{\sphinxupquote{\_\_message\_\_}} attribute which
+contains the incoming message data. The structure of a typical \sphinxcode{\sphinxupquote{process\_item}}
+method is shown in the figure.
+
+\begin{figure}[htbp]
+\centering
+\capstart
+
+\noindent\sphinxincludegraphics[width=400\sphinxpxdimen]{{process_item}.png}
+\caption{A typical \sphinxcode{\sphinxupquote{process\_item}} method for \sphinxcode{\sphinxupquote{NanoNode}} objects}\label{\detokenize{overview:id3}}\end{figure}
+
+For example, let’s suppose you want to create a node that is passed a string as a
 message, and returns \sphinxcode{\sphinxupquote{True}} if the message has an even number of
 characters, \sphinxcode{\sphinxupquote{False}} otherwise. The class definition would look like
 this:
@@ -185,31 +399,18 @@ this:
         \PYG{c+c1}{\PYGZsh{} No particular initialization required in this example}
         \PYG{n+nb}{super}\PYG{p}{(}\PYG{n}{MessageLengthTester}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{o}{.}\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{p}{)}
 
-    \PYG{k}{def} \PYG{n+nf}{process\PYGZus{}item}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{message}\PYG{p}{)}\PYG{p}{:}
-        \PYG{k}{if} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{message}\PYG{p}{)} \PYG{o}{\PYGZpc{}} \PYG{l+m+mi}{2} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{:}
-            \PYG{k}{yield} \PYG{k+kc}{True}  \PYG{c+c1}{\PYGZsh{} Again, note the use of yield instead of return}
+    \PYG{k}{def} \PYG{n+nf}{process\PYGZus{}item}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
+        \PYG{k}{if} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}\PYGZus{}message\PYGZus{}\PYGZus{}}\PYG{p}{)} \PYG{o}{\PYGZpc{}} \PYG{l+m+mi}{2} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{:}
+            \PYG{k}{yield} \PYG{k+kc}{True}
         \PYG{k}{else}\PYG{p}{:}
             \PYG{k}{yield} \PYG{k+kc}{False}
-\end{sphinxVerbatim}
-
-That’s it.
-
-Instantiating both of them into a pipeline is just a matter of
-instantiating the classes and hooking them together:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{message\PYGZus{}node} \PYG{o}{=} \PYG{n}{FooEmitter}\PYG{p}{(}\PYG{n}{message}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{foobar}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{interval}\PYG{o}{=}\PYG{l+m+mi}{5}\PYG{p}{)}
-\PYG{n}{length\PYGZus{}tester\PYGZus{}node} \PYG{o}{=} \PYG{n}{MessageLengthTester}\PYG{p}{(}\PYG{p}{)}
-
-\PYG{n}{message\PYGZus{}node} \PYG{o}{\PYGZgt{}} \PYG{n}{length\PYGZus{}tester\PYGZus{}node}
-
-\PYG{n}{message\PYGZus{}node}\PYG{o}{.}\PYG{n}{global\PYGZus{}start}\PYG{p}{(}\PYG{p}{)}
 \end{sphinxVerbatim}
 
 
 \section{Composing and configuring \sphinxstyleliteralintitle{\sphinxupquote{NanoNode}} objects}
 \label{\detokenize{overview:composing-and-configuring-nanonode-objects}}
+(in-progress… code is not guaranteed to be stable…)
+
 Let’s suppose you’ve worked very hard to create the pipeline from the
 last example. Now, your boss says that another engineering team wants to
 use it, but they want to rename parameters and “freeze” the values of
@@ -292,7 +493,2695 @@ That ought to be everything.
 
 \chapter{Implementation}
 \label{\detokenize{implementation:implementation}}\label{\detokenize{implementation::doc}}
-Nothing here yet.
+This section describes what’s happening under the hood in a \sphinxcode{\sphinxupquote{NanoStream}}
+data pipeline. Most people won’t need to read this section.
+
+
+\section{The data journey}
+\label{\detokenize{implementation:the-data-journey}}
+NanoStream pipelines are sets of \sphinxcode{\sphinxupquote{NanoNode}} objects connected by \sphinxcode{\sphinxupquote{NanoStreamQueue}}
+objects. Think of each \sphinxcode{\sphinxupquote{NanoNode}} as a vertex in a directed graph, and each
+\sphinxcode{\sphinxupquote{NanoStreamQueue}} as a directed edge.
+
+There are two types of \sphinxcode{\sphinxupquote{NanoNode}} objects. A “source” is a \sphinxcode{\sphinxupquote{NanoNode}} that does not accept incoming data from another \sphinxcode{\sphinxupquote{NanoNode}}. A “processor” is any \sphinxcode{\sphinxupquote{NanoNode}} that is not a “source”. Note that there is nothing in the class definition or object that distinguishes between these two \textendash{} the only
+difference is that processors have a \sphinxcode{\sphinxupquote{process\_item}} method, and sources have a \sphinxcode{\sphinxupquote{generator}} method. Other than that, they are identical.
+
+The data journey begins with one or more source nodes. When a source node is started (by calling its \sphinxcode{\sphinxupquote{start}} method), a new thread is created and the node’s \sphinxcode{\sphinxupquote{generator}} method is executed inside the thread. As results from the \sphinxcode{\sphinxupquote{generator}} method are yielded, they are placed on each outgoing \sphinxcode{\sphinxupquote{NanoStreamQueue}} to be picked up by one or more processors downstream.
+
+The data from the source’s \sphinxcode{\sphinxupquote{generator}} is handled by the \sphinxcode{\sphinxupquote{NanoStreamQueue}} object. At its heart, the \sphinxcode{\sphinxupquote{NanoStreamQueue}} is simply a class which has a Python \sphinxcode{\sphinxupquote{Queue.queue}} object as an attribute. The reason we don’t simply use Python \sphinxcode{\sphinxupquote{Queue}} objects is because the \sphinxcode{\sphinxupquote{NanoStreamQueue}} contains some logic that’s useful. In particular:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+It wraps the data into a \sphinxcode{\sphinxupquote{NanoStreamMessage}} object, which also holds useful metadata including a UUID, the ID of the node that generated the data, and a timestamp.
+
+\item {} 
+If the \sphinxcode{\sphinxupquote{NanoStreamQueue}} receives data that is simply a \sphinxcode{\sphinxupquote{None}} object, then it is skipped.
+
+\end{enumerate}
+
+
+\chapter{API Documentation}
+\label{\detokenize{api:module-nanostream.node}}\label{\detokenize{api:api-documentation}}\label{\detokenize{api::doc}}\index{nanostream.node (module)}
+
+\section{Node module}
+\label{\detokenize{api:node-module}}
+The \sphinxcode{\sphinxupquote{node}} module contains the \sphinxcode{\sphinxupquote{NanoNode}} class, which is the foundation
+for NanoStream.
+\index{AggregateValues (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.AggregateValues}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{AggregateValues}}}{\emph{values=False}, \emph{tail\_path=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Does that.
+\index{process\_item() (nanostream.node.AggregateValues method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.AggregateValues.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{BatchMessages (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.BatchMessages}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{BatchMessages}}}{\emph{batch\_size=None}, \emph{batch\_list=None}, \emph{counter=0}, \emph{timeout=5}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{cleanup() (nanostream.node.BatchMessages method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.BatchMessages.cleanup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{cleanup}}}{}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.node.BatchMessages method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.BatchMessages.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{CSVReader (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CSVReader}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{CSVReader}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.CSVReader method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CSVReader.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{CSVToDictionaryList (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CSVToDictionaryList}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{CSVToDictionaryList}}}{\emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.CSVToDictionaryList method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CSVToDictionaryList.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{ConstantEmitter (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.ConstantEmitter}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{ConstantEmitter}}}{\emph{thing=None}, \emph{delay=2}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Send a thing every n seconds
+\index{generator() (nanostream.node.ConstantEmitter method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.ConstantEmitter.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{CounterOfThings (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CounterOfThings}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{CounterOfThings}}}{\emph{*args}, \emph{batch=False}, \emph{get\_runtime\_attrs=\textless{}function no\_op\textgreater{}}, \emph{get\_runtime\_attrs\_args=None}, \emph{get\_runtime\_attrs\_kwargs=None}, \emph{runtime\_attrs\_destinations=None}, \emph{input\_mapping=None}, \emph{retain\_input=True}, \emph{throttle=0}, \emph{keep\_alive=True}, \emph{max\_errors=0}, \emph{name=None}, \emph{input\_message\_keypath=None}, \emph{key=None}, \emph{messages\_received\_counter=0}, \emph{messages\_sent\_counter=0}, \emph{post\_process\_function=None}, \emph{post\_process\_keypath=None}, \emph{summary=''}, \emph{post\_process\_function\_kwargs=None}, \emph{output\_key=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{foo\_\_init\_\_() (nanostream.node.CounterOfThings method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CounterOfThings.foo__init__}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{foo\_\_init\_\_}}}{\emph{*args}, \emph{start=0}, \emph{end=None}, \emph{**kwargs}}{}
+\end{fulllineitems}
+
+\index{generator() (nanostream.node.CounterOfThings method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.CounterOfThings.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+Just start counting integers
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{DynamicClassMediator (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{DynamicClassMediator}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{get\_sink() (nanostream.node.DynamicClassMediator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator.get_sink}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{get\_sink}}}{}{}
+\end{fulllineitems}
+
+\index{get\_source() (nanostream.node.DynamicClassMediator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator.get_source}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{get\_source}}}{}{}
+\end{fulllineitems}
+
+\index{hi() (nanostream.node.DynamicClassMediator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator.hi}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{hi}}}{}{}
+\end{fulllineitems}
+
+\index{sink\_list() (nanostream.node.DynamicClassMediator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator.sink_list}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{sink\_list}}}{}{}
+\end{fulllineitems}
+
+\index{source\_list() (nanostream.node.DynamicClassMediator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.DynamicClassMediator.source_list}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{source\_list}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{Filter (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Filter}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{Filter}}}{\emph{test=None}, \emph{key=None}, \emph{value=True}, \emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Applies tests to each message and filters out messages that don’t pass
+\begin{description}
+\item[{Built-in tests:}] \leavevmode
+key\_exists
+value\_is\_true
+value\_is\_not\_none
+
+\item[{Example:}] \leavevmode\begin{description}
+\item[{\{‘test’: ‘key\_exists’,}] \leavevmode
+‘key’: mykey\}
+
+\end{description}
+
+\end{description}
+\index{process\_item() (nanostream.node.Filter method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Filter.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{GetEnvironmentVariables (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.GetEnvironmentVariables}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{GetEnvironmentVariables}}}{\emph{mappings=None}, \emph{environment\_variables=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{generator() (nanostream.node.GetEnvironmentVariables method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.GetEnvironmentVariables.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.node.GetEnvironmentVariables method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.GetEnvironmentVariables.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{InsertData (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.InsertData}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{InsertData}}}{\emph{overwrite=True}, \emph{overwrite\_if\_null=True}, \emph{value\_dict=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.InsertData method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.InsertData.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{LocalDirectoryWatchdog (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.LocalDirectoryWatchdog}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{LocalDirectoryWatchdog}}}{\emph{directory='.'}, \emph{check\_interval=3}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{generator() (nanostream.node.LocalDirectoryWatchdog method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.LocalDirectoryWatchdog.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{LocalFileReader (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.LocalFileReader}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{LocalFileReader}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.LocalFileReader method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.LocalFileReader.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{NanoNode (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{NanoNode}}}{\emph{*args}, \emph{batch=False}, \emph{get\_runtime\_attrs=\textless{}function no\_op\textgreater{}}, \emph{get\_runtime\_attrs\_args=None}, \emph{get\_runtime\_attrs\_kwargs=None}, \emph{runtime\_attrs\_destinations=None}, \emph{input\_mapping=None}, \emph{retain\_input=True}, \emph{throttle=0}, \emph{keep\_alive=True}, \emph{max\_errors=0}, \emph{name=None}, \emph{input\_message\_keypath=None}, \emph{key=None}, \emph{messages\_received\_counter=0}, \emph{messages\_sent\_counter=0}, \emph{post\_process\_function=None}, \emph{post\_process\_keypath=None}, \emph{summary=''}, \emph{post\_process\_function\_kwargs=None}, \emph{output\_key=None}, \emph{**kwargs}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+The foundational class of \sphinxtitleref{NanoStream}. This class is inherited by all
+nodes in a computation graph.
+
+Order of operations:
+1. Child class \sphinxcode{\sphinxupquote{\_\_init\_\_}} function
+2. \sphinxcode{\sphinxupquote{NanoNode}} \sphinxcode{\sphinxupquote{\_\_init\_\_}} function
+3. \sphinxcode{\sphinxupquote{preflight\_function}} (Specified in initialization params)
+4. \sphinxcode{\sphinxupquote{setup}}
+5. start
+
+These methods have the following intended uses:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+\sphinxcode{\sphinxupquote{\_\_init\_\_}} Sets attribute values and calls the \sphinxcode{\sphinxupquote{NanoNode}} \sphinxcode{\sphinxupquote{\_\_init\_\_}}
+method.
+
+\item {} 
+\sphinxcode{\sphinxupquote{get\_runtime\_attrs}} Sets any attribute values that are to be determined
+at runtime, e.g. by checking environment variables or reading values
+from a database. The \sphinxcode{\sphinxupquote{get\_runtime\_attrs}} should return a dictionary
+of attributes -\textgreater{} values, or else \sphinxcode{\sphinxupquote{None}}.
+
+\item {} 
+\sphinxcode{\sphinxupquote{setup}} Sets the state of the \sphinxcode{\sphinxupquote{NanoNode}} and/or creates any attributes
+that require information available only at runtime.
+
+\end{enumerate}
+\begin{quote}\begin{description}
+\item[{Variables}] \leavevmode\begin{itemize}
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{send\_batch\_markers}} \textendash{} If \sphinxcode{\sphinxupquote{True}}, then a \sphinxcode{\sphinxupquote{BatchStart}} marker will
+be sent when a new input is received, and a \sphinxcode{\sphinxupquote{BatchEnd}} will be sent
+after the input has been processed. The intention is that a number of
+items will be emitted for each input received. For example, we might
+emit a table row-by-row for each input.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{get\_runtime\_attrs}} \textendash{} A function that returns a dictionary-like object.
+The keys and values will be saved to this \sphinxcode{\sphinxupquote{NanoNode}} object’s
+attributes. The function is executed one time, upon starting the node.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{get\_runtime\_attrs\_args}} \textendash{} A tuple of arguments to be passed to the
+\sphinxcode{\sphinxupquote{get\_runtime\_attrs}} function upon starting the node.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{get\_runtime\_attrs\_kwargs}} \textendash{} A dictionary of kwargs passed to the
+\sphinxcode{\sphinxupquote{get\_runtime\_attrs}} function.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{runtime\_attrs\_destinations}} \textendash{} If set, this is a dictionary mapping
+the keys returned from the \sphinxcode{\sphinxupquote{get\_runtime\_attrs}} function to the
+names of the attributes to which the values will be saved.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{throttle}} \textendash{} For each input received, a delay of \sphinxcode{\sphinxupquote{throttle}} seconds
+will be added.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{keep\_alive}} \textendash{} If \sphinxcode{\sphinxupquote{True}}, keep the node’s thread alive after
+everything has been processed.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{name}} \textendash{} The name of the node. Defaults to a randomly generated hash.
+Note that this hash is not consistent from one run to the next.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{input\_mapping}} \textendash{} When the node receives a dictionary-like object,
+this dictionary will cause the keys of the dictionary to be remapped
+to new keys.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{retain\_input}} \textendash{} If \sphinxcode{\sphinxupquote{True}}, then combine the dictionary-like input
+with the output. If keys clash, the output value will be kept.
+
+\item {} 
+\sphinxstyleliteralstrong{\sphinxupquote{input\_message\_keypath}} \textendash{} Read the value in this keypath as the content
+of the incoming message.
+
+\end{itemize}
+
+\end{description}\end{quote}
+\index{add\_edge() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.add_edge}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{add\_edge}}}{\emph{target}, \emph{**kwargs}}{}
+Create an edge connecting \sphinxtitleref{self} to \sphinxtitleref{target}. The edge
+is really just a queue
+
+\end{fulllineitems}
+
+\index{all\_connected() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.all_connected}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{all\_connected}}}{\emph{seen=None}}{}
+Returns all the nodes connected (directly or indirectly) to \sphinxcode{\sphinxupquote{self}}.
+\begin{description}
+\item[{Args:}] \leavevmode\begin{description}
+\item[{seen (set): A set of all the nodes that have been identified as}] \leavevmode
+connected to \sphinxcode{\sphinxupquote{self}}.
+
+\end{description}
+
+\item[{Returns:}] \leavevmode\begin{description}
+\item[{(set of \sphinxcode{\sphinxupquote{NanoNode}}): All the nodes connected to \sphinxcode{\sphinxupquote{self}}. This}] \leavevmode
+includes \sphinxcode{\sphinxupquote{self}}.
+
+\end{description}
+
+\end{description}
+
+\end{fulllineitems}
+
+\index{broadcast() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.broadcast}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{broadcast}}}{\emph{broadcast\_message}}{}
+Puts the message into all the input queues for all connected nodes.
+
+\end{fulllineitems}
+
+\index{cleanup() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.cleanup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{cleanup}}}{}{}
+\end{fulllineitems}
+
+\index{draw\_pipeline() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.draw_pipeline}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{draw\_pipeline}}}{}{}
+Draw the pipeline structure using graphviz.
+
+\end{fulllineitems}
+
+\index{global\_start() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.global_start}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{global\_start}}}{\emph{datadog=False}, \emph{pipeline\_name=None}}{}
+Starts every node connected to \sphinxcode{\sphinxupquote{self}}.
+
+\end{fulllineitems}
+
+\index{input\_queue\_size (nanostream.node.NanoNode attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.input_queue_size}}\pysigline{\sphinxbfcode{\sphinxupquote{input\_queue\_size}}}
+Return the total number of items in all of the queues that are inputs
+to this node.
+
+\end{fulllineitems}
+
+\index{is\_sink (nanostream.node.NanoNode attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.is_sink}}\pysigline{\sphinxbfcode{\sphinxupquote{is\_sink}}}
+Tests whether the node is a sink or not, i.e. whether there are no
+outputs from the node.
+
+\end{fulllineitems}
+
+\index{is\_source (nanostream.node.NanoNode attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.is_source}}\pysigline{\sphinxbfcode{\sphinxupquote{is\_source}}}
+Tests whether the node is a source or not, i.e. whether there are no
+inputs to the node.
+
+\end{fulllineitems}
+
+\index{kill\_pipeline() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.kill_pipeline}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{kill\_pipeline}}}{}{}
+\end{fulllineitems}
+
+\index{log\_info() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.log_info}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{log\_info}}}{\emph{message=''}}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{\emph{*args}, \emph{**kwargs}}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+\index{processor() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.processor}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{processor}}}{}{}
+This calls the user’s \sphinxcode{\sphinxupquote{process\_item}} with just the message content,
+and then returns the full message.
+
+\end{fulllineitems}
+
+\index{setup() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.setup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{setup}}}{}{}
+To be overridden by child classes when we need to do something
+after setting attributes and the pre-flight function.
+
+\end{fulllineitems}
+
+\index{start() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.start}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{start}}}{}{}
+Starts the node. This is called by \sphinxcode{\sphinxupquote{NanoNode.global\_start()}}.
+
+\end{fulllineitems}
+
+\index{stream() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.stream}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{stream}}}{}{}
+Called in each \sphinxcode{\sphinxupquote{NanoNode}} thread.
+
+\end{fulllineitems}
+
+\index{terminate\_pipeline() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.terminate_pipeline}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{terminate\_pipeline}}}{}{}
+This method can be called on any node in a pipeline, and it will cause
+all of the nodes to terminate.
+
+\end{fulllineitems}
+
+\index{thread\_monitor() (nanostream.node.NanoNode method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.thread_monitor}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{thread\_monitor}}}{}{}
+This function loops over all of the threads in the pipeline, checking
+that they are either \sphinxcode{\sphinxupquote{finished}} or \sphinxcode{\sphinxupquote{running}}. If any have had an
+abnormal exit, terminate the entire pipeline.
+
+\end{fulllineitems}
+
+\index{time\_running (nanostream.node.NanoNode attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.time_running}}\pysigline{\sphinxbfcode{\sphinxupquote{time\_running}}}
+Return the number of wall-clock seconds elapsed since the node was
+started.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{NothingToSeeHere (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.NothingToSeeHere}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{NothingToSeeHere}}}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+Vacuous class used as a no-op message type.
+
+\end{fulllineitems}
+
+\index{Parameters (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Parameters}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{Parameters}}}{\emph{**kwargs}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\index{PrinterOfThings (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.PrinterOfThings}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{PrinterOfThings}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.PrinterOfThings method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.PrinterOfThings.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{RandomSample (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.RandomSample}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{RandomSample}}}{\emph{sample=0.1}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Lets through only a random sample of incoming messages. Might be useful
+for testing, or when only approximate results are necessary.
+\index{process\_item() (nanostream.node.RandomSample method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.RandomSample.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{Remapper (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Remapper}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{Remapper}}}{\emph{mapping=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.Remapper method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Remapper.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{SequenceEmitter (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SequenceEmitter}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{SequenceEmitter}}}{\emph{sequence}, \emph{*args}, \emph{max\_sequences=1}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Emits \sphinxcode{\sphinxupquote{sequence}} \sphinxcode{\sphinxupquote{max\_sequences}} times, or forever if
+\sphinxcode{\sphinxupquote{max\_sequences}} is \sphinxcode{\sphinxupquote{None}}.
+\index{generator() (nanostream.node.SequenceEmitter method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SequenceEmitter.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+Emit the sequence \sphinxcode{\sphinxupquote{max\_sequences}} times.
+
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.node.SequenceEmitter method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SequenceEmitter.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Emit the sequence \sphinxcode{\sphinxupquote{max\_sequences}} times.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{Serializer (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Serializer}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{Serializer}}}{\emph{values=False}, \emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Takes an iterable thing as input, and successively yields its items.
+\index{process\_item() (nanostream.node.Serializer method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.Serializer.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{SimpleTransforms (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SimpleTransforms}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{SimpleTransforms}}}{\emph{missing\_keypath\_action='ignore'}, \emph{starting\_path=None}, \emph{transform\_mapping=None}, \emph{target\_value=None}, \emph{keypath=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.SimpleTransforms method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SimpleTransforms.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{StreamMySQLTable (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamMySQLTable}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{StreamMySQLTable}}}{\emph{*args}, \emph{host='localhost'}, \emph{user=None}, \emph{table=None}, \emph{password=None}, \emph{database=None}, \emph{port=3306}, \emph{to\_row\_obj=False}, \emph{send\_batch\_markers=True}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{generator() (nanostream.node.StreamMySQLTable method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamMySQLTable.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+\index{get\_schema() (nanostream.node.StreamMySQLTable method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamMySQLTable.get_schema}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{get\_schema}}}{}{}
+\end{fulllineitems}
+
+\index{setup() (nanostream.node.StreamMySQLTable method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamMySQLTable.setup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{setup}}}{}{}
+To be overridden by child classes when we need to do something
+after setting attributes and the pre-flight function.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{StreamingJoin (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamingJoin}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{StreamingJoin}}}{\emph{window=30}, \emph{streams=None}, \emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Joins two streams on a key, using exact match only. MVP.
+\index{process\_item() (nanostream.node.StreamingJoin method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.StreamingJoin.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{SubstituteRegex (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SubstituteRegex}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{SubstituteRegex}}}{\emph{match\_regex=None}, \emph{substitute\_string=None}, \emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{process\_item() (nanostream.node.SubstituteRegex method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.SubstituteRegex.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{TimeWindowAccumulator (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.TimeWindowAccumulator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{TimeWindowAccumulator}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Every N seconds, put the latest M seconds data on the queue.
+
+\end{fulllineitems}
+
+\index{bcolors (class in nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{bcolors}}}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+This class holds the values for the various colors that are used in the
+tables that monitor the status of the nodes.
+\index{BOLD (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.BOLD}}\pysigline{\sphinxbfcode{\sphinxupquote{BOLD}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}1m'}}}
+\end{fulllineitems}
+
+\index{ENDC (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.ENDC}}\pysigline{\sphinxbfcode{\sphinxupquote{ENDC}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}0m'}}}
+\end{fulllineitems}
+
+\index{FAIL (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.FAIL}}\pysigline{\sphinxbfcode{\sphinxupquote{FAIL}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}91m'}}}
+\end{fulllineitems}
+
+\index{HEADER (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.HEADER}}\pysigline{\sphinxbfcode{\sphinxupquote{HEADER}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}95m'}}}
+\end{fulllineitems}
+
+\index{OKBLUE (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.OKBLUE}}\pysigline{\sphinxbfcode{\sphinxupquote{OKBLUE}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}94m'}}}
+\end{fulllineitems}
+
+\index{OKGREEN (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.OKGREEN}}\pysigline{\sphinxbfcode{\sphinxupquote{OKGREEN}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}92m'}}}
+\end{fulllineitems}
+
+\index{UNDERLINE (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.UNDERLINE}}\pysigline{\sphinxbfcode{\sphinxupquote{UNDERLINE}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}4m'}}}
+\end{fulllineitems}
+
+\index{WARNING (nanostream.node.bcolors attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.bcolors.WARNING}}\pysigline{\sphinxbfcode{\sphinxupquote{WARNING}}\sphinxbfcode{\sphinxupquote{ = '\textbackslash{}x1b{[}93m'}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{class\_factory() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.class_factory}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{class\_factory}}}{\emph{raw\_config}}{}
+\end{fulllineitems}
+
+\index{get\_environment\_variables() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.get_environment_variables}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{get\_environment\_variables}}}{\emph{*args}}{}
+Retrieves the environment variables listed in \sphinxcode{\sphinxupquote{*args}}.
+\begin{description}
+\item[{Args:}] \leavevmode
+args (list of str): List of environment variables.
+
+\item[{Returns:}] \leavevmode\begin{description}
+\item[{dict: Dictionary of environment variables to values. If the environment}] \leavevmode
+variable is not defined, the value is \sphinxcode{\sphinxupquote{None}}.
+
+\end{description}
+
+\end{description}
+
+\end{fulllineitems}
+
+\index{get\_node\_dict() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.get_node_dict}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{get\_node\_dict}}}{\emph{node\_config}}{}
+\end{fulllineitems}
+
+\index{kwarg\_remapper() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.kwarg_remapper}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{kwarg\_remapper}}}{\emph{f}, \emph{**kwarg\_mapping}}{}
+\end{fulllineitems}
+
+\index{no\_op() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.no_op}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{no\_op}}}{\emph{*args}, \emph{**kwargs}}{}
+No-op function to serve as default \sphinxcode{\sphinxupquote{get\_runtime\_attrs}}.
+
+\end{fulllineitems}
+
+\index{template\_class() (in module nanostream.node)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node.template_class}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{template\_class}}}{\emph{class\_name}, \emph{parent\_class}, \emph{kwargs\_remapping}, \emph{frozen\_arguments\_mapping}}{}
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.utils.data_structures}}\index{nanostream.utils.data\_structures (module)}
+
+\section{Data structures module}
+\label{\detokenize{api:data-structures-module}}
+Data types (e.g. Rows, Records) for ETL.
+\index{BOOL (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.BOOL}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{BOOL}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.IntermediateTypeSystem}}}}}
+\index{python\_cast\_function (nanostream.utils.data\_structures.BOOL attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.BOOL.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.bool}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{DATETIME (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DATETIME}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{DATETIME}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.IntermediateTypeSystem}}}}}
+\index{python\_cast\_function() (nanostream.utils.data\_structures.DATETIME method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DATETIME.python_cast_function}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{DataSourceTypeSystem (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{DataSourceTypeSystem}}}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+Information about mapping one type system onto another contained in
+the children of this class.
+\index{convert() (nanostream.utils.data\_structures.DataSourceTypeSystem static method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem.convert}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static }}\sphinxbfcode{\sphinxupquote{convert}}}{\emph{obj}}{}
+Override this method if something more complicated is necessary.
+
+\end{fulllineitems}
+
+\index{type\_mapping() (nanostream.utils.data\_structures.DataSourceTypeSystem static method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem.type_mapping}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static }}\sphinxbfcode{\sphinxupquote{type\_mapping}}}{\emph{*args}, \emph{**kwargs}}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{DataType (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{DataType}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+Each \sphinxcode{\sphinxupquote{DataType}} gets a \sphinxcode{\sphinxupquote{python\_cast\_function}}, which is a function.
+\index{intermediate\_type (nanostream.utils.data\_structures.DataType attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}\sphinxbfcode{\sphinxupquote{ = None}}}
+\end{fulllineitems}
+
+\index{python\_cast\_function (nanostream.utils.data\_structures.DataType attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}\sphinxbfcode{\sphinxupquote{ = None}}}
+\end{fulllineitems}
+
+\index{to\_intermediate\_type() (nanostream.utils.data\_structures.DataType method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType.to_intermediate_type}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{to\_intermediate\_type}}}{}{}
+Convert the \sphinxcode{\sphinxupquote{DataType}} to an \sphinxcode{\sphinxupquote{IntermediateDataType}} using its
+class’s \sphinxcode{\sphinxupquote{intermediate\_type}} attribute.
+
+\end{fulllineitems}
+
+\index{to\_python() (nanostream.utils.data\_structures.DataType method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType.to_python}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{to\_python}}}{}{}
+\end{fulllineitems}
+
+\index{type\_system (nanostream.utils.data\_structures.DataType attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.DataType.type_system}}\pysigline{\sphinxbfcode{\sphinxupquote{type\_system}}}
+Just for convenience to make the type system an attribute.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{FLOAT (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.FLOAT}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{FLOAT}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.IntermediateTypeSystem}}}}}
+\index{python\_cast\_function (nanostream.utils.data\_structures.FLOAT attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.FLOAT.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.float}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{INTEGER (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.INTEGER}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{INTEGER}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.IntermediateTypeSystem}}}}}
+\index{python\_cast\_function (nanostream.utils.data\_structures.INTEGER attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.INTEGER.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.int}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{IncompatibleTypesException}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.IncompatibleTypesException}}\pysigline{\sphinxbfcode{\sphinxupquote{exception }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{IncompatibleTypesException}}}
+Bases: \sphinxcode{\sphinxupquote{Exception}}
+
+\end{fulllineitems}
+
+\index{IntermediateTypeSystem (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{IntermediateTypeSystem}}}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataSourceTypeSystem}}}}}
+
+Never instantiate this by hand.
+
+\end{fulllineitems}
+
+\index{MYSQL\_BOOL (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_BOOL}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_BOOL}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MySQLTypeSystem}}}}}
+\index{intermediate\_type (nanostream.utils.data\_structures.MYSQL\_BOOL attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_BOOL.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}}
+alias of {\hyperref[\detokenize{api:nanostream.utils.data_structures.BOOL}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{BOOL}}}}}
+
+\end{fulllineitems}
+
+\index{python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_BOOL attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_BOOL.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.bool}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_DATE (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_DATE}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_DATE}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MySQLTypeSystem}}}}}
+\index{intermediate\_type (nanostream.utils.data\_structures.MYSQL\_DATE attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_DATE.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}}
+alias of {\hyperref[\detokenize{api:nanostream.utils.data_structures.DATETIME}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{DATETIME}}}}}
+
+\end{fulllineitems}
+
+\index{python\_cast\_function() (nanostream.utils.data\_structures.MYSQL\_DATE method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_DATE.python_cast_function}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}{}{}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_ENUM (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_ENUM}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_ENUM}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MySQLTypeSystem}}}}}
+\index{intermediate\_type (nanostream.utils.data\_structures.MYSQL\_ENUM attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_ENUM.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}}
+alias of {\hyperref[\detokenize{api:nanostream.utils.data_structures.STRING}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{STRING}}}}}
+
+\end{fulllineitems}
+
+\index{python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_ENUM attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_ENUM.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.str}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER}}}
+Bases: \sphinxcode{\sphinxupquote{type}}
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER0 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER0}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER0}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER0 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER0.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 0}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER1 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER1}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER1}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER1 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER1.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 1}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER10 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER10}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER10}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER10 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER10.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 10}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER1024 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER1024}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER1024}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER1024 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER1024.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 1024}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER11 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER11}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER11}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER11 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER11.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 11}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER12 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER12}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER12}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER12 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER12.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 12}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER128 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER128}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER128}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER128 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER128.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 128}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER13 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER13}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER13}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER13 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER13.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 13}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER14 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER14}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER14}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER14 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER14.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 14}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER15 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER15}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER15}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER15 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER15.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 15}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER16 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER16}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER16}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER16 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER16.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 16}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER16384 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER16384}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER16384}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER16384 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER16384.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 16384}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER17 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER17}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER17}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER17 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER17.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 17}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER18 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER18}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER18}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER18 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER18.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 18}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER19 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER19}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER19}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER19 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER19.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 19}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER2 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER2}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER2}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER2 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER2.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 2}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER20 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER20}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER20}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER20 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER20.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 20}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER2048 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER2048}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER2048}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER2048 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER2048.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 2048}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER21 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER21}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER21}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER21 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER21.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 21}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER22 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER22}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER22}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER22 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER22.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 22}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER23 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER23}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER23}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER23 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER23.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 23}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER24 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER24}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER24}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER24 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER24.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 24}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER25 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER25}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER25}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER25 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER25.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 25}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER256 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER256}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER256}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER256 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER256.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 256}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER26 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER26}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER26}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER26 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER26.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 26}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER27 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER27}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER27}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER27 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER27.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 27}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER28 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER28}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER28}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER28 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER28.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 28}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER29 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER29}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER29}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER29 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER29.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 29}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER3 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER3}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER3}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER3 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER3.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 3}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER30 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER30}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER30}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER30 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER30.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 30}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER31 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER31}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER31}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER31 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER31.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 31}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER32 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER32}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER32}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER32 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER32.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 32}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER32768 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER32768}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER32768}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER32768 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER32768.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 32768}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER4 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER4}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER4}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER4 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER4.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 4}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER4096 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER4096}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER4096}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER4096 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER4096.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 4096}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER5 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER5}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER5}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER5 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER5.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 5}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER512 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER512}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER512}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER512 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER512.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 512}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER6 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER6}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER6}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER6 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER6.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 6}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER64 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER64}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER64}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER64 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER64.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 64}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER7 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER7}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER7}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER7 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER7.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 7}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER8 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER8}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER8}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER8 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER8.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 8}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER8192 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER8192}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER8192}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER8192 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER8192.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 8192}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER9 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER9}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER9}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER9 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER9.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 9}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_INTEGER\_BASE (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_INTEGER\_BASE}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MySQLTypeSystem}}}}}
+\index{intermediate\_type (nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}}
+alias of {\hyperref[\detokenize{api:nanostream.utils.data_structures.INTEGER}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{INTEGER}}}}}
+
+\end{fulllineitems}
+
+\index{python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_INTEGER_BASE.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.int}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR}}}
+Bases: \sphinxcode{\sphinxupquote{type}}
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR0 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR0}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR0}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR0 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR0.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 0}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR1 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR1}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR1}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR1 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR1.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 1}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR10 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR10}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR10}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR10 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR10.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 10}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR1024 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR1024}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR1024}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR1024 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR1024.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 1024}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR11 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR11}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR11}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR11 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR11.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 11}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR12 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR12}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR12}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR12 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR12.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 12}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR128 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR128}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR128}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR128 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR128.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 128}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR13 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR13}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR13}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR13 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR13.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 13}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR14 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR14}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR14}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR14 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR14.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 14}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR15 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR15}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR15}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR15 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR15.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 15}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR16 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR16}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR16}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR16 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR16.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 16}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR16384 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR16384}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR16384}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR16384 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR16384.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 16384}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR17 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR17}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR17}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR17 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR17.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 17}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR18 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR18}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR18}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR18 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR18.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 18}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR19 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR19}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR19}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR19 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR19.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 19}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR2 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR2}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR2}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR2 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR2.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 2}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR20 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR20}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR20}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR20 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR20.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 20}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR2048 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR2048}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR2048}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR2048 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR2048.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 2048}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR21 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR21}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR21}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR21 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR21.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 21}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR22 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR22}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR22}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR22 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR22.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 22}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR23 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR23}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR23}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR23 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR23.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 23}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR24 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR24}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR24}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR24 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR24.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 24}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR25 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR25}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR25}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR25 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR25.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 25}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR256 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR256}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR256}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR256 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR256.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 256}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR26 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR26}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR26}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR26 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR26.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 26}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR27 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR27}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR27}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR27 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR27.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 27}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR28 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR28}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR28}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR28 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR28.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 28}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR29 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR29}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR29}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR29 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR29.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 29}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR3 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR3}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR3}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR3 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR3.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 3}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR30 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR30}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR30}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR30 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR30.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 30}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR31 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR31}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR31}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR31 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR31.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 31}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR32 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR32}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR32}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR32 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR32.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 32}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR32768 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR32768}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR32768}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR32768 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR32768.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 32768}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR4 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR4}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR4}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR4 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR4.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 4}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR4096 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR4096}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR4096}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR4096 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR4096.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 4096}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR5 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR5}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR5}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR5 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR5.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 5}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR512 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR512}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR512}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR512 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR512.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 512}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR6 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR6}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR6}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR6 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR6.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 6}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR64 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR64}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR64}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR64 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR64.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 64}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR7 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR7}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR7}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR7 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR7.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 7}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR8 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR8}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR8}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR8 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR8.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 8}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR8192 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR8192}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR8192}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR8192 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR8192.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 8192}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR9 (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR9}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR9}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE}}}}}
+\index{max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR9 attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR9.max_length}}\pysigline{\sphinxbfcode{\sphinxupquote{max\_length}}\sphinxbfcode{\sphinxupquote{ = 9}}}
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MYSQL\_VARCHAR\_BASE (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MYSQL\_VARCHAR\_BASE}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.MySQLTypeSystem}}}}}
+\index{intermediate\_type (nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE.intermediate_type}}\pysigline{\sphinxbfcode{\sphinxupquote{intermediate\_type}}}
+alias of {\hyperref[\detokenize{api:nanostream.utils.data_structures.STRING}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{STRING}}}}}
+
+\end{fulllineitems}
+
+\index{python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MYSQL_VARCHAR_BASE.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.str}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{MySQLTypeSystem (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{MySQLTypeSystem}}}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataSourceTypeSystem}}}}}
+
+Each \sphinxcode{\sphinxupquote{TypeSystem}} gets a \sphinxcode{\sphinxupquote{type\_mapping}} static method that takes a
+string and returns the class in the type system named by that string.
+For example, \sphinxcode{\sphinxupquote{int(8)}} in a MySQL schema should return the
+\sphinxcode{\sphinxupquote{MYSQL\_INTEGER8}} class.
+\index{type\_mapping() (nanostream.utils.data\_structures.MySQLTypeSystem static method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.MySQLTypeSystem.type_mapping}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static }}\sphinxbfcode{\sphinxupquote{type\_mapping}}}{\emph{string}}{}
+Parses the schema strings from MySQL and returns the appropriate class.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{PrimitiveTypeSystem (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.PrimitiveTypeSystem}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{PrimitiveTypeSystem}}}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataSourceTypeSystem}}}}}
+
+\end{fulllineitems}
+
+\index{PythonTypeSystem (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.PythonTypeSystem}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{PythonTypeSystem}}}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataSourceTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataSourceTypeSystem}}}}}
+
+\end{fulllineitems}
+
+\index{Row (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.Row}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{Row}}}{\emph{*records}, \emph{type\_system=None}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+A collection of \sphinxcode{\sphinxupquote{DataType}} objects (typed values). They are dictionaries
+mapping the names of the values to the \sphinxcode{\sphinxupquote{DataType}} objects.
+\index{concat() (nanostream.utils.data\_structures.Row method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.Row.concat}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{concat}}}{\emph{other}, \emph{fail\_on\_duplicate=True}}{}
+\end{fulllineitems}
+
+\index{from\_dict() (nanostream.utils.data\_structures.Row static method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.Row.from_dict}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static }}\sphinxbfcode{\sphinxupquote{from\_dict}}}{\emph{row\_dictionary}, \emph{**kwargs}}{}
+Creates a \sphinxcode{\sphinxupquote{Row}} object form a dictionary mapping names to values.
+
+\end{fulllineitems}
+
+\index{is\_empty() (nanostream.utils.data\_structures.Row method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.Row.is_empty}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{is\_empty}}}{}{}
+\end{fulllineitems}
+
+\index{keys() (nanostream.utils.data\_structures.Row method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.Row.keys}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{keys}}}{}{}
+For implementing the mapping protocol.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{STRING (class in nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.STRING}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{STRING}}}{\emph{value}, \emph{original\_type=None}, \emph{name=None}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.utils.data_structures.DataType}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.DataType}}}}}, {\hyperref[\detokenize{api:nanostream.utils.data_structures.IntermediateTypeSystem}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.IntermediateTypeSystem}}}}}
+\index{python\_cast\_function (nanostream.utils.data\_structures.STRING attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.STRING.python_cast_function}}\pysigline{\sphinxbfcode{\sphinxupquote{python\_cast\_function}}}
+alias of \sphinxcode{\sphinxupquote{builtins.str}}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{all\_bases() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.all_bases}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{all\_bases}}}{\emph{obj}}{}
+Return all the class to which \sphinxcode{\sphinxupquote{obj}} belongs.
+
+\end{fulllineitems}
+
+\index{convert\_to\_type\_system() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.convert_to_type_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{convert\_to\_type\_system}}}{\emph{obj}, \emph{cls}}{}
+\end{fulllineitems}
+
+\index{get\_type\_system() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.get_type_system}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{get\_type\_system}}}{\emph{obj}}{}
+\end{fulllineitems}
+
+\index{make\_types() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.make_types}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{make\_types}}}{}{}
+\end{fulllineitems}
+
+\index{mysql\_type() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.mysql_type}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{mysql\_type}}}{\emph{string}}{}
+Parses the schema strings from MySQL and returns the appropriate class.
+
+\end{fulllineitems}
+
+\index{primitive\_to\_intermediate\_type() (in module nanostream.utils.data\_structures)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.utils.data_structures.primitive_to_intermediate_type}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.utils.data\_structures.}}\sphinxbfcode{\sphinxupquote{primitive\_to\_intermediate\_type}}}{\emph{thing}, \emph{name=None}}{}
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.node_classes.network_nodes}}\index{nanostream.node\_classes.network\_nodes (module)}
+
+\section{Network nodes module}
+\label{\detokenize{api:network-nodes-module}}
+Classes that deal with sending and receiving data across the interwebs.
+\index{HttpGetRequest (class in nanostream.node\_classes.network\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.HttpGetRequest}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node\_classes.network\_nodes.}}\sphinxbfcode{\sphinxupquote{HttpGetRequest}}}{\emph{url=None}, \emph{endpoint\_template=''}, \emph{endpoint\_dict=None}, \emph{json=True}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Node class for making simple GET requests.
+\index{process\_item() (nanostream.node\_classes.network\_nodes.HttpGetRequest method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.HttpGetRequest.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+The input to this function will be a dictionary-like object with
+parameters to be substituted into the endpoint string and a
+dictionary with keys and values to be passed in the GET request.
+
+Three use-cases:
+1. Endpoint and parameters set initially and never changed.
+2. Endpoint and parameters set once at runtime
+3. Endpoint and parameters set by upstream messages
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{HttpGetRequestPaginator (class in nanostream.node\_classes.network\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.HttpGetRequestPaginator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node\_classes.network\_nodes.}}\sphinxbfcode{\sphinxupquote{HttpGetRequestPaginator}}}{\emph{endpoint\_dict=None}, \emph{json=True}, \emph{pagination\_get\_request\_key=None}, \emph{endpoint\_template=None}, \emph{additional\_data\_key=None}, \emph{pagination\_key=None}, \emph{pagination\_template\_key=None}, \emph{default\_offset\_value=''}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Node class for HTTP API requests that require paging through sets of
+results.
+\index{process\_item() (nanostream.node\_classes.network\_nodes.HttpGetRequestPaginator method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.HttpGetRequestPaginator.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{PaginatedHttpGetRequest (class in nanostream.node\_classes.network\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.PaginatedHttpGetRequest}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node\_classes.network\_nodes.}}\sphinxbfcode{\sphinxupquote{PaginatedHttpGetRequest}}}{\emph{endpoint\_template=None}, \emph{additional\_data\_key=None}, \emph{pagination\_key=None}, \emph{pagination\_get\_request\_key=None}, \emph{default\_offset\_value=''}, \emph{additional\_data\_test=\textless{}class 'bool'\textgreater{}}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+For handling requests in a semi-general way that require paging through
+lists of results and repeatedly making GET requests.
+\index{responses() (nanostream.node\_classes.network\_nodes.PaginatedHttpGetRequest method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_classes.network_nodes.PaginatedHttpGetRequest.responses}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{responses}}}{}{}
+Generator. Yields each response until empty.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.message.message}}\index{nanostream.message.message (module)}
+
+\section{NanoStreamMessage module}
+\label{\detokenize{api:nanostreammessage-module}}
+The \sphinxcode{\sphinxupquote{NanoStreamMesaage}} encapsulates the content of each piece of data,
+along with some useful metadata.
+\index{NanoStreamMessage (class in nanostream.message.message)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.message.NanoStreamMessage}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.message.}}\sphinxbfcode{\sphinxupquote{NanoStreamMessage}}}{\emph{message\_content}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+A class that contains the message payloads that are queued for
+each \sphinxcode{\sphinxupquote{NanoStreamProcessor}}. It holds the messages and lots
+of metadata used for logging, monitoring, etc.
+
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.message.poison_pill}}\index{nanostream.message.poison\_pill (module)}
+
+\section{PoisonPill module}
+\label{\detokenize{api:poisonpill-module}}
+A simple class that is sent in a message to signal that the node should be
+terminated.
+\index{PoisonPill (class in nanostream.message.poison\_pill)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.poison_pill.PoisonPill}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.poison\_pill.}}\sphinxbfcode{\sphinxupquote{PoisonPill}}}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.message.trigger}}\index{nanostream.message.trigger (module)}
+
+\section{Trigger module}
+\label{\detokenize{api:trigger-module}}
+A simple class containing no data, which is intended merely as a trigger,
+signaling that the downstream node should do something.
+\index{Trigger (class in nanostream.message.trigger)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.trigger.Trigger}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.trigger.}}\sphinxbfcode{\sphinxupquote{Trigger}}}{\emph{previous\_trigger\_time=None}, \emph{trigger\_name=None}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\index{hello\_world() (in module nanostream.message.trigger)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.trigger.hello_world}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.message.trigger.}}\sphinxbfcode{\sphinxupquote{hello\_world}}}{}{}
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.message.batch}}\index{nanostream.message.batch (module)}
+
+\section{Batch module}
+\label{\detokenize{api:batch-module}}
+We’ll use markers to delimit batches of things, such as serialized
+files and that kind of thing.
+\index{BatchEnd (class in nanostream.message.batch)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.batch.BatchEnd}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.batch.}}\sphinxbfcode{\sphinxupquote{BatchEnd}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\index{BatchStart (class in nanostream.message.batch)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.batch.BatchStart}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.batch.}}\sphinxbfcode{\sphinxupquote{BatchStart}}}{\emph{*args}, \emph{**kwargs}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.message.canary}}\index{nanostream.message.canary (module)}\index{Canary (class in nanostream.message.canary)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.message.canary.Canary}}\pysigline{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.message.canary.}}\sphinxbfcode{\sphinxupquote{Canary}}}
+Bases: \sphinxcode{\sphinxupquote{object}}
+
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.node_queue.queue}}\index{nanostream.node\_queue.queue (module)}
+
+\section{NanoStreamQueue module}
+\label{\detokenize{api:nanostreamqueue-module}}
+These are queues that form the directed edges between nodes.
+\index{NanoStreamQueue (class in nanostream.node\_queue.queue)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_queue.queue.NanoStreamQueue}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node\_queue.queue.}}\sphinxbfcode{\sphinxupquote{NanoStreamQueue}}}{\emph{max\_queue\_size}, \emph{name=None}}{}
+Bases: \sphinxcode{\sphinxupquote{object}}
+\index{empty (nanostream.node\_queue.queue.NanoStreamQueue attribute)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_queue.queue.NanoStreamQueue.empty}}\pysigline{\sphinxbfcode{\sphinxupquote{empty}}}
+\end{fulllineitems}
+
+\index{get() (nanostream.node\_queue.queue.NanoStreamQueue method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_queue.queue.NanoStreamQueue.get}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{get}}}{}{}
+\end{fulllineitems}
+
+\index{put() (nanostream.node\_queue.queue.NanoStreamQueue method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.node_queue.queue.NanoStreamQueue.put}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{put}}}{\emph{message}, \emph{*args}, \emph{previous\_message=None}, \emph{**kwargs}}{}
+Places a message on the output queues. If the message is \sphinxcode{\sphinxupquote{None}},
+then the queue is skipped.
+
+Messages are \sphinxcode{\sphinxupquote{NanoStreamMessage}} objects; the payload of the
+message is message.message\_content.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+
+\chapter{License}
+\label{\detokenize{license:license}}\label{\detokenize{license::doc}}
+Copyright (C) 2016 Zachary Ernst
+\sphinxhref{mailto:zac.ernst@gmail.com}{zac.ernst@gmail.com}
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see \textless{}\sphinxurl{http://www.gnu.org/licenses/}\textgreater{}.
 
 
 \chapter{Indices and tables}
@@ -309,6 +3198,20 @@ Nothing here yet.
 \end{itemize}
 
 
+\renewcommand{\indexname}{Python Module Index}
+\begin{sphinxtheindex}
+\let\bigletter\sphinxstyleindexlettergroup
+\bigletter{n}
+\item\relax\sphinxstyleindexentry{nanostream.message.batch}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.batch}}
+\item\relax\sphinxstyleindexentry{nanostream.message.canary}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.canary}}
+\item\relax\sphinxstyleindexentry{nanostream.message.message}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.message}}
+\item\relax\sphinxstyleindexentry{nanostream.message.poison\_pill}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.poison_pill}}
+\item\relax\sphinxstyleindexentry{nanostream.message.trigger}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.trigger}}
+\item\relax\sphinxstyleindexentry{nanostream.node}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.node}}
+\item\relax\sphinxstyleindexentry{nanostream.node\_classes.network\_nodes}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.node_classes.network_nodes}}
+\item\relax\sphinxstyleindexentry{nanostream.node\_queue.queue}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.node_queue.queue}}
+\item\relax\sphinxstyleindexentry{nanostream.utils.data\_structures}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.utils.data_structures}}
+\end{sphinxtheindex}
 
 \renewcommand{\indexname}{Index}
 \printindex
