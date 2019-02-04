@@ -226,7 +226,6 @@ The code corresponding to the configuration file above would look like this:
         get_environment_variables.global_start()
     
 
-
 Rolling your own ``NanoNode`` class
 -----------------------------------
 
@@ -312,7 +311,8 @@ this:
 Composing and configuring ``NanoNode`` objects
 ----------------------------------------------
 
-(in-progress... code is not guaranteed to be stable...)
+.. warning:: The code described in this section is experimental and very
+   unstable. It would be bad to use it for anything important.
 
 Let's suppose you've worked very hard to create the pipeline from the
 last example. Now, your boss says that another engineering team wants to

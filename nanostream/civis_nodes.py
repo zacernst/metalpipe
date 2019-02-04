@@ -251,6 +251,7 @@ class FindValueInRedshiftColumn(NanoNode):
         value = (
             result['result_rows'][0][0]
             if len(result['result_rows']) > 0 and len(result['result_rows'][0]) > 0 else None)
+        logging.info('FindValueInRedshiftColumn: ' + str(value))
         yield value
 
 

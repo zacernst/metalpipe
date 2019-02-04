@@ -74,6 +74,7 @@ def get_environment_variables(*args):
         for environment_variable in environment_variables}
     return environment
 
+
 class bcolors:
     '''
     This class holds the values for the various colors that are used in the
@@ -175,6 +176,7 @@ class NanoNode:
         input_message_keypath=None,
         key=None,
         messages_received_counter=0,
+        prefer_existing_value=False,
         messages_sent_counter=0,
         post_process_function=None,
         post_process_keypath=None,
@@ -192,6 +194,7 @@ class NanoNode:
         self.global_dict = None  # We'll add a dictionary upon startup
         self.thread_dict = {}
         self.kill_thread = False
+        self.prefer_existing_value = prefer_existing_value
         self.accumulator = {}
         self.output_key = output_key
         self.keep_alive = keep_alive
@@ -718,6 +721,7 @@ class CounterOfThings(NanoNode):
             if counter > 10:
                 assert False
 
+
 class InsertData(NanoNode):
 
     def __init__(self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs):
@@ -728,9 +732,9 @@ class InsertData(NanoNode):
 
     def process_item(self):
         for key, value in self.value_dict.items():
-            if (key not in self.__message__) or overwrite or (
+            if (key not in self.__message__) or self.overwrite or (
                 self.__message__.get(key) == None and
-                     iself.overwrite_if_null):
+                     self.overwrite_if_null):
                 self.__message__[key] = value
         yield self.__message__
 

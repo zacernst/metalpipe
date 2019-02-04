@@ -40,6 +40,7 @@ class NanoStreamQueue:
             self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
         except queue.Empty:
             message = None
+        logging.debug('Retrieved message: ' + str(message))
         return message
 
     def put(self, message, *args, previous_message=None, **kwargs):
@@ -58,15 +59,19 @@ class NanoStreamQueue:
             previous_message = {}
         if self.source_node.output_key is not None:
             message = {self.source_node.output_key: message}
+
         # Check if we need to retain the previous message in the keys of
         # this message, assuming we have dictionaries, etc.
-        logging.debug(
-            '--->' + self.source_node.name + '--->' + str(self.source_node.output_key) + '--->' +
-            str(previous_message) + '--->' + str(previous_message.items()
-                if previous_message is not None else None))
         if self.source_node.retain_input:
             for key, value in previous_message.items():
-                message[key] = value
+                if key not in message:
+                    message[key] = value
+                elif (key in message and value is not None
+                        and self.source_node.prefer_existing_value):
+                    message[key] = value
+                else:
+                    pass
+
 
         message_obj = NanoStreamMessage(message)
         message_obj.time_queued = time.time()

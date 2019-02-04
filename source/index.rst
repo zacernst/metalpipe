@@ -11,6 +11,7 @@ NanoStream: Stream processing without the hassle
    :caption: Contents:
 
    Overview <overview>
+   The Data Journey <data_journey>
    Requirements <requirements>
    Implementation notes <implementation>
    API documentation <api>

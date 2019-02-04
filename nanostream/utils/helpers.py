@@ -153,10 +153,21 @@ def now_redshift():
     return datetime.datetime.now().strftime('%b %d,%Y  %H:%M:%S')
 
 
+def now_datetime():
+    return datetime.datetime.now()
+
+def two_weeks_ago_datetime():
+    return datetime.datetime.now() - datetime.timedelta(days=14)
+
+def datetime_to_redshift(datetime_obj):
+    return datetime_obj.strftime('%b %d,%Y  %H:%M:%S')
+
+def datetime_to_milliseconds(datetime_obj):
+    return int((datetime_obj - UNIX_EPOCH).total_seconds() * 1000)
+
 class SafeMap(dict):
     def __missing__(self, key):
         return '{' + str(key) + '}'
-
 
 class ListIndex:
     def __init__(self, index):
@@ -235,15 +246,16 @@ def replace_by_path(
     function_kwargs = function_kwargs or {}
     #dictionary_clone = copy.deepcopy(dictionary)
     dictionary_clone = dictionary
-    for path in matching_tail_paths(target_path, dictionary_clone, starting_path=starting_path):
+    for path in list(matching_tail_paths(target_path, dictionary_clone, starting_path=starting_path)):
         #logging.info('replace_by_path log:')
         #logging.info(str(dictionary))
         #logging.info(str(target_path))
         #logging.info('-----------------------------------')
         current_value = get_value(dictionary, path)
-        target_value = target_value or function(
+        one_target_value = target_value or function(
             current_value, *function_args, **function_kwargs)
-        set_value(dictionary, path, target_value)
+        set_value(dictionary, path, one_target_value)
+        print('replace_by_path:' + str(current_value) + ' ' + str(one_target_value))
 
 
 def aggregate_values(dictionary, target_path, values=False):
@@ -303,4 +315,6 @@ if __name__ == '__main__':
         replace_by_path(d, ['vid'], target_value='hithere')
         counter += 1
         print(counter)
-
+    import random
+    logging.basicConfig(level=logging.INFO)
+    replace_by_path(d, ['vid'], function=lambda x: str(x) + str(random.random()))

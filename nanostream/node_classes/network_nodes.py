@@ -63,7 +63,7 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(
             **get_request_parameters)
-        logging.debug('paginator url: ' + endpoint_url)
+        logging.info('paginator url: ' + endpoint_url)
         out = session.get(endpoint_url)
         # out = out.json()
         out = json.loads(out.text)
@@ -99,11 +99,9 @@ class HttpGetRequest(NanoNode):
     def __init__(
         self,
         url=None,
-        endpoint_template='',
         endpoint_dict=None,
         json=True,
             **kwargs):
-        self.endpoint_template = endpoint_template
         self.url = url
         self.endpoint_dict = endpoint_dict or {}
         self.json = json
@@ -124,7 +122,7 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        formatted_endpoint = self.endpoint_template.format_map(SafeMap(**(self.message or {})))
+        formatted_endpoint = self.url.format_map(SafeMap(**(self.message or {})))
         try:
             formatted_endpoint = formatted_endpoint.format_map(SafeMap(**(self.endpoint_dict or {})))
         except Exception as err:
