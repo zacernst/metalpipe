@@ -11,7 +11,8 @@ from nanostream.utils.required_arguments import (
     MissingRequiredArgument, required_arguments)
 from nanostream.utils.set_attributes import set_kwarg_attributes
 from nanostream.utils.helpers import (
-    list_to_dict, to_bool, get_value, set_value, ListIndex)
+    aggregate_values, list_to_dict, to_bool, get_value,
+    set_value, ListIndex, replace_by_path)
 
 
 os.environ['PYTHONPATH'] = '.'
@@ -128,6 +129,17 @@ def some_dictionary():
         'outer_5': [{'inner_1': 'value_1'}, {'inner_2': 'value_2'}]}
     return dictionary
 
+@pytest.fixture(scope='function')
+def dict_with_dup_keys():
+
+    dictionary = {
+        'outer_1': 1,
+        'outer_2': {'level_2': 4},
+        'outer_3': {'level_2': 3},
+        'outer_4': [4, 5, 6],
+        'outer_5': [{'inner_1': 'value_1'}, {'inner_1': 'value_2'}]}
+    return dictionary
+
 
 def test_get_value(some_dictionary):
     assert get_value(some_dictionary, 'outer_1') == 1
@@ -153,3 +165,29 @@ def test_set_value_2(some_dictionary):
 def test_set_value_error(some_dictionary):
     with pytest.raises(expected_exception=Exception):
         set_value(some_dictionary, ['outer_4', 'doesnotexist'], 'noway')
+
+
+def test_replace_by_path_value(dict_with_dup_keys):
+    replace_by_path(dict_with_dup_keys, ['level_2'], 'replaced_value')
+    assert dict_with_dup_keys['outer_2']['level_2'] == 'replaced_value'
+    assert dict_with_dup_keys['outer_3']['level_2'] == 'replaced_value'
+
+
+def test_replace_by_path_function_1(dict_with_dup_keys):
+    def add_one(thing):
+        return thing + 1
+
+    replace_by_path(dict_with_dup_keys, ['level_2'], function=add_one)
+    assert dict_with_dup_keys['outer_2']['level_2'] == 5
+    assert dict_with_dup_keys['outer_3']['level_2'] == 4
+
+
+def test_replace_by_path_value_in_list(dict_with_dup_keys):
+    replace_by_path(dict_with_dup_keys, ['inner_1'], 'replaced_value')
+    assert dict_with_dup_keys['outer_5'][0]['inner_1'] == 'replaced_value'
+    assert dict_with_dup_keys['outer_5'][1]['inner_1'] == 'replaced_value'
+
+
+def test_aggregate_values(dict_with_dup_keys):
+    out = aggregate_values(dict_with_dup_keys, ['inner_1'])
+    assert out == ['value_1', 'value_2']

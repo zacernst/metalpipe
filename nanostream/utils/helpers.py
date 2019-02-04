@@ -156,18 +156,23 @@ def now_redshift():
 def now_datetime():
     return datetime.datetime.now()
 
+
 def two_weeks_ago_datetime():
     return datetime.datetime.now() - datetime.timedelta(days=14)
+
 
 def datetime_to_redshift(datetime_obj):
     return datetime_obj.strftime('%b %d,%Y  %H:%M:%S')
 
+
 def datetime_to_milliseconds(datetime_obj):
     return int((datetime_obj - UNIX_EPOCH).total_seconds() * 1000)
+
 
 class SafeMap(dict):
     def __missing__(self, key):
         return '{' + str(key) + '}'
+
 
 class ListIndex:
     def __init__(self, index):
@@ -206,8 +211,10 @@ def all_paths(thing, path=None, starting_path=None):
 def last_element_list_index(path):
     return isinstance(path[-1], (ListIndex,))
 
+
 def remove_list_indexes(path):
     return tuple(step for step in path if not isinstance(step, (ListIndex,)))
+
 
 def matching_tail_paths(target_path, structure, starting_path=None):
     target_path = tuple(target_path)
@@ -231,11 +238,14 @@ def matching_tail_paths(target_path, structure, starting_path=None):
             logging.info('tail path: ' + str(target_path) + ' ' + str(path))
             yield (starting_path or tuple([])) + path
 
+
 def lists_equal(l1, l2):
     return l1 == l2
 
+
 def nevermind(thing):
     return thing
+
 
 def replace_by_path(
     dictionary, target_path, target_value=None, function=None,
@@ -246,16 +256,12 @@ def replace_by_path(
     function_kwargs = function_kwargs or {}
     #dictionary_clone = copy.deepcopy(dictionary)
     dictionary_clone = dictionary
-    for path in list(matching_tail_paths(target_path, dictionary_clone, starting_path=starting_path)):
-        #logging.info('replace_by_path log:')
-        #logging.info(str(dictionary))
-        #logging.info(str(target_path))
-        #logging.info('-----------------------------------')
+    for path in matching_tail_paths(
+            target_path, dictionary_clone, starting_path=starting_path):
         current_value = get_value(dictionary, path)
         one_target_value = target_value or function(
             current_value, *function_args, **function_kwargs)
         set_value(dictionary, path, one_target_value)
-        print('replace_by_path:' + str(current_value) + ' ' + str(one_target_value))
 
 
 def aggregate_values(dictionary, target_path, values=False):
