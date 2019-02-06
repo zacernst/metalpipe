@@ -50,6 +50,7 @@ DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
 
+PROMETHEUS = True
 
 def no_op(*args, **kwargs):
     '''
@@ -217,6 +218,7 @@ class NanoNode:
         self.post_process_function_name = post_process_function  # Function to be run on result
         self.post_process_function_kwargs = post_process_function_kwargs or {}
         self.summary = summary
+        self.prometheus_objects = None
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -470,6 +472,11 @@ class NanoNode:
         error handling later.
         '''
         # Swap out the message if ``key`` is specified
+        # If we're using prometheus, then increment a counter
+        if self.prometheus_objects is not None:
+            self.prometheus_objects['incoming_message_summary'].observe(random.random())
+        message_arrival_time = time.time()
+
         try:
             for out in self.process_item(*args, **kwargs):
                 if not isinstance(out, (dict, NothingToSeeHere)) and self.output_key is None:
@@ -487,6 +494,9 @@ class NanoNode:
                                 out,
                                 self.post_process_keypath),
                             **self.post_process_function_kwargs))
+                if self.prometheus_objects is not None:
+                    self.prometheus_objects['outgoing_message_summary'].set(time.time() - message_arrival_time)
+
                 yield out
         except Exception as err:
             self.error_counter += 1
@@ -580,10 +590,24 @@ class NanoNode:
             for input_queue in node.input_queue_list:
                 input_queue.put(broadcast_message)
 
-    def global_start(self, datadog=False, pipeline_name=None):
+    def global_start(
+        self, datadog=False, prometheus=False, pipeline_name=None):
         '''
         Starts every node connected to ``self``.
         '''
+
+        def prometheus_init():
+            from prometheus_client import start_http_server, Summary, Gauge, Histogram, Counter
+            for node in self.all_connected():
+                node.prometheus_objects = {}
+                summary = Summary(node.name + '_incoming', 'Summary of incoming messages')
+                node.prometheus_objects['incoming_message_summary'] = summary
+                node.prometheus_objects['outgoing_message_summary'] = Gauge(node.name + '_outgoing', 'Summary of outgoing messages')
+            start_http_server(8000)
+
+        if PROMETHEUS:
+            prometheus_init()
+
         # thread_dict = self.thread_dict
         global_dict = {}
 
@@ -606,7 +630,7 @@ class NanoNode:
             # Tell each node whether they're logging to datadog
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
-            logging.debug('global_start:' + str(self))
+            logging.info('global_start:' + str(self))
             thread = threading.Thread(target=NanoNode.stream, args=(node, ))
             thread.start()
             node.thread_dict = self.thread_dict
@@ -879,8 +903,8 @@ class SimpleTransforms(NanoNode):
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.debug('TRANSFORM')
-        logging.debug(self.message)
+        logging.info('TRANSFORM ' + str(self.name))
+        logging.info(self.name + ' ' + str(self.message))
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
@@ -892,7 +916,7 @@ class SimpleTransforms(NanoNode):
                 function = None
             function_kwargs = transform.get('function_kwargs', None)
             function_args = transform.get('function_args', None)
-
+            logging.info(self.name + ' calling replace_by_path:')
             replace_by_path(
                 self.message,
                 tuple(path),
@@ -901,7 +925,7 @@ class SimpleTransforms(NanoNode):
                 function_args=function_args,
                 starting_path=starting_path,
                 function_kwargs=function_kwargs)
-        logging.debug(self.message)
+            logging.info('after SimpleTransform: ' + self.name + str(self.message))
         yield self.message
 
 
@@ -920,6 +944,7 @@ class Serializer(NanoNode):
                 yield item
         else:
             for item in self.__message__:
+                logging.info(self.name + ' ' + str(item))
                 yield item
 
 
@@ -935,6 +960,7 @@ class AggregateValues(NanoNode):
 
     def process_item(self):
         values = aggregate_values(self.__message__, self.tail_path, values=self.values)
+        logging.info('aggregate_values ' + self.name + ' ' + str(values))
         yield values
 
 
@@ -952,10 +978,10 @@ class Filter(NanoNode):
          'key': mykey}
 
     '''
-    def __init__(self, test=None, key=None, value=True, *args, **kwargs):
+    def __init__(self, test=None, test_keypath=None, value=True, *args, **kwargs):
         self.test = test
-        self.key = key
         self.value = value
+        self.test_keypath = test_keypath or []
         super(Filter, self).__init__(*args, **kwargs)
 
     @staticmethod
@@ -964,7 +990,7 @@ class Filter(NanoNode):
 
     @staticmethod
     def _value_is_not_none(message, key):
-        return message.get(key, None) is not None
+        return get_value(message, key) is not None
 
     @staticmethod
     def _value_is_true(message, key):
@@ -974,15 +1000,16 @@ class Filter(NanoNode):
         if self.test in ['key_exists', 'value_is_not_none', 'value_is_true']:
             result = (
                 getattr(self, '_' + self.test)(
-                    self.message, self.key) == self.value)
+                    self.__message__, self.test_keypath) == self.value)
         else:
             raise Exception('Unknown test: {test_name}'.format(
                 test_name=test))
         if result:
-            logging.debug('Sending message through')
+            logging.info('Sending message through')
             yield self.message
         else:
-            logging.debug('Blocking message')
+            logging.info('Blocking message: ' + str(self.__message__))
+            yield NothingToSeeHere()
 
 
 class StreamMySQLTable(NanoNode):
@@ -1341,6 +1368,7 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
+        logging.info('Remapper {node}:'.format(node=self.name) + str(self.__message__))
         out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
 
@@ -1358,6 +1386,7 @@ class BatchMessages(NanoNode):
     def process_item(self):
         self.counter += 1
         self.batch_list.append(self.__message__)
+        logging.info(self.name + ' ' + str(self.__message__))
         out = NothingToSeeHere()
         if self.counter % self.batch_size == 0:
             out = self.batch_list

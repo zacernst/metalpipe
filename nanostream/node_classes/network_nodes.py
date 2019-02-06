@@ -128,13 +128,13 @@ class HttpGetRequest(NanoNode):
         except Exception as err:
             print('formatted endpoint: ' + formatted_endpoint)
             raise Exception()
-        logging.debug('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
+        logging.info('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
         get_response = requests.get(formatted_endpoint)
         try:
             output = get_response.json()
         except JSONDecodeError:
             output = get_response.text
-        logging.debug(formatted_endpoint + ' GET RESPONSE: ' + str(output) + str(type(output)))
+        logging.info(formatted_endpoint + ' GET RESPONSE: ' + str(output) + str(type(output)))
         yield output
 
 

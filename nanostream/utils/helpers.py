@@ -132,7 +132,8 @@ def remap_dictionary(
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
-            target_dictionary, path,
+            target_dictionary,
+            path,
             get_value(
                 source_dictionary,
                 value,

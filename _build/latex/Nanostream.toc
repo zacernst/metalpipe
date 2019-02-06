@@ -5,19 +5,22 @@
 \contentsline {section}{\numberline {1.3}Using built-in \sphinxstyleliteralintitle {\sphinxupquote {NanoNode}} classes}{3}{section.1.3}
 \contentsline {section}{\numberline {1.4}Rolling your own \sphinxstyleliteralintitle {\sphinxupquote {NanoNode}} class}{5}{section.1.4}
 \contentsline {section}{\numberline {1.5}Composing and configuring \sphinxstyleliteralintitle {\sphinxupquote {NanoNode}} objects}{6}{section.1.5}
-\contentsline {chapter}{\numberline {2}Requirements}{9}{chapter.2}
-\contentsline {chapter}{\numberline {3}Implementation}{11}{chapter.3}
-\contentsline {section}{\numberline {3.1}The data journey}{11}{section.3.1}
-\contentsline {chapter}{\numberline {4}API Documentation}{13}{chapter.4}
-\contentsline {section}{\numberline {4.1}Node module}{13}{section.4.1}
-\contentsline {section}{\numberline {4.2}Data structures module}{19}{section.4.2}
-\contentsline {section}{\numberline {4.3}Network nodes module}{30}{section.4.3}
-\contentsline {section}{\numberline {4.4}NanoStreamMessage module}{31}{section.4.4}
-\contentsline {section}{\numberline {4.5}PoisonPill module}{31}{section.4.5}
-\contentsline {section}{\numberline {4.6}Trigger module}{31}{section.4.6}
-\contentsline {section}{\numberline {4.7}Batch module}{31}{section.4.7}
-\contentsline {section}{\numberline {4.8}NanoStreamQueue module}{31}{section.4.8}
-\contentsline {chapter}{\numberline {5}License}{33}{chapter.5}
-\contentsline {chapter}{\numberline {6}Indices and tables}{35}{chapter.6}
-\contentsline {chapter}{Python Module Index}{37}{section*.343}
-\contentsline {chapter}{Index}{39}{section*.344}
+\contentsline {chapter}{\numberline {2}The Data Journey}{9}{chapter.2}
+\contentsline {section}{\numberline {2.1}Overview}{9}{section.2.1}
+\contentsline {section}{\numberline {2.2}Example: Making a GET request}{9}{section.2.2}
+\contentsline {chapter}{\numberline {3}Requirements}{11}{chapter.3}
+\contentsline {chapter}{\numberline {4}Implementation}{13}{chapter.4}
+\contentsline {section}{\numberline {4.1}The data journey}{13}{section.4.1}
+\contentsline {chapter}{\numberline {5}API Documentation}{15}{chapter.5}
+\contentsline {section}{\numberline {5.1}Node module}{15}{section.5.1}
+\contentsline {section}{\numberline {5.2}Data structures module}{21}{section.5.2}
+\contentsline {section}{\numberline {5.3}Network nodes module}{32}{section.5.3}
+\contentsline {section}{\numberline {5.4}NanoStreamMessage module}{33}{section.5.4}
+\contentsline {section}{\numberline {5.5}PoisonPill module}{33}{section.5.5}
+\contentsline {section}{\numberline {5.6}Trigger module}{33}{section.5.6}
+\contentsline {section}{\numberline {5.7}Batch module}{33}{section.5.7}
+\contentsline {section}{\numberline {5.8}NanoStreamQueue module}{33}{section.5.8}
+\contentsline {chapter}{\numberline {6}License}{35}{chapter.6}
+\contentsline {chapter}{\numberline {7}Indices and tables}{37}{chapter.7}
+\contentsline {chapter}{Python Module Index}{39}{section*.343}
+\contentsline {chapter}{Index}{41}{section*.344}
