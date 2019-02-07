@@ -43,6 +43,7 @@ class IsDictionary(MeetsCondition):
             direction=direction,
             test_function=(lambda x: isinstance(x, (TracedDictionary,))))
 
+
 class FromKey(TreeFinder):
     pass
 
@@ -90,6 +91,9 @@ class TracedObject:
         else:
             return self.parent.root
 
+    def __repr__(self):
+        return self.thing.__repr__()
+
 
 class ListIndex:
 
@@ -125,9 +129,6 @@ class TracedList(TracedObject, list):
             self.children.append(child)
             self.append(child)
 
-    def __repr__(self):
-        return [i.__repr__() for i in self].__repr__()
-
 
 def splitter(
     thing,
@@ -155,9 +156,6 @@ class TracedPrimitive(TracedObject):
         super(TracedPrimitive, self).__init__(
             path=path, parent=parent, parent_key=parent_key)
 
-    def __repr__(self):
-        return self.thing.__repr__()
-
 
 class TracedDictionary(TracedObject, dict):
 
@@ -179,8 +177,7 @@ class TracedDictionary(TracedObject, dict):
             self[key] = child
             self.children.append(child)
 
-    def __repr__(self):
-        return self.thing.__repr__()
+
 
 
 if __name__ == '__main__':
