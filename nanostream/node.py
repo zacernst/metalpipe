@@ -26,7 +26,7 @@ import yaml
 import types
 import inspect
 import prettytable
-import MySQLdb
+# import MySQLdb  #  Fix this for container script
 import requests
 import graphviz
 
@@ -50,7 +50,7 @@ DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
 
-PROMETHEUS = True
+PROMETHEUS = False
 
 def no_op(*args, **kwargs):
     '''

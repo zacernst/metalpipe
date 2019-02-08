@@ -2,11 +2,27 @@ import types
 from nanostream.utils.helpers import *
 
 
-class TreeFinder:
+class TreeHorn:
     pass
 
 
-class MeetsCondition(TreeFinder):
+class Label:
+
+    def __init__(self, label):
+        self.label = label
+        self.treehorns = []
+
+    def __le__(self, other):
+        if isinstance(other, (TreeHorn,)):
+            self.treehorns.append(other)
+        else:
+            raise Exception('Right side of Label assignment must be TreeHorn.')
+
+    def __repr__(self):
+        return 'Label({label})'.format(label=self.label)
+
+
+class MeetsCondition(TreeHorn):
 
     def __init__(self, test_function=None, truth_value=True, direction='down', **kwargs):
         '''
@@ -135,7 +151,7 @@ class IsDictionary(MeetsCondition):
             test_function=(lambda x: isinstance(x, (TracedDictionary,))))
 
 
-class FromKey(TreeFinder):
+class FromKey(TreeHorn):
     pass
 
 
@@ -150,8 +166,12 @@ class TracedObject:
         self.path = path or []
         self.parent = parent
         self.parent_key = parent_key
+        self.labels = set()
         self.children = []
         self.parent_list_index = parent_list_index
+
+    def enumerate(self):
+        return self.root.descendants
 
     @property
     def is_root(self):
@@ -279,7 +299,7 @@ if __name__ == '__main__':
         'baz': {'foobar': 1, 'goober': 2},
         'qux': ['foo', 'foobarbaz', 'ding', {'goo': 'blergh'}],
         'a': {'b': {'c': 'd', 'some_list': [1, 2, 4,]}},
-        'a1': {'b1': {'c': 'd', 'some_list': [1, 2, 4,], 'e': 'whatever'}}}
+        'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
     thing = splitter(d)
     print(thing['qux'][3].root)
     c = MeetsCondition(

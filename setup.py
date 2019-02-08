@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="nanostream",
-    version="0.1.6b",
+    version="0.1.7",
     author="Zachary Ernst",
     author_email="zac.ernst@gmail.com",
     description="Small-scale stream processing for ETL",
@@ -53,8 +53,8 @@ setuptools.setup(
       'jsonschema==2.6.0',
       'kafka==1.3.1',
       'MarkupSafe==1.0',
+      'prometheus_client',
       'more-itertools==4.3.0',
-      'mysqlclient==1.3.13',
       'networkx==2.1',
       'packaging==18.0',
       'pandas==0.23.3',
