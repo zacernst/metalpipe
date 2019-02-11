@@ -46,8 +46,8 @@ class MeetsCondition(TreeHorn):
             thing, (types.GeneratorType,)) else thing
         for outer_node in thing:
             generator = (
-                outer_node.descendants if self.direction == 'down'
-                else outer_node.ancestors)
+                outer_node.descendants() if self.direction == 'down'
+                else outer_node.ancestors())
             for node in generator:
                 if self.test_function(node) == self.truth_value:
                     yield node
@@ -76,8 +76,8 @@ class HasDescendantOrAncestor(MeetsCondition):
 
     def __call__(self, thing):
         generator = (
-            thing.descendants if isinstance(self, (HasDescendant,)) else
-            thing.ancestors)
+            thing.descendants() if isinstance(self, (HasDescendant,)) else
+            thing.ancestors())
         for outer_node in generator:
             sentinal = False
             for _ in self.condition_object(outer_node):
@@ -171,15 +171,21 @@ class TracedObject:
         self.parent_list_index = parent_list_index
 
     def enumerate(self):
-        return self.root.descendants
+        return self.root.descendants()
 
     def __eq__(self, other):
-        'No!'
-        out = isinstance(other, (TracedObject,))
-        out = out and self.path == other.path and self.children == self.children
-        if isinstance(self, (TracedDictionary,)) and isinstance(other, (TracedDictionary,)):
-            for key, value in self.items():
-                out = (out and (key in other) and (other[key] == value))
+        return self.to_python() == other.to_python()
+
+    def to_python(self):
+        '''
+        Disfrobulates the object back into Python primitive types.
+        '''
+        if isinstance(self, (TracedDictionary,)):
+            out = {key: value.to_python() for key, value in self.items()}
+        elif isinstance(self, (TracedList,)):
+            out = [i.to_python() for i in self]
+        elif isinstance(self, (TracedPrimitive,)):
+            out = self.thing
         return out
 
     @property
@@ -190,18 +196,20 @@ class TracedObject:
     def is_leaf(self):
         return
 
-    @property
-    def ancestors(self):
+    def ancestors(self, include_self=False):
+        if include_self:
+            yield self
         if self.parent is not None:
             yield self.parent
-            for i in  self.parent.ancestors:
+            for i in  self.parent.ancestors(include_self=False):
                 yield i
 
-    @property
-    def descendants(self):
+    def descendants(self, include_self=False):
+        if include_self:
+            yield self
         for child in self.children:
             yield child
-            for grandchild in child.descendants:
+            for grandchild in child.descendants(include_self=False):
                 yield grandchild
 
     @property
@@ -223,6 +231,8 @@ class ListIndex:
     def __repr__(self):
         return 'ListIndex({index})'.format(index=self.index)
 
+    def __eq__(self, other):
+        return self.index == other.index
 
 class TracedList(TracedObject, list):
 
@@ -250,7 +260,14 @@ class TracedList(TracedObject, list):
             self.append(child)
 
     def __repr__(self):
-        return ', '.join([item.__repr__() for item in self])
+        return '[' + ', '.join([item.__repr__() for item in self]) + ']'
+
+
+class PathEndsIn(MeetsCondition):
+    def __init__(self, path=None, **kwargs):
+        self.path = path or []
+        _test_function = (lambda x: x.path[-1 * len(self.path):] == self.path)
+        super(PathEndsIn, self).__init__(test_function=_test_function, **kwargs)
 
 
 def splitter(
@@ -329,3 +346,4 @@ if __name__ == '__main__':
     d_test = HasDescendant(IsDictionary())
     print('---')
     print(list(d_test(thing)))
+

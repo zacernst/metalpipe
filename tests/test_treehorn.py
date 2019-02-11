@@ -95,3 +95,18 @@ def test_and(sample_traced_object):
         treehorn.HasKey('c1') & treehorn.HasKey('e'))(sample_traced_object))
     assert sample_traced_object['a1']['b1'] in result
     assert len(result) == 1
+
+def test_traced_object_equality():
+    d = {'foo': ['bar', 'baz'], 'qux': 0}
+    assert treehorn.splitter(d) == treehorn.splitter(d)
+
+def test_traced_object_not_equal():
+    d1 = {'foo': ['bar', 'baz'], 'qux': 0}
+    d2 = {'foo': ['bar', 'baz'], 'qux': 1}
+    assert treehorn.splitter(d1) != treehorn.splitter(d2)
+
+def test_list_index_equal():
+    assert treehorn.ListIndex(1) == treehorn.ListIndex(1)
+
+def test_list_index_not_equal():
+    assert treehorn.ListIndex(1) != treehorn.ListIndex(2)
