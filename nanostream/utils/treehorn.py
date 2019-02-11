@@ -173,6 +173,15 @@ class TracedObject:
     def enumerate(self):
         return self.root.descendants
 
+    def __eq__(self, other):
+        'No!'
+        out = isinstance(other, (TracedObject,))
+        out = out and self.path == other.path and self.children == self.children
+        if isinstance(self, (TracedDictionary,)) and isinstance(other, (TracedDictionary,)):
+            for key, value in self.items():
+                out = (out and (key in other) and (other[key] == value))
+        return out
+
     @property
     def is_root(self):
         return self.parent is None

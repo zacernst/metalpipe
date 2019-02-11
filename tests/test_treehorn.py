@@ -1,0 +1,97 @@
+import os
+import logging
+import time
+import pytest
+import nanostream.utils.treehorn as treehorn
+
+
+os.environ['PYTHONPATH'] = '.'
+logging.basicConfig(level=logging.INFO)
+
+
+def assert_generates(generator, iterable):
+    iterable = list(iterable)  # not set because items might not be hashable
+    generated_elements = list(generator)
+    assert sorted(iterable) == sorted(generated_elements)
+
+def test_assert_generates_true():
+    assert_generates(range(3), [0, 1, 2])
+
+def test_assert_generates_true_wrong_order():
+    assert_generates(range(3), [1, 2, 0])
+
+def test_assert_generates_false_too_many():
+    with pytest.raises(expected_exception=Exception):
+        assert_generates(range(3), [1, 2, 0, 'foo'])
+
+def test_assert_generates_false_not_enough():
+    with pytest.raises(expected_exception=Exception):
+        assert_generates(range(3), [1, 2])
+
+@pytest.fixture(scope='function')
+def sample_dictionary():
+    d = {
+        'foo': 'bar',
+        'bar': 'baz',
+        'baz': {'foobar': 1, 'goober': 2},
+        'qux': ['foo', 'foobarbaz', 'ding', {'goo': 'blergh'}],
+        'a': {'b': {'c': 'd', 'some_list': [1, 2, 4,]}},
+        'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
+    return d
+
+@pytest.fixture(scope='function')
+def sample_traced_object(sample_dictionary):
+    return treehorn.splitter(sample_dictionary)
+
+def test_use_splitter_to_instantiate(sample_dictionary):
+    obj = treehorn.splitter(sample_dictionary)
+    assert isinstance(obj, (treehorn.TracedObject,))
+
+def test_splitter_generates_traced_dictionary(sample_traced_object):
+    assert isinstance(sample_traced_object, (treehorn.TracedDictionary,))
+
+def test_splitter_generates_traced_primitive(sample_traced_object):
+    obj = sample_traced_object['foo']  # equals 'bar'
+    assert isinstance(obj, (treehorn.TracedPrimitive,))
+
+def test_splitter_generates_traced_list(sample_traced_object):
+    obj = sample_traced_object['qux']
+    assert isinstance(obj, (treehorn.TracedList,))
+
+def test_find_root(sample_traced_object):
+    assert sample_traced_object['qux'][3]['goo'].root is sample_traced_object
+
+def test_has_descendant_dictionary(sample_traced_object):
+    result = list(
+        treehorn.HasDescendant(treehorn.IsDictionary())(sample_traced_object))
+    assert sample_traced_object['qux'] in result
+    assert sample_traced_object['a1'] in result
+    assert sample_traced_object['a'] in result
+    assert len(result) == 3
+
+def test_not_list(sample_traced_object):
+    result = list(treehorn.Not(treehorn.IsList())(sample_traced_object))
+    objects_in = [
+        sample_traced_object['foo'],
+        sample_traced_object['bar'],
+        sample_traced_object['baz'],
+        sample_traced_object['a'],
+        sample_traced_object['a1'],
+        sample_traced_object['a1']['b1'],
+        sample_traced_object['a1']['b1']['c1'],
+        sample_traced_object['a1']['b1']['e']]
+
+    objects_out = [
+        sample_traced_object['qux'],
+        sample_traced_object['a1']['b1']['some_list']]
+
+    for obj in objects_in:
+        assert obj in result
+    for obj in objects_out:
+        assert obj not in result
+
+def test_and(sample_traced_object):
+    result = list((
+        treehorn.HasKey('c1') & treehorn.HasKey('e'))(sample_traced_object))
+    assert sample_traced_object['a1']['b1'] in result
+    assert len(result) == 1
