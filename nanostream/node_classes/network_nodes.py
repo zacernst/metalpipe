@@ -98,11 +98,11 @@ class HttpGetRequest(NanoNode):
 
     def __init__(
         self,
-        url=None,
+        endpoint_template=None,
         endpoint_dict=None,
         json=True,
             **kwargs):
-        self.url = url
+        self.endpoint_template = endpoint_template
         self.endpoint_dict = endpoint_dict or {}
         self.json = json
         self.endpoint_dict.update(self.endpoint_dict)
@@ -122,7 +122,7 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        formatted_endpoint = self.url.format_map(SafeMap(**(self.message or {})))
+        formatted_endpoint = self.endpoint_template.format_map(SafeMap(**(self.message or {})))
         try:
             formatted_endpoint = formatted_endpoint.format_map(SafeMap(**(self.endpoint_dict or {})))
         except Exception as err:
