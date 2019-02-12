@@ -51,7 +51,7 @@ def test_splitter_generates_traced_dictionary(sample_traced_object):
     assert isinstance(sample_traced_object, (treehorn.TracedDictionary,))
 
 def test_splitter_generates_traced_primitive(sample_traced_object):
-    obj = sample_traced_object['foo']  # equals 'bar'
+    obj = sample_traced_object['foo']
     assert isinstance(obj, (treehorn.TracedPrimitive,))
 
 def test_splitter_generates_traced_list(sample_traced_object):
@@ -63,14 +63,19 @@ def test_find_root(sample_traced_object):
 
 def test_has_descendant_dictionary(sample_traced_object):
     result = list(
-        treehorn.HasDescendant(treehorn.IsDictionary())(sample_traced_object))
+        treehorn.GoDown(
+            condition=treehorn.HasDescendant(
+                treehorn.IsDictionary()))(sample_traced_object))
     assert sample_traced_object['qux'] in result
     assert sample_traced_object['a1'] in result
     assert sample_traced_object['a'] in result
     assert len(result) == 3
 
 def test_not_list(sample_traced_object):
-    result = list(treehorn.Not(treehorn.IsList())(sample_traced_object))
+    result = list(
+        treehorn.GoDown(
+            condition=treehorn.Not(
+                treehorn.IsList()))(sample_traced_object))
     objects_in = [
         sample_traced_object['foo'],
         sample_traced_object['bar'],
@@ -91,8 +96,8 @@ def test_not_list(sample_traced_object):
         assert obj not in result
 
 def test_and(sample_traced_object):
-    result = list((
-        treehorn.HasKey('c1') & treehorn.HasKey('e'))(sample_traced_object))
+    result = list(treehorn.GoDown(
+        condition=treehorn.HasKey('c1') & treehorn.HasKey('e'))(sample_traced_object))
     assert sample_traced_object['a1']['b1'] in result
     assert len(result) == 1
 
@@ -110,3 +115,14 @@ def test_list_index_equal():
 
 def test_list_index_not_equal():
     assert treehorn.ListIndex(1) != treehorn.ListIndex(2)
+
+def test_apply_label(sample_traced_object):
+    label = treehorn.Label('label')
+    result = list(
+        treehorn.GoDown(
+            condition=treehorn.HasDescendant(
+                treehorn.IsDictionary())).apply_label(label)(sample_traced_object))
+    assert label in sample_traced_object['qux'].labels
+    assert label in sample_traced_object['a1'].labels
+    assert label in sample_traced_object['a'].labels
+    assert label not in sample_traced_object['foo'].labels

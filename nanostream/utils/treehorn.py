@@ -1,5 +1,17 @@
+import logging
 import types
+import hashlib
 from nanostream.utils.helpers import *
+
+
+logging.basicConfig(level=logging.ERROR)
+
+
+def cast_generators(some_dict):
+    if isinstance(some_dict, (dict,)):
+        for key, value in some_dict.items():
+            if isinstance(value, (types.GeneratorType,)):
+                some_dict[key] = list(value)
 
 
 class TreeHorn:
@@ -21,18 +33,62 @@ class Label:
     def __repr__(self):
         return 'Label({label})'.format(label=self.label)
 
+    def apply(self, generator):
+        for node in generator():
+            generator.labels.add(self)
+
+    def __eq__(self, other):
+        return self.label == other.label
+
+    def __hash__(self):
+        return int(hashlib.md5(bytes(self.label, 'utf8')).hexdigest(), 16)
+
+
+class GoSomewhere(TreeHorn):
+
+    def __init__(self, condition=None, **kwargs):
+        self.condition = condition
+        self.label = None
+        super(GoSomewhere, self).__init__(**kwargs)
+
+    def __call__(self, thing):
+        generator = (
+            thing.descendants if self.direction == 'down' else thing.ancestors)
+        for node in generator():
+            logging.info('go somewhere: ' + str(node))
+            if self.condition(node) == self.condition.truth_value:
+                yield node
+                if self.label is not None:
+                    node.labels.add(self.label)
+
+    def apply_label(self, label):
+        self.label = label
+        return self
+
+
+class GoDown(GoSomewhere):
+    def __init__(self, **kwargs):
+        self.direction = 'down'
+        super(GoDown, self).__init__(**kwargs)
+
+
+class GoUp(GoSomewhere):
+    def __init__(self, **kwargs):
+        self.direction = 'up'
+        super(GoDown, self).__init__(**kwargs)
+
 
 class MeetsCondition(TreeHorn):
 
-    def __init__(self, test_function=None, truth_value=True, direction='down', **kwargs):
+    def __init__(
+        self, test_function=None,
+            truth_value=True, **kwargs):
         '''
         Fix generator in __call__ so that it depends on whether the argument
         is a generator or a TracedObject.
         '''
         self.test_function = test_function or (lambda x: True)
-        self.direction = direction
         self.truth_value = truth_value
-        super(MeetsCondition, self).__init__(**kwargs)
 
     def _test(self, node):
         return self.test_function(node.value)
@@ -42,15 +98,7 @@ class MeetsCondition(TreeHorn):
         yield thing
 
     def __call__(self, thing):
-        thing = MeetsCondition._trivial_generator(thing) if not isinstance(
-            thing, (types.GeneratorType,)) else thing
-        for outer_node in thing:
-            generator = (
-                outer_node.descendants() if self.direction == 'down'
-                else outer_node.ancestors())
-            for node in generator:
-                if self.test_function(node) == self.truth_value:
-                    yield node
+        return self.test_function(thing)
 
     def __and__(self, other):
         return And(self, other)
@@ -68,10 +116,12 @@ class MeetsCondition(TreeHorn):
         return ~ (self == other)
 
 
+
+
 class HasDescendantOrAncestor(MeetsCondition):
 
-    def __init__(self, condition_object=None, **kwargs):
-        self.condition_object = condition_object
+    def __init__(self, condition=None, **kwargs):
+        self.condition = condition
         super(HasDescendantOrAncestor, self).__init__(**kwargs)
 
     def __call__(self, thing):
@@ -80,7 +130,7 @@ class HasDescendantOrAncestor(MeetsCondition):
             thing.ancestors())
         for outer_node in generator:
             sentinal = False
-            for _ in self.condition_object(outer_node):
+            for _ in self.condition(outer_node):
                 sentinal = True
                 break
             if sentinal:
@@ -89,16 +139,24 @@ class HasDescendantOrAncestor(MeetsCondition):
 
 class HasDescendant(HasDescendantOrAncestor):
 
-    def __init__(self, condition_object=None, **kwargs):
+    def __init__(self, condition=None, **kwargs):
+        self.condition = condition
         super(HasDescendant, self).__init__(
-            condition_object=condition_object, **kwargs)
+            condition=condition, **kwargs)
+
+    def __call__(self, thing):
+        return any(self.condition(node) for node in thing.descendants())
 
 
 class HasAncestor(HasDescendantOrAncestor):
 
-    def __init__(self, condition_object=None, **kwargs):
+    def __init__(self, condition=None, **kwargs):
+        self.condition = condition
         super(HasAncestor, self).__init__(
-            condition_object=condition_object, **kwagrs)
+            condition=condition, **kwagrs)
+
+    def __call__(self, thing):
+        return any(self.condition(node) for node in thing.descendants())
 
 
 class HasKey(MeetsCondition):
@@ -149,10 +207,6 @@ class IsDictionary(MeetsCondition):
         super(IsDictionary, self).__init__(
             direction=direction,
             test_function=(lambda x: isinstance(x, (TracedDictionary,))))
-
-
-class FromKey(TreeHorn):
-    pass
 
 
 class TracedObject:
@@ -328,22 +382,11 @@ if __name__ == '__main__':
         'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
     thing = splitter(d)
     print(thing['qux'][3].root)
-    c = MeetsCondition(
-        test_function=(
-            lambda x: isinstance(
-                x, (TracedPrimitive,)) and x.thing == 'blergh'))
-    print(list(c(thing)))
-    c = IsList(thing)
-    print(list(c(thing)))
-    c = HasKey(key='goo')
-    print(list(c(thing)))
-    has_goober = HasKey(key='goober')
-    has_foobar = HasKey(key='foobar')
-    conjunction = And(has_goober, has_foobar)
-    print(list(conjunction(thing)))
-    not_list = Not(IsList())
-    print(list(not_list(thing)))
-    d_test = HasDescendant(IsDictionary())
-    print('---')
-    print(list(d_test(thing)))
 
+    out = GoDown(condition=(IsDictionary() & HasKey(key='c')))(thing)
+    out = list(out)
+    print(out)
+    print('---')
+    has_dict = GoDown(condition=HasDescendant(condition=IsDictionary()))
+    out = has_dict.apply_label('HiThere')(thing)
+    out = list(out)

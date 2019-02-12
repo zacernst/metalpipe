@@ -6,6 +6,7 @@ Misc. helper functions for other classes.
 '''
 
 import copy
+import types
 import time
 import logging
 import datetime
@@ -312,6 +313,8 @@ def meets_condition(thing, func):
     for item in iterate(thing):
         if func(item):
             yield item
+
+
 
 
 if __name__ == '__main__':
