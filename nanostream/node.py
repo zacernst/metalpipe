@@ -4,7 +4,6 @@ Node module
 
 The ``node`` module contains the ``NanoNode`` class, which is the foundation
 for NanoStream.
-
 """
 
 import time
@@ -49,10 +48,11 @@ from datadog import initialize as initialize_datadog
 DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get('DEFAULT_MAX_QUEUE_SIZE', 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
+LOGJAM_THRESHOLD = .25
 
 PROMETHEUS = False
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.debug)
 
 def no_op(*args, **kwargs):
     '''
@@ -221,6 +221,7 @@ class NanoNode:
         self.post_process_function_kwargs = post_process_function_kwargs or {}
         self.summary = summary
         self.prometheus_objects = None
+        self.logjam_score = {'polled': 0., 'logjam': 0.}
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -432,7 +433,7 @@ class NanoNode:
         self.log_info('Cleanup called after shutdown.')
 
     def log_info(self, message=''):
-        logging.info('{node_name}: {message}'.format(
+        logging.debug('{node_name}: {message}'.format(
             node_name=self.name, message=message))
 
     def terminate_pipeline(self, error=False):
@@ -592,6 +593,14 @@ class NanoNode:
             for input_queue in node.input_queue_list:
                 input_queue.put(broadcast_message)
 
+    @property
+    def logjam(self):
+        if self.logjam_score['polled'] == 0:
+            return 0.
+        else:
+            return self.logjam_score[
+                'logjam'] / self.logjam_score['polled']
+
     def global_start(
         self, datadog=False, prometheus=False, pipeline_name=None):
         '''
@@ -632,7 +641,7 @@ class NanoNode:
             # Tell each node whether they're logging to datadog
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
-            logging.info('global_start:' + str(self))
+            logging.debug('global_start:' + str(self))
             thread = threading.Thread(target=NanoNode.stream, args=(node, ))
             thread.start()
             node.thread_dict = self.thread_dict
@@ -680,7 +689,7 @@ class NanoNode:
             node.finished for node in self.all_connected())
         error = False
         while not pipeline_finished:
-            logging.info('MONITOR THREAD')
+            logging.debug('MONITOR THREAD')
             time.sleep(MONITOR_INTERVAL)
             counter += 1
 
@@ -692,7 +701,8 @@ class NanoNode:
                 table = prettytable.PrettyTable(
                     ['Node', 'Class', 'Received', 'Sent',
                      'Queued', 'Status', 'Time'])
-                for node in self.all_connected():
+                for node in sorted(
+                        list(self.all_connected()), key=lambda x: x.name):
                     if node.status == 'running':
                         status_color = bcolors.WARNING
                     elif node.status == 'stopped':
@@ -705,9 +715,14 @@ class NanoNode:
                     else:
                         assert False
 
+                    if node.logjam >= LOGJAM_THRESHOLD:
+                        logjam_color = bcolors.FAIL
+                    else:
+                        logjam_color = ''
+
                     table.add_row(
                         [
-                            node.name,
+                            logjam_color + node.name + bcolors.ENDC,
                             node.__class__.__name__,
                             node.messages_received_counter,
                             node.messages_sent_counter,
@@ -734,15 +749,16 @@ class NanoNode:
                     output_queue.approximately_full() for output_queue in
                     node.output_queue_list]
 
-                #logging.info('QUEUE SIZES: {node} {q}'.format(node=node.name, q=str(input_queue_sizes)))
                 logjam = not node.is_source and all(input_queue_full) and not any(output_queue_full)
-                #logging.info('INPUT QUEUE STATE: {node} {full}'.format(node=node.name, full=str(input_queue_full)))
-                #logging.info('OUTPUT QUEUE STATE: {node} {full}'.format(node=node.name, full=str(outputput_queue_full)))
-                logging.info('LOGJAM {logjam} {name}'.format(logjam=logjam, name=node.name))
+                node.logjam_score['polled'] += 1
+                logging.info('LOGJAM SCORE: {logjam}'.format(logjam=str(node.logjam)))
+                if logjam:
+                    node.logjam_score['logjam'] += 1
+                logging.debug('LOGJAM {logjam} {name}'.format(logjam=logjam, name=node.name))
 
-        logging.info('Pipeline finished.')
-        logging.info('Sending terminate signal to nodes.')
-        logging.info('Messages that are being processed will complete.')
+        logging.debug('Pipeline finished.')
+        logging.debug('Sending terminate signal to nodes.')
+        logging.debug('Messages that are being processed will complete.')
 
         if error:
             sys.exit(1)
@@ -777,6 +793,7 @@ class InsertData(NanoNode):
         super(InsertData, self).__init__(**kwargs)
 
     def process_item(self):
+        logging.info('INSERT DATA: ' + str(self.__message__))
         for key, value in self.value_dict.items():
             if (key not in self.__message__) or self.overwrite or (
                 self.__message__.get(key) == None and
@@ -925,8 +942,8 @@ class SimpleTransforms(NanoNode):
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('TRANSFORM ' + str(self.name))
-        logging.info(self.name + ' ' + str(self.message))
+        logging.debug('TRANSFORM ' + str(self.name))
+        logging.debug(self.name + ' ' + str(self.message))
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
@@ -938,7 +955,7 @@ class SimpleTransforms(NanoNode):
                 function = None
             function_kwargs = transform.get('function_kwargs', None)
             function_args = transform.get('function_args', None)
-            logging.info(self.name + ' calling replace_by_path:')
+            logging.debug(self.name + ' calling replace_by_path:')
             replace_by_path(
                 self.message,
                 tuple(path),
@@ -947,7 +964,7 @@ class SimpleTransforms(NanoNode):
                 function_args=function_args,
                 starting_path=starting_path,
                 function_kwargs=function_kwargs)
-            logging.info('after SimpleTransform: ' + self.name + str(self.message))
+            logging.debug('after SimpleTransform: ' + self.name + str(self.message))
         yield self.message
 
 
@@ -966,7 +983,7 @@ class Serializer(NanoNode):
                 yield item
         else:
             for item in self.__message__:
-                logging.info(self.name + ' ' + str(item))
+                logging.debug(self.name + ' ' + str(item))
                 yield item
 
 
@@ -982,7 +999,7 @@ class AggregateValues(NanoNode):
 
     def process_item(self):
         values = aggregate_values(self.__message__, self.tail_path, values=self.values)
-        logging.info('aggregate_values ' + self.name + ' ' + str(values))
+        logging.debug('aggregate_values ' + self.name + ' ' + str(values))
         yield values
 
 
@@ -1027,10 +1044,10 @@ class Filter(NanoNode):
             raise Exception('Unknown test: {test_name}'.format(
                 test_name=test))
         if result:
-            logging.info('Sending message through')
+            logging.debug('Sending message through')
             yield self.message
         else:
-            logging.info('Blocking message: ' + str(self.__message__))
+            logging.debug('Blocking message: ' + str(self.__message__))
             yield NothingToSeeHere()
 
 
@@ -1112,16 +1129,14 @@ class PrinterOfThings(NanoNode):
         logging.debug('Initialized printer...')
 
     def process_item(self):
-        print(self.prepend)
-        if self.pretty:
-            pprint.pprint(self.__message__, indent=2)
-        else:
-            print(str(self.__message__))
-        print('\n')
-        print('------------')
-        if random.random() < -.1:
-            print('!!!!!!!!!!!')
-            assert False
+        if not self.disable:
+            print(self.prepend)
+            if self.pretty:
+                pprint.pprint(self.__message__, indent=2)
+            else:
+                print(str(self.__message__))
+            print('\n')
+            print('------------')
         yield self.message
 
 
@@ -1374,8 +1389,9 @@ def class_factory(raw_config):
 
     for node_name, node_config in new_class.node_dict.items():
         _class = node_config['class']
-        cls = template_class(node_name, _class, node_config['remapping'],
-                             node_config['frozen_arguments'])
+        cls = template_class(
+            node_name, _class, node_config['remapping'],
+            node_config['frozen_arguments'])
         setattr(cls, 'raw_config', raw_config)
         node_config['cls_obj'] = cls
     # Inject?
@@ -1390,7 +1406,7 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('Remapper {node}:'.format(node=self.name) + str(self.__message__))
+        logging.debug('Remapper {node}:'.format(node=self.name) + str(self.__message__))
         out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
 
@@ -1408,7 +1424,7 @@ class BatchMessages(NanoNode):
     def process_item(self):
         self.counter += 1
         self.batch_list.append(self.__message__)
-        logging.info(self.name + ' ' + str(self.__message__))
+        logging.debug(self.name + ' ' + str(self.__message__))
         out = NothingToSeeHere()
         if self.counter % self.batch_size == 0:
             out = self.batch_list

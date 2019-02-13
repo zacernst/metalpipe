@@ -55,7 +55,7 @@ class GoSomewhere(TreeHorn):
         generator = (
             thing.descendants if self.direction == 'down' else thing.ancestors)
         for node in generator():
-            logging.info('go somewhere: ' + str(node))
+            logging.debug('go somewhere: ' + str(node))
             if self.condition(node) == self.condition.truth_value:
                 yield node
                 if self.label is not None:

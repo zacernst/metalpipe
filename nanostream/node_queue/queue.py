@@ -33,7 +33,7 @@ class NanoStreamQueue:
         return self.queue.qsize()
 
     def approximately_full(self, error=.95):
-        return self.size() >= (self.max_queue_size * error)
+        return self.size() >= (self.max_queue_size -1)
 
     @property
     def empty(self):
@@ -44,9 +44,9 @@ class NanoStreamQueue:
             message = self.queue.get(block=False)
             self.queue_times.append(time.time() - message.time_queued)
             self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
-            logging.info('QUEUE TIMES: {queue_times}'.format(queue_times=str(self.queue_times)))
-            logging.info('QUEUE SIZE: {queue_size}'.format(queue_size=str(self.size())))
-            logging.info('QUEUE FULL: {queue_full}'.format(queue_full=str(self.approximately_full())))
+            logging.debug('QUEUE TIMES: {queue_times}'.format(queue_times=str(self.queue_times)))
+            logging.debug('QUEUE SIZE: {queue_size}'.format(queue_size=str(self.size())))
+            logging.debug('QUEUE FULL: {queue_full}'.format(queue_full=str(self.approximately_full())))
         except queue.Empty:
             message = None
         logging.debug('Retrieved message: ' + str(message))

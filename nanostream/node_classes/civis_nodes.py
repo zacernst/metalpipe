@@ -94,7 +94,7 @@ class SendToCivis(NanoNode):
                 logging.debug('poller result:' + str(future_obj._state) + str(type(future_obj._state)))
                 if future_obj._state != 'RUNNING':
                     if future_obj.failed():
-                        logging.info('failer in SendToCivis: ' + str(future_obj.exception()))
+                        logging.debug('failer in SendToCivis: ' + str(future_obj.exception()))
                         self.status = 'error'  # Needs to be caught by Node class
                         run = False
             table_lock.release()
@@ -113,8 +113,8 @@ class SendToCivis(NanoNode):
         # with tempfile.NamedTemporaryFile(mode='w') as tmp:
         row_list = []
         if self.name == 'send_email_to_redshift':
-            logging.info('send_email_to_redshift')
-            logging.info(str(self.__message__))
+            logging.debug('send_email_to_redshift')
+            logging.debug(str(self.__message__))
         if len(self.__message__) == 0:
             yield self.message
 
@@ -145,8 +145,8 @@ class SendToCivis(NanoNode):
                     writer.writerow(row)
                     row_list.append(row)  # Will this get too slow?
                 tmp.flush()
-                logging.info('to redshift: ' + str(self.name))
-                logging.info(str(row_list))
+                logging.debug('to redshift: ' + str(self.name))
+                logging.debug(str(row_list))
                 if not self.dummy_run:
                     fut = civis.io.csv_to_civis(
                         tmp.name,
@@ -163,7 +163,7 @@ class SendToCivis(NanoNode):
                         while not fut.done():
                             time.sleep(1)
                 else:
-                    logging.info('Not sending to Redshift due to `dummy run`')
+                    logging.debug('Not sending to Redshift due to `dummy run`')
             yield self.message
 
 
@@ -251,7 +251,7 @@ class FindValueInRedshiftColumn(NanoNode):
         value = (
             result['result_rows'][0][0]
             if len(result['result_rows']) > 0 and len(result['result_rows'][0]) > 0 else None)
-        logging.info('FindValueInRedshiftColumn: ' + str(value))
+        logging.debug('FindValueInRedshiftColumn: ' + str(value))
         yield value
 
 
@@ -289,14 +289,14 @@ class CivisSQLExecute(NanoNode):
         '''
         sql_query = self.sql.format_map(SafeMap(**self.query_dict))
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
-        logging.info(sql_query)
+        logging.debug(sql_query)
         if not self.dummy_run:
             fut = civis.io.query_civis(
                 sql_query,
                 self.database)
             result = fut.result()
         else:
-            logging.info('Not querying Redshift due to `dummy run`')
+            logging.debug('Not querying Redshift due to `dummy run`')
             result = None
         result_rows = result['result_rows']
         if self.returned_columns is not None:
@@ -350,7 +350,7 @@ class CivisToCSV(NanoNode):
         fut.result()
         #while fut._result == 'RUNNING':
         #    time.sleep(1)
-        #logging.info('future state: ' + str(fut._state))
+        #logging.debug('future state: ' + str(fut._state))
         try:
             csv_file = open(tmp_filename, 'r')
             csv_reader = csv.DictReader(csv_file)
@@ -358,7 +358,7 @@ class CivisToCSV(NanoNode):
                 yield row
             os.remove(tmp_filename)
         except FileNotFoundError:
-            logging.info('FileNotFoundError in CivisToCSV')
+            logging.debug('FileNotFoundError in CivisToCSV')
             yield NothingToSeeHere()
 
 

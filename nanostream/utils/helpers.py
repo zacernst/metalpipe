@@ -32,13 +32,27 @@ def timestamp_to_redshift(timestamp):
     return timestamp.strftime('%b %d,%Y  %H:%M:%S')
 
 
+def string_to_redshift(timestamp):
+    '''
+    TODO: Consider removing this function.
+    '''
+    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ''):
+        return timestamp
+    return datetime.datetime.strptime(timestamp, '%b %d,%Y  %H:%M:%S')
+
+def string_to_datetime(timestamp):
+    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ''):
+        return timestamp
+    return datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+
+
 def milliseconds_epoch_to_datetime(milliseconds_epoch):
     if isinstance(milliseconds_epoch, (datetime.datetime, str,)):
         return milliseconds_epoch
-    logging.info('milliseconds_epoch_to_datetime: ' + str(milliseconds_epoch))
+    logging.debug('milliseconds_epoch_to_datetime: ' + str(milliseconds_epoch))
     out = UNIX_EPOCH + datetime.timedelta(seconds=(
         int(milliseconds_epoch)/1000))
-    logging.info('milliseconds_epoch_to_datetime output: ' + str(out))
+    logging.debug('milliseconds_epoch_to_datetime output: ' + str(out))
     return out
 
 
@@ -237,7 +251,7 @@ def matching_tail_paths(target_path, structure, starting_path=None):
             continue
         tail_of_path = temp_list[-1 * len(target_path):]
         if lists_equal(tail_of_path, target_path):
-            logging.info('tail path: ' + str(target_path) + ' ' + str(path))
+            logging.debug('tail path: ' + str(target_path) + ' ' + str(path))
             yield (starting_path or tuple([])) + path
 
 
@@ -326,5 +340,5 @@ if __name__ == '__main__':
         counter += 1
         print(counter)
     import random
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.debug)
     replace_by_path(d, ['vid'], function=lambda x: str(x) + str(random.random()))
