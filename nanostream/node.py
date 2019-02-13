@@ -52,6 +52,8 @@ STATS_COUNTER_MODULO = 4
 
 PROMETHEUS = False
 
+logging.basicConfig(level=logging.INFO)
+
 def no_op(*args, **kwargs):
     '''
     No-op function to serve as default ``get_runtime_attrs``.
@@ -433,7 +435,7 @@ class NanoNode:
         logging.info('{node_name}: {message}'.format(
             node_name=self.name, message=message))
 
-    def terminate_pipeline(self):
+    def terminate_pipeline(self, error=False):
         '''
         This method can be called on any node in a pipeline, and it will cause
         all of the nodes to terminate.
@@ -678,12 +680,13 @@ class NanoNode:
             node.finished for node in self.all_connected())
         error = False
         while not pipeline_finished:
+            logging.info('MONITOR THREAD')
             time.sleep(MONITOR_INTERVAL)
             counter += 1
 
             # Check whether all the workers have ``.finished``
-            pipeline_finished = all(
-                node.finished for node in self.all_connected())
+            # pipeline_finished = all(
+            #     node.finished for node in self.all_connected())
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(
@@ -714,18 +717,37 @@ class NanoNode:
                 logging.info('\n' + str(table))
                 if error:
                     logging.info('Terminating due to error.')
-                    self.terminate_pipeline()
+                    self.terminate_pipeline(error=True)
                     pipeline_finished = True
                     break
 
             pipeline_finished = all(
                 node.finished for node in self.all_connected())
 
+            # Check for blocked nodes
+            for node in self.all_connected():
+                input_queue_full = [
+                    input_queue.approximately_full() for input_queue in
+                    node.input_queue_list]
+
+                output_queue_full = [
+                    output_queue.approximately_full() for output_queue in
+                    node.output_queue_list]
+
+                #logging.info('QUEUE SIZES: {node} {q}'.format(node=node.name, q=str(input_queue_sizes)))
+                logjam = not node.is_source and all(input_queue_full) and not any(output_queue_full)
+                #logging.info('INPUT QUEUE STATE: {node} {full}'.format(node=node.name, full=str(input_queue_full)))
+                #logging.info('OUTPUT QUEUE STATE: {node} {full}'.format(node=node.name, full=str(outputput_queue_full)))
+                logging.info('LOGJAM {logjam} {name}'.format(logjam=logjam, name=node.name))
+
         logging.info('Pipeline finished.')
         logging.info('Sending terminate signal to nodes.')
         logging.info('Messages that are being processed will complete.')
 
-        sys.exit(0)
+        if error:
+            sys.exit(1)
+        else:
+            sys.exit(0)
 
 
 class CounterOfThings(NanoNode):

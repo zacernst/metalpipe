@@ -23,11 +23,17 @@ class NanoStreamQueue:
 
     def __init__(self, max_queue_size, name=None):
         self.queue = queue.Queue(max_queue_size)
+        self.max_queue_size = max_queue_size
         self.name = name or uuid.uuid4().hex
         self.source_node = None
         self.target_node = None
         self.queue_times = []  # Time messages spend in queue
 
+    def size(self):
+        return self.queue.qsize()
+
+    def approximately_full(self, error=.95):
+        return self.size() >= (self.max_queue_size * error)
 
     @property
     def empty(self):
@@ -38,6 +44,9 @@ class NanoStreamQueue:
             message = self.queue.get(block=False)
             self.queue_times.append(time.time() - message.time_queued)
             self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
+            logging.info('QUEUE TIMES: {queue_times}'.format(queue_times=str(self.queue_times)))
+            logging.info('QUEUE SIZE: {queue_size}'.format(queue_size=str(self.size())))
+            logging.info('QUEUE FULL: {queue_full}'.format(queue_full=str(self.approximately_full())))
         except queue.Empty:
             message = None
         logging.debug('Retrieved message: ' + str(message))
@@ -71,7 +80,6 @@ class NanoStreamQueue:
                     message[key] = value
                 else:
                     pass
-
 
         message_obj = NanoStreamMessage(message)
         message_obj.time_queued = time.time()
