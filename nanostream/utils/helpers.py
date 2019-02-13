@@ -240,10 +240,13 @@ def matching_tail_paths(target_path, structure, starting_path=None):
     for path in all_paths(structure, starting_path=starting_path):
         if path in seen:
             continue
+        elif len(path) == 0:
+            continue
+        elif last_element_list_index(path):
+            continue
         else:
             seen.add(path)
-        if last_element_list_index(path):
-            continue
+
 
         temp_list = remove_list_indexes(path)
 
