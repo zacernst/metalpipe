@@ -25,7 +25,7 @@ class PaginatedHttpGetRequest:
 
     def __init__(
         self, endpoint_template=None, additional_data_key=None,
-        pagination_key=None, pagination_get_request_key=None,
+        pagination_key=None, pagination_get_request_key=None, protocol='http', retries=5,
             default_offset_value='', additional_data_test=bool):
         '''
         :ivar endpoint_template: (str) Template for endpoint URL, suitable
@@ -46,6 +46,8 @@ class PaginatedHttpGetRequest:
         self.additional_data_key = additional_data_key
         self.pagination_key = pagination_key
         self.pagination_get_request_key = pagination_get_request_key
+        self.protocol = protocol
+        self.retries = retries
         self.default_offset_value = default_offset_value
         self.additional_data_test = additional_data_test
 
@@ -55,9 +57,9 @@ class PaginatedHttpGetRequest:
         '''
         offset_set = set()
         session = requests.Session()
-        retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[ 500, 502, 503, 504 ])
+        retries = Retry(total=self.retries, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
 
-        session.mount('http://', HTTPAdapter(max_retries=retries))
+        session.mount('{protocol}://'.format(self.protocol), HTTPAdapter(max_retries=retries))
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
@@ -100,11 +102,15 @@ class HttpGetRequest(NanoNode):
         self,
         endpoint_template=None,
         endpoint_dict=None,
+        protocol='http',
+        retries=5,
         json=True,
             **kwargs):
         self.endpoint_template = endpoint_template
         self.endpoint_dict = endpoint_dict or {}
+        self.protocol = protocol
         self.json = json
+        self.retries = retries
         self.endpoint_dict.update(self.endpoint_dict)
 
         super(HttpGetRequest, self).__init__(**kwargs)
@@ -129,7 +135,13 @@ class HttpGetRequest(NanoNode):
             logging.error('formatted endpoint: ' + formatted_endpoint)
             raise Exception()
         logging.info('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
-        get_response = requests.get(formatted_endpoint)
+
+
+        session = requests.Session()
+        retries = Retry(total=self.retries, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+        session.mount('{protocol}://'.format(protocol=self.protocol), HTTPAdapter(max_retries=retries))
+
+        get_response = session.get(formatted_endpoint)
         try:
             output = get_response.json()
         except JSONDecodeError:

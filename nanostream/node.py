@@ -642,7 +642,7 @@ class NanoNode:
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug('global_start:' + str(self))
-            thread = threading.Thread(target=NanoNode.stream, args=(node, ))
+            thread = threading.Thread(target=NanoNode.stream, args=(node, ), daemon=True)
             thread.start()
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
@@ -942,8 +942,8 @@ class SimpleTransforms(NanoNode):
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.debug('TRANSFORM ' + str(self.name))
-        logging.debug(self.name + ' ' + str(self.message))
+        logging.info('TRANSFORM ' + str(self.name))
+        logging.info(self.name + ' ' + str(self.message))
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
@@ -964,7 +964,8 @@ class SimpleTransforms(NanoNode):
                 function_args=function_args,
                 starting_path=starting_path,
                 function_kwargs=function_kwargs)
-            logging.debug('after SimpleTransform: ' + self.name + str(self.message))
+            logging.debug(
+                'after SimpleTransform: ' + self.name + str(self.message))
         yield self.message
 
 
@@ -978,7 +979,9 @@ class Serializer(NanoNode):
         super(Serializer, self).__init__(**kwargs)
 
     def process_item(self):
-        if self.values:
+        if self.__message__ is None:
+            yield None
+        elif self.values:
             for item in self.__message__.values():
                 yield item
         else:
@@ -998,7 +1001,8 @@ class AggregateValues(NanoNode):
         super(AggregateValues, self).__init__(**kwargs)
 
     def process_item(self):
-        values = aggregate_values(self.__message__, self.tail_path, values=self.values)
+        values = aggregate_values(
+            self.__message__, self.tail_path, values=self.values)
         logging.debug('aggregate_values ' + self.name + ' ' + str(values))
         yield values
 
@@ -1029,6 +1033,7 @@ class Filter(NanoNode):
 
     @staticmethod
     def _value_is_not_none(message, key):
+        logging.info('value_is_not_none: {message} {key}'.format(message=str(message), key=key))
         return get_value(message, key) is not None
 
     @staticmethod
