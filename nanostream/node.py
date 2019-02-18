@@ -52,7 +52,7 @@ LOGJAM_THRESHOLD = .25
 
 PROMETHEUS = False
 
-logging.basicConfig(level=logging.debug)
+logging.basicConfig(level=logging.INFO)
 
 def no_op(*args, **kwargs):
     '''
@@ -647,7 +647,7 @@ class NanoNode:
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
         monitor_thread = threading.Thread(
-            target=NanoNode.thread_monitor, args=(self,), daemon=True)
+            target=NanoNode.thread_monitor, args=(self,), daemon=False)
         monitor_thread.start()
 
     @property
@@ -731,7 +731,7 @@ class NanoNode:
                             node.time_running])
                 logging.info('\n' + str(table))
                 if error:
-                    logging.info('Terminating due to error.')
+                    logging.error('Terminating due to error.')
                     self.terminate_pipeline(error=True)
                     pipeline_finished = True
                     break
@@ -751,7 +751,7 @@ class NanoNode:
 
                 logjam = not node.is_source and all(input_queue_full) and not any(output_queue_full)
                 node.logjam_score['polled'] += 1
-                logging.info('LOGJAM SCORE: {logjam}'.format(logjam=str(node.logjam)))
+                logging.debug('LOGJAM SCORE: {logjam}'.format(logjam=str(node.logjam)))
                 if logjam:
                     node.logjam_score['logjam'] += 1
                 logging.debug('LOGJAM {logjam} {name}'.format(logjam=logjam, name=node.name))
@@ -793,7 +793,7 @@ class InsertData(NanoNode):
         super(InsertData, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('INSERT DATA: ' + str(self.__message__))
+        logging.debug('INSERT DATA: ' + str(self.__message__))
         for key, value in self.value_dict.items():
             if (key not in self.__message__) or self.overwrite or (
                 self.__message__.get(key) == None and
@@ -942,8 +942,8 @@ class SimpleTransforms(NanoNode):
         super(SimpleTransforms, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.info('TRANSFORM ' + str(self.name))
-        logging.info(self.name + ' ' + str(self.message))
+        logging.debug('TRANSFORM ' + str(self.name))
+        logging.debug(self.name + ' ' + str(self.message))
         for transform in self.transform_mapping:
             path = transform['path']
             target_value = transform.get('target_value', None)
@@ -1033,7 +1033,7 @@ class Filter(NanoNode):
 
     @staticmethod
     def _value_is_not_none(message, key):
-        logging.info('value_is_not_none: {message} {key}'.format(message=str(message), key=key))
+        logging.debug('value_is_not_none: {message} {key}'.format(message=str(message), key=key))
         return get_value(message, key) is not None
 
     @staticmethod

@@ -2,15 +2,19 @@
 Overview
 ========
 
+NanoStream is a package of classes and functions that help you write consistent, efficient, configuration-driven ETL pipelines in Python. It is open-source and
+as simple as possible (but not simpler).
 
-Why?
-----
+This overview tells you why NanoStream exists, and how it can help you escape from ETL hell.
+
+Why is it?
+----------
 
 Tolstoy said that every happy family is the same, but every unhappy family is
 unhappy in its own way. ETL pipelines are unhappy families.
 
 Why are they so unhappy? Every engineer who does more than one project involving
-ETL eventually goes through the same stages of ETL grief. First, they thing it's
+ETL eventually goes through the same stages of ETL grief. First, they think it's
 not so bad. Then they do another project and discover that they have to rewrite
 very similar code. Then they think, "Surely, I could have just written a few
 library functions and reused that code, saving lots of time." But when they try
@@ -22,23 +26,30 @@ such a pain to write in the first place. The task of writing ETL pipelines is
 so lousy that engineering best practices tend to go out the window because
 the engineer has better things to do.
 
-NanoStream is an ETL framework written in Python that tries to thread the ETL
-needle. It is opinionated about how ETL pipelines ought to be written; it
-provides a number of highly reusable and well-documented modules that are
-useful in ETL tasks; and it has just enough flexibility to allow an engineer
-to accommodate the strange idiosyncratic requirements of real-world ETL tasks.
+What is it?
+-----------
 
-The overall idea of NanoStream is simple. It is a streaming framework that
-resembles stream-processing patterns such as those found in Spark, Storm, and
-others. But unlike those tools, it requires no special infrastructure or
-server because it runs entirely within one process. It also differs from
-high-powered stream processing tools in that it is designed from the ground
-up with ETL in mind.
+NanoStream is an ETL framework for the real world. It aims to provide structure and consistency to your ETL pipelines, while still allowing you to write bespoke code for all of the weird little idiosyncratic features of your data. It is opinionated without being bossy.
 
-Despite its superficial similarity to Spark and Storm, it is not intended to
-compete with them in any way. NanoStream is not suitable for huge analytic
-pipelines that require massive amounts of computation. You won't want to
-analyze the Twitter firehose with NanoStream.
+The overall idea of NanoStream is simple. On the surface, it looks a lot like streaming frameworks such as Spark or Storm. You hook up various tasks in a directed graph called a "pipeline". The pipeline ingests data from or more places, transforms it, and loads the data somewhere else. But it differs from Spark-like systems in important ways:
+
+1. It is agnostic between stream and batch. Batches of data can be turned into streams and vice-versa.
+#. It is lightweight, requiring no specialized infrastructure or network configuration.
+#. Its built-in functionality is specifically designed for ETL tasks.
+#. It is meant to accommodate 90% of your ETL needs entirely by writing configuration files.
+   
+What isn't it?
+--------------
+
+There are many things that NanoStream is not:
+
+1. It is not a Big Data(tm) tool. If you're handling petabytes of data, you do
+   not want to use NanoStream.
+2. It is not suitable for large amounts of computation. If you need to use
+   dataframes to calculate lots of complex statistical information in real-time,
+   this is not the tool for you.
+
+Basically, NanoStream deliberately makes two trade-offs: (1) it gives up Big Data(tm) for simplicity; and (2) it gives up being a general-purpose analytic tool in favor of being very good at ETL.
 
 NanoStream pipelines
 --------------------
@@ -92,24 +103,45 @@ each geared toward a specific task. Such tasks include:
   Somewhat high-level view of a NanoStream pipeline
 
 All results and messages passed among the nodes must be dictionary-like
-objects. By default, messages hold the entire history of all the earlier
-messages that led to its being generated.
+objects. By default, messages retain any keys and values that were created by upstream nodes. 
 
-The goal is for NanoStream to be fully "batteries included", with built-in
-``NanoNode`` subclasses for every necessary ETL task. But because this is 
-actually impossible, we try to make it easy to roll your own node classes.
+The goal is for NanoStream to be "batteries included", with built-in
+``NanoNode`` subclasses for every common ETL task. But because ETL pipelines
+generally have something weird going on somewhere, NanoNode makes it easy to
+roll your own node classes;
 
-Using built-in ``NanoNode`` classes
------------------------------------
+Installing NanoStream
+---------------------
 
-The most straightforward use of NanoStream actually requires no coding, per se.
-You write a simple configuration file in YAML, and run the pipeline with the
-built-in command line tool, ``nanostream_cli``. The tool reads the
-configuration file, instantiates the pipeline, and runs it.
+NanoStream is installed in the usual way, with pip:
 
-The configuration file has two parts. The first specifies the nodes; the second
-specifies how they are linked together. Here is an example of a very simple
-configuration file:
+::
+
+    pip install nanostream
+
+To test your installation, try typing
+
+::
+
+    nanostream --help
+
+If NanoStream is installed correctly, you should see a help message.
+
+Using NanoStream
+----------------
+
+You use NanoStream by (1) writing a configuration file that describes your pipeline, and (2) running the ``nanostream`` command, specifying the location of your
+configuration file. NanoStream will read the configuration, create the pipeline,
+and run it.
+
+The configuration file is written in YAML. It has three parts:
+
+1. A list of global variables (optional)
+#. The nodes and their options (required)
+#. A list of edges connecting those nodes to each other.
+
+This is a simple configuration file. If you want to, you can copy it into a
+file called ``sample_config.yaml``:
 
 ::
 
@@ -137,32 +169,58 @@ configuration file:
         - get_environment_variables
         - print_variables
 
-Let's look at this config file one part at a time.
+If you've installed NanoStream and copied this configuration into ``sample_config.yaml``, then you can execute the pipeline:
 
-Other than the optional ``pipeline_name`` and ``pipeline_description`` fields,
-there are two top-level keys: ``nodes`` and ``paths``. Each entry in the
-``node`` section corresponds to a specific node in the pipeline. Their
-top-level key is whatever name you would like to use to refer to that node --
-it should be something short, descriptive, and Python-y. We recommend naming
-these as simple verb-noun phrases such as ``get_environment_variable``,
-``print_variables``, ``light_candle``, ``curse_darkness``, etc.
+::
 
-There are three keys under each node configuration: ``class``, ``summary``, and
-``options``. The ``class`` key is the only one that's required. It is the name
-of the node's class. The ``summary`` key is just an optional arbitrary string.
+    nanostream run --filename sample_config.yaml
 
-All nodes share a certain number of common options that are important for any
-node. Depending on the node, there may also be one or more options specific to
-it. For example, a node that reads from a SQL database will likely have the
-table name as an option. In the above configuration, the
-``GetEnvironmentVariables`` node has (reasonably enough) an option
-``environment_variables``, which contains a list of the environment variables
-that are to be retrieved. The ``PrinterOfThings`` node has an optional
-``prepend`` value, which is a string that will be prepended to anything the
-node prints to the terminal.
 
-The structure of the pipeline is given in the ``paths`` section, which contains
-a list of lists. Each list is a set of nodes that are to be linked together in
+The output should look like this (you might also see some log messages):
+
+::
+    
+    Environment variables: 
+    {'API_USER_ID': None, 'API_KEY': None}
+
+
+The NanoStream pipeline has found the values of two environment variables (``API_KEY`` and ``API_USER_ID``) and printed them to the terminal. If those environmet variables have not been set, their values will be ``None``. But if you were to set any of them, their values would be printed.
+
+Although this is a very trivial example, it is enough to show the main functionality of NanoStream. Let's look at the configuration file one 
+part at a time.
+
+The configuration starts with two top-level options, ``pipeline_name`` and ``pipeline_description``. These are optional, and are only used for the user's convenience.
+
+Below those are two sections: ``nodes`` and ``paths``. Each ``nodes`` section contains one or more blocks that always have this form:
+
+::
+
+    do_something:
+      class: node class
+      summary: optional string describing what this node does
+      options:
+        option_1: value of this option
+        option_2: value of another option
+
+
+Let's go through this one line at a time.
+
+Each node block describes a single node in the NanoStream pipeline. A node
+must be given a name, which can be any arbitrary string. This should be a
+short, descriptive string describing its action, such as ``get_environment_variables`` or ``parse_json``, for example. We encourage
+you to stick to a clear naming convention. We like nodes to have names of
+the form ``verb_noun`` (as in ``print_name``).
+
+NanoStream contains a number of node classes, each of which is designed
+for a specific type of ETL task. In the sample configuration, we're used
+the built-in classes ``GetEnvironmentVariables`` and ``PrinterOfThings``; these are the value following ``class``. You can also roll your own node classes (we'll describe how to do this later in the documentation).
+
+Next is a set of keys and values for the various options that are supported by that class. Because each node class does something different,
+the options are different as well. In the sample configuration, the
+``GetEnvironmentVariables`` node class requires a list of environment variables to retrieve, so as you would expect, we specify that list under the ``environment_variables`` option. The various options are explained in
+the documentation for each class. In addition to the options that are specific to each node, there are also options that are common to every type of node. These will be explained later.
+
+The structure of the pipeline is given in the ``paths`` section, which contains a list of lists. Each list is a set of nodes that are to be linked together in
 order. In our example, the ``paths`` value says that
 ``get_environment_variables`` will send its output to ``print_variables``.
 Paths can be arbitrarily long.
@@ -195,6 +253,14 @@ which generates a diagram of the pipeline. The relevant command(s) are:
 
     python nanostream_cli.py [run | draw] --filename my_sample_config.yaml
 
+
+The ``nanostream`` command can generate a pdf file containing a drawing of the pipeline, showing the flow of data through the various nodes. Just speciy ``draw`` instead of ``run`` to generate the diagram. For our simple little pipeline, we get this:
+
+.. figure:: sample_config_drawing.pdf
+  :width: 240
+  :alt: Sample pipeline drawing
+
+  The pipeline drawing for the simple configuration example
 
 It is also possible to skip using the configuration file and define your
 pipelines directly in code. In general, it's better to use the configuration

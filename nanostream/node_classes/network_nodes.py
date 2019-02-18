@@ -59,7 +59,7 @@ class PaginatedHttpGetRequest:
         session = requests.Session()
         retries = Retry(total=self.retries, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
 
-        session.mount('{protocol}://'.format(self.protocol), HTTPAdapter(max_retries=retries))
+        session.mount('{protocol}://'.format(protocol=self.protocol), HTTPAdapter(max_retries=retries))
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
@@ -134,7 +134,7 @@ class HttpGetRequest(NanoNode):
         except Exception as err:
             logging.error('formatted endpoint: ' + formatted_endpoint)
             raise Exception()
-        logging.info('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
+        logging.debug('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
 
 
         session = requests.Session()
@@ -189,7 +189,7 @@ class HttpGetRequestPaginator(NanoNode):
             default_offset_value=self.default_offset_value)
 
         for i in self.requestor.responses():
-            logging.info('paginator GET request:' + str(self.name) + ' ' + str(self.requestor.endpoint_template))
+            logging.debug('paginator GET request:' + str(self.name) + ' ' + str(self.requestor.endpoint_template))
             if self.finished:
                 break
             yield i
