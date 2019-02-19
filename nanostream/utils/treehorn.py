@@ -1,10 +1,11 @@
+import json
 import logging
 import types
 import hashlib
 from nanostream.utils.helpers import *
 
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 
 def cast_generators(some_dict):
@@ -49,21 +50,51 @@ class GoSomewhere(TreeHorn):
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
         self.label = None
+        self._current_result = None
+        self._previous_traversal = None
+        self._generator = None
+        self._next_traversal = None
         super(GoSomewhere, self).__init__(**kwargs)
 
     def __call__(self, thing):
-        generator = (
-            thing.descendants if self.direction == 'down' else thing.ancestors)
-        for node in generator():
-            logging.debug('go somewhere: ' + str(node))
-            if self.condition(node) == self.condition.truth_value:
-                yield node
-                if self.label is not None:
-                    node.labels.add(self.label)
+        # Find start of traversal
+        
+        start_traversal = self
+
+        def _generator(_traversal, _tree):
+            _inner_generator = (
+                _tree.descendants if _traversal.direction == 'down' 
+                else _tree.ancestors)
+
+            for inner_node in _inner_generator():
+                _traversal._current_result = inner_node
+                if _traversal.condition(inner_node) == _traversal.condition.truth_value:
+                    if _traversal._next_traversal is None:
+                        _traversal._current_result = inner_node
+                        yield inner_node
+                    else:
+                        _traversal._next_traversal(inner_node)
+                        for result in _traversal._next_traversal._generator:
+                            yield result
+
+        self._generator = _generator(start_traversal, thing)
+
+    def next_traversal(self, go_somewhere):
+        self._next_traversal = go_somewhere
+        go_somewhere._previous_traversal = self
+
+    def __getattr__(self, thing):
+        raise Exception('not implemented...')
 
     def apply_label(self, label):
         self.label = label
         return self
+
+    def get(self, key_or_keys):
+        if isinstance(key_or_keys, (str,)):
+            return self.get(key)
+        elif isinstance(key_or_keys, (list, tuple,)):
+            return [self.get(key) for key in key_or_keys]
 
 
 class GoDown(GoSomewhere):
@@ -114,8 +145,6 @@ class MeetsCondition(TreeHorn):
 
     def __ne__(self, other):
         return ~ (self == other)
-
-
 
 
 class HasDescendantOrAncestor(MeetsCondition):
@@ -381,12 +410,32 @@ if __name__ == '__main__':
         'a': {'b': {'c': 'd', 'some_list': [1, 2, 4,]}},
         'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
     thing = splitter(d)
-    print(thing['qux'][3].root)
+    #print(thing['qux'][3].root)
 
-    out = GoDown(condition=(IsDictionary() & HasKey(key='c')))(thing)
-    out = list(out)
-    print(out)
-    print('---')
-    has_dict = GoDown(condition=HasDescendant(condition=IsDictionary()))
-    out = has_dict.apply_label('HiThere')(thing)
-    out = list(out)
+    #out = GoDown(condition=(IsDictionary() & HasKey(key='c')))(thing)
+    #out = list(out)
+    #print(out)
+    #print('---')
+    #has_dict = GoDown(condition=HasDescendant(condition=IsDictionary()))
+    #out = has_dict.apply_label('HiThere')(thing)
+    #out = list(out)
+
+    SAMPLE_FILE = '/home/zac/projects/nanostream/sample_output.json'
+    with open(SAMPLE_FILE, 'r') as infile:
+        tree = json.load(infile)
+    #print(tree)
+    tree = TracedDictionary(tree)
+    go = GoDown(condition=HasKey('recipient') & HasKey('browser'))
+
+    go(tree)
+    for i in go._generator:
+        print(i)
+    
+    go = GoDown(condition=HasKey('recipient') & HasKey('browser'))
+    city = GoDown(condition=HasKey('city'))
+
+    go.next_traversal(city)
+    go(tree)
+    for i in go._generator:
+        print(go._current_result)
+        print(i)
