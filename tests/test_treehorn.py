@@ -121,15 +121,53 @@ def test_list_index_equal():
 def test_list_index_not_equal():
     assert treehorn.ListIndex(1) != treehorn.ListIndex(2)
 
-@pytest.mark.skip('Deleted this method from Label class')
-def test_apply_label(sample_traced_object):
-    label = treehorn.Label('label')
-    obj = treehorn.GoDown(
-            condition=treehorn.HasDescendant(
-                treehorn.IsDictionary()))
+def test_instantiate_downward_traversal():
+    obj = treehorn.GoDown()
+    assert isinstance(obj, (treehorn.GoDown,))
+
+def test_instantiate_condition():
+    obj = treehorn.HasKey('key')
+    assert isinstance(obj, (treehorn.HasKey,))
+
+def test_traversal_creates_generator(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('a1'))
     obj(sample_traced_object)
-    result = list(obj._generator.apply_label(label))
-    assert label in sample_traced_object['qux'].labels
-    assert label in sample_traced_object['a1'].labels
-    assert label in sample_traced_object['a'].labels
-    assert label not in sample_traced_object['foo'].labels
+    assert obj._generator is not None
+
+def test_has_key_finds_node(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('c1'))
+    obj(sample_traced_object)
+    result = list(obj._generator) 
+    assert result[0] == treehorn.splitter(
+        {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'})
+    assert len(result) == 1
+
+def test_has_key_correctly_finds_nothing(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('nonexistent'))
+    obj(sample_traced_object)
+    result = list(obj._generator)
+    assert len(result) == 0
+
+def test_has_key_in_conjunction_finds_node(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('c1') & treehorn.HasKey('e'))
+    obj(sample_traced_object)
+    result = list(obj._generator)
+    assert result[0] == treehorn.splitter(
+        {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'})
+    assert len(result) == 1
+
+def test_has_key_in_disjunction_finds_node(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('c1') | treehorn.HasKey('nonexistent'))
+    obj(sample_traced_object)
+    result = list(obj._generator)
+    assert result[0] == treehorn.splitter(
+        {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'})
+    assert len(result) == 1
+
+def test_has_key_in_disjunction_negation_finds_node(sample_traced_object):
+    obj = treehorn.GoDown(condition=treehorn.HasKey('c1') & (~ treehorn.HasKey('nonexistent')))
+    obj(sample_traced_object)
+    result = list(obj._generator)
+    assert result[0] == treehorn.splitter(
+        {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'})
+    assert len(result) == 1

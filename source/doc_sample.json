@@ -1,0 +1,56 @@
+{
+    "source": "users",
+    "hash": "Ch8KFgjQj67igOnVto4BELHgwMD7iNfjkQEYlrfjtZAt",
+    "events": [
+        {
+            "appName": "mobileapp",
+            "browser": {
+                "name": "Google Chrome",
+                "version": []
+            },
+            "duration": 0,
+            "created": 1550596005797,
+            "location": {
+                "country": "United States",
+                "state": "Massachusetts",
+                "city": "Boston"
+            },
+            "id": "af6de71b",
+            "smtpId": null,
+            "portalId": 537105,
+            "recipient": "alice@gmail.com",
+            "sentBy": {
+                "id": "befa29c9",
+                "created": 1550518557458
+            },
+            "type": "OPEN",
+            "filteredEvent": false,
+            "deviceType": "COMPUTER"
+        },
+        {
+            "appName": "desktopapp",
+            "browser": {
+                "name": "Firefox",
+                "version": []
+            },
+            "duration": 0,
+            "created": 1550596005389,
+            "location": {
+                "country": "United States",
+                "state": "New York",
+                "city": "New York"
+            },
+            "id": "12aadd80",
+            "smtpId": null,
+            "portalId": 537105,
+            "recipient": "bob@gmail.com",
+            "sentBy": {
+                "id": "2cd1e257",
+                "created": 1550581974777
+            },
+            "type": "OPEN",
+            "filteredEvent": false,
+            "deviceType": "COMPUTER"
+        }
+    ]
+}

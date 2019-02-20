@@ -12,7 +12,7 @@ NanoStream: Stream processing without the hassle
 
    Overview <overview>
    The Data Journey <data_journey>
-   Requirements <requirements>
+   Treehorn <treehorn>
    Implementation notes <implementation>
    API documentation <api>
    License <license>

@@ -75,6 +75,9 @@ class GoSomewhere(TreeHorn, dict):
 
     def __call__(self, thing):
         # Find start of traversal
+
+        if not isinstance(thing, (TracedObject,)):
+            thing = splitter(thing)
         
         start_traversal = self
 
@@ -85,7 +88,8 @@ class GoSomewhere(TreeHorn, dict):
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
-                if _traversal.condition(inner_node) == _traversal.condition.truth_value:
+                if (_traversal.condition(inner_node) == 
+                        _traversal.condition.truth_value):
                     if _traversal._next_traversal is None:
                         _traversal._current_result = inner_node
                         yield inner_node
@@ -96,6 +100,11 @@ class GoSomewhere(TreeHorn, dict):
                             yield result
 
         self._generator = _generator(start_traversal, thing)
+
+    def matches(self, thing):
+        self(thing)
+        for i in self._generator:
+            yield i
 
     def next_traversal(self, go_somewhere):
         self._next_traversal = go_somewhere
@@ -117,6 +126,9 @@ class GoSomewhere(TreeHorn, dict):
         self.next_traversal(other)
         return self
 
+    def __iter__(self):
+        for i in self._generator:
+            yield i
 
     def get(self, key_or_keys):
         if isinstance(key_or_keys, (str,)):
@@ -434,12 +446,15 @@ class Relation:
 
     def __init__(self, name):
         self.name = name
+        globals()[name] = self
 
     def __eq__(self, traversal):
         self.traversal = traversal
         return self
 
     def __call__(self, tree):
+        if not isinstance(tree, (TracedObject,)):
+            tree = splitter(tree)
         traversal_head = self.traversal.head
         traversal_head(tree)
         traversals = traversal_head.all_traversals()
@@ -464,14 +479,16 @@ if __name__ == '__main__':
     with open(SAMPLE_FILE, 'r') as infile:
         tree = json.load(infile)
     
-    tree = splitter(tree)
+    # tree = splitter(tree)
 
-    has_email_key = GoDown(condition=HasKey('recipient') & HasKey('browser'))
+    has_email_key = GoDown(condition=HasKey('email'))
     has_city_key = GoDown(condition=HasKey('city'))
 
-    from_city = Relation('FROM_CITY')
-    from_city == (
-        (has_email_key + 'email')['recipient'] > (has_city_key + 'city')['city'])
-    out = from_city(tree)
-    for email_city in out:
+    for i in has_email_key.matches(tree):
+        print(i)
+
+    Relation('FROM_CITY') == (
+        (has_email_key + 'email')['email'] > (has_city_key + 'city')['city'])
+    for email_city in FROM_CITY(tree):
+        pass
         print(email_city)
