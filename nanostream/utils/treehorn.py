@@ -1,10 +1,11 @@
+import json
 import logging
 import types
 import hashlib
 from nanostream.utils.helpers import *
 
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 
 def cast_generators(some_dict):
@@ -33,10 +34,6 @@ class Label:
     def __repr__(self):
         return 'Label({label})'.format(label=self.label)
 
-    def apply(self, generator):
-        for node in generator():
-            generator.labels.add(self)
-
     def __eq__(self, other):
         return self.label == other.label
 
@@ -44,26 +41,100 @@ class Label:
         return int(hashlib.md5(bytes(self.label, 'utf8')).hexdigest(), 16)
 
 
-class GoSomewhere(TreeHorn):
+class GoSomewhere(TreeHorn, dict):
 
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
         self.label = None
+        self._current_result = None
+        self._previous_traversal = None
+        self._generator = None
+        self._retrieve_key = None
+        self._next_traversal = None
         super(GoSomewhere, self).__init__(**kwargs)
 
+    def __getitem__(self, key):
+        self._retrieve_key = key
+        return self
+
+    @property
+    def head(self):
+        start = self
+        while start._previous_traversal is not None:
+            start = start._previous_traversal
+        return start
+
+    def all_traversals(self):
+        head = self.head
+        chain = [head]
+        current = head
+        while current._next_traversal is not None:
+            chain.append(current._next_traversal)
+            current = current._next_traversal
+        return chain
+
     def __call__(self, thing):
-        generator = (
-            thing.descendants if self.direction == 'down' else thing.ancestors)
-        for node in generator():
-            logging.debug('go somewhere: ' + str(node))
-            if self.condition(node) == self.condition.truth_value:
-                yield node
-                if self.label is not None:
-                    node.labels.add(self.label)
+        # Find start of traversal
+
+        if not isinstance(thing, (TracedObject,)):
+            thing = splitter(thing)
+        
+        start_traversal = self
+
+        def _generator(_traversal, _tree):
+            _inner_generator = (
+                _tree.descendants if _traversal.direction == 'down' 
+                else _tree.ancestors)
+
+            for inner_node in _inner_generator():
+                _traversal._current_result = inner_node
+                if (_traversal.condition(inner_node) == 
+                        _traversal.condition.truth_value):
+                    if _traversal._next_traversal is None:
+                        _traversal._current_result = inner_node
+                        yield inner_node
+                    else:
+                        _traversal._next_traversal(inner_node)
+                        for result in _traversal._next_traversal._generator:
+                            _traversal._next_traversal._current_result = result
+                            yield result
+
+        self._generator = _generator(start_traversal, thing)
+
+    def matches(self, thing):
+        self(thing)
+        for i in self._generator:
+            yield i
+
+    def next_traversal(self, go_somewhere):
+        self._next_traversal = go_somewhere
+        go_somewhere._previous_traversal = self
+
+    def __getattr__(self, thing):
+
+        raise Exception('not implemented...' + thing)
 
     def apply_label(self, label):
         self.label = label
         return self
+
+    def __add__(self, label):
+        self.label = Label(label)
+        return self
+
+    def __gt__(self, other):
+        self.next_traversal(other)
+        return self
+
+    def __iter__(self):
+        for i in self._generator:
+            yield i
+
+    def get(self, key_or_keys):
+        if isinstance(key_or_keys, (str,)):
+            return self.get(key)
+        elif isinstance(key_or_keys, (list, tuple,)):
+            return [self.get(key) for key in key_or_keys]
 
 
 class GoDown(GoSomewhere):
@@ -114,8 +185,6 @@ class MeetsCondition(TreeHorn):
 
     def __ne__(self, other):
         return ~ (self == other)
-
-
 
 
 class HasDescendantOrAncestor(MeetsCondition):
@@ -288,6 +357,7 @@ class ListIndex:
     def __eq__(self, other):
         return self.index == other.index
 
+
 class TracedList(TracedObject, list):
 
     def __init__(
@@ -372,21 +442,53 @@ class TracedDictionary(TracedObject, dict):
             self.children.append(child)
 
 
-if __name__ == '__main__':
-    d = {
-        'foo': 'bar',
-        'bar': 'baz',
-        'baz': {'foobar': 1, 'goober': 2},
-        'qux': ['foo', 'foobarbaz', 'ding', {'goo': 'blergh'}],
-        'a': {'b': {'c': 'd', 'some_list': [1, 2, 4,]}},
-        'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
-    thing = splitter(d)
-    print(thing['qux'][3].root)
+class Relation:
 
-    out = GoDown(condition=(IsDictionary() & HasKey(key='c')))(thing)
-    out = list(out)
-    print(out)
-    print('---')
-    has_dict = GoDown(condition=HasDescendant(condition=IsDictionary()))
-    out = has_dict.apply_label('HiThere')(thing)
-    out = list(out)
+    def __init__(self, name):
+        self.name = name
+        globals()[name] = self
+
+    def __eq__(self, traversal):
+        self.traversal = traversal
+        return self
+
+    def __call__(self, tree):
+        if not isinstance(tree, (TracedObject,)):
+            tree = splitter(tree)
+        traversal_head = self.traversal.head
+        traversal_head(tree)
+        traversals = traversal_head.all_traversals()
+        with_labels = [
+            traversal for traversal in traversals 
+            if traversal.label is not None]
+        traversal_head(tree)
+        for _ in traversal_head._generator:
+            d = {}
+            for node_with_label in with_labels:
+                d[node_with_label.label.label] = (
+                    node_with_label._current_result 
+                    if node_with_label._retrieve_key is None 
+                    else node_with_label._current_result.get(
+                        node_with_label._retrieve_key))
+            yield d
+
+    
+if __name__ == '__main__':
+    SAMPLE_FILE = '/home/zac/projects/nanostream/sample_output.json'
+
+    with open(SAMPLE_FILE, 'r') as infile:
+        tree = json.load(infile)
+    
+    # tree = splitter(tree)
+
+    has_email_key = GoDown(condition=HasKey('email'))
+    has_city_key = GoDown(condition=HasKey('city'))
+
+    for i in has_email_key.matches(tree):
+        print(i)
+
+    Relation('FROM_CITY') == (
+        (has_email_key + 'email')['email'] > (has_city_key + 'city')['city'])
+    for email_city in FROM_CITY(tree):
+        pass
+        print(email_city)
