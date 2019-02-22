@@ -7,6 +7,11 @@ API Documentation
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: nanostream.civis_nodes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: nanostream.utils.data_structures
    :members:
    :undoc-members:

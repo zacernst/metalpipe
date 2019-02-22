@@ -28,9 +28,9 @@ operations.
 Nodes may have access to the entire message, or it is possible to specify
 which key-value pair is passed to it. This is done by using the ``key``
 option in the node definition. If the node will be generating results to be
-passed downstream, then we need to either (1) specify the for those results; or
-(2) make sure that the node is generating a dictionary. If (2), then
-by default the dictionary will be merged into the incoming message, and the
+passed downstream, then we need to either (1) specify the output key for those results; or
+(2) make sure that the node is generating a dictionary. If (2), then by default
+the dictionary will be merged into the incoming message, and the
 combined dictionary will be placed on the node's outgoing queue. If a specific
 key is specified for the generated data, then we use the ``output_key``
 option in the node definition.
@@ -60,7 +60,9 @@ GET requests. They are called ``GetEnvironmentVariables`` and
 
 1. ``GetEnvironmentVariables``
 
-   * ``environment_variables``: A list of the names of the environment variables to be fetched. The results will be put in keys named after those environment variables.
+   * ``environment_variables``: A list of the names of the environment
+     variables to be fetched. The results will be put in keys named after
+     those environment variables.
 
 #. ``HttpGetRequest``
 
@@ -70,4 +72,5 @@ GET requests. They are called ``GetEnvironmentVariables`` and
    * ``json`` (optional: default ``True``) Whether the response should be parsed as JSON.
    * ``endpoint_dict`` (optional) Keys and values to be substituted into the
      url.
+
 

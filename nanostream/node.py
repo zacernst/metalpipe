@@ -101,12 +101,6 @@ class NothingToSeeHere:
     pass
 
 
-class Parameters:
-
-    def __init__(self, **kwargs):
-        self.parameters = kwargs
-
-
 class NanoNode:
     '''
     The foundational class of `NanoStream`. This class is inherited by all
@@ -244,8 +238,12 @@ class NanoNode:
 
     def setup(self):
         '''
-        To be overridden by child classes when we need to do something
-        after setting attributes and the pre-flight function.
+        For classes that require initialization at runtime, which can't be done
+        when the class's ``__init__`` function is called. The ``NanoNode`` base
+        class's setup function is just a logging call.
+        
+        It should be unusual to have to make use of ``setup`` because in practice,
+        initialization can be done in the ``__init__`` function.
         '''
         logging.debug('No ``setup`` method for {class_name}.'.format(
             class_name=self.__class__.__name__))
@@ -254,6 +252,7 @@ class NanoNode:
     def __gt__(self, other):
         '''
         Convenience method so that we can link two nodes by ``node1 > node2``.
+        This just calls ``add_edge``.
         '''
         self.add_edge(other)
         return other
@@ -263,6 +262,10 @@ class NanoNode:
         '''
         Tests whether the node is a source or not, i.e. whether there are no
         inputs to the node.
+
+        Returns:
+           (bool): ``True`` if the node has no inputs, ``False`` otherwise.
+           
         '''
         return len(self.input_queue_list) == 0
 
@@ -271,13 +274,25 @@ class NanoNode:
         '''
         Tests whether the node is a sink or not, i.e. whether there are no
         outputs from the node.
+
+        Returns:
+           (bool): ``True`` if the node has no output nodes, ``False`` otherwise.
         '''
         return len(self.output_queue_list) == 0
 
     def add_edge(self, target, **kwargs):
         """
-        Create an edge connecting `self` to `target`. The edge
-        is really just a queue
+        Create an edge connecting `self` to `target`.
+
+        This method instantiates the ``NanoStreamQueue`` object that connects the
+        nodes. Connecting the nodes together consists in (1) adding the queue to 
+        the other's ``input_queue_list`` or ``output_queue_list`` and (2) setting
+        the queue's ``source_node`` and ``target_node`` attributes.
+
+        Args:
+           target (``NanoNode``): The node to which ``self`` will be connected.
+        Returns:
+           None
         """
         max_queue_size = kwargs.get('max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = NanoStreamQueue(max_queue_size)
@@ -288,14 +303,32 @@ class NanoNode:
         edge_queue.source_node = self
         edge_queue.target_node = target
 
-        # Make this recursive below
-        # TODO: Add support for composition
         target.input_queue_list.append(edge_queue)
         self.output_queue_list.append(edge_queue)
 
     def start(self):
         '''
         Starts the node. This is called by ``NanoNode.global_start()``.
+
+        The node's main loop is contained in this method. The main loop does
+        the following:
+
+        1. records the timestamp to the node's ``started_at`` attribute.
+        #. calls ``get_runtime_attrs`` (TODO: check if we can deprecate this)
+        #. calls the ``setup`` method for the class (which is a no-op by default)
+        #. if the node is a source, then successively yield all the results of
+           the node's ``generator`` method, then exit.
+        #. if the node is not a source, then loop over the input queues, getting
+           the next message. Note that when the message is pulled from the queue,
+           the ``NanoStreamQueue`` yields it as a dictionary.
+        #. gets either the content of the entire message if the node has no ``key``
+           attribute, or the value of ``message[self.key]``.
+        #. remaps the message content if a ``remapping`` dictionary has been
+           given in the node's configuration
+        #. calls the node's ``process_item`` method, yielding back the results.
+           (Note that a single input message may cause the node to yield zero,
+           one, or more than one output message.)
+        #. places the results into each of the node's output queues.
         '''
 
         # Run pre-flight function and save output if necessary
@@ -430,6 +463,11 @@ class NanoNode:
             self.cleanup()
 
     def cleanup(self):
+        '''
+        If there is any cleanup (closing files, shutting down database connections),
+        necessary when the node is stopped, then the node's class should provide
+        a ``cleanup`` method. By default, the method is just a logging statement.
+        '''
         self.log_info('Cleanup called after shutdown.')
 
     def log_info(self, message=''):
@@ -439,7 +477,10 @@ class NanoNode:
     def terminate_pipeline(self, error=False):
         '''
         This method can be called on any node in a pipeline, and it will cause
-        all of the nodes to terminate.
+        all of the nodes to terminate if they haven't stopped already.
+
+        Args:
+           error (bool): Not yet implemented.
         '''
         for node in self.all_connected():
             if not node.finished:
@@ -458,6 +499,9 @@ class NanoNode:
         If the node has an ``output_key`` defined, return the corresponding
         value in the message dictionary. If it does not, return the entire
         message dictionary.
+
+        Nodes should access the content of their incoming message via this
+        property.
         '''
         if self.key is None:
             out = self.message
@@ -471,19 +515,25 @@ class NanoNode:
 
     def _process_item(self, *args, **kwargs):
         '''
-        This extra indirection is so that we have a place to insert some
-        error handling later.
+        This method wraps the node's ``process_item`` method. It provides a place
+        to insert code for logging, error handling, etc.
+
+        There's lots of experimental code here, particularly the code for
+        Prometheus monitoring.
         '''
         # Swap out the message if ``key`` is specified
         # If we're using prometheus, then increment a counter
         if self.prometheus_objects is not None:
-            self.prometheus_objects['incoming_message_summary'].observe(random.random())
+            self.prometheus_objects['incoming_message_summary'].observe(
+                random.random())
         message_arrival_time = time.time()
 
         try:
             for out in self.process_item(*args, **kwargs):
-                if not isinstance(out, (dict, NothingToSeeHere)) and self.output_key is None:
-                    logging.debug('Exception raised due to no key' + str(self.name))
+                if (not isinstance(out, (dict, NothingToSeeHere)) 
+                        and self.output_key is None):
+                    logging.debug(
+                        'Exception raised due to no key' + str(self.name))
                     raise Exception(
                         'Either message must be a dictionary or `output_key` '
                         'must be specified. {name}'.format(self.name))
@@ -498,21 +548,27 @@ class NanoNode:
                                 self.post_process_keypath),
                             **self.post_process_function_kwargs))
                 if self.prometheus_objects is not None:
-                    self.prometheus_objects['outgoing_message_summary'].set(time.time() - message_arrival_time)
+                    self.prometheus_objects[
+                        'outgoing_message_summary'].set(
+                            time.time() - message_arrival_time)
 
                 yield out
         except Exception as err:
             self.error_counter += 1
             if self.error_counter > self.max_errors:
-                logging.warning('message: ' + str(err.args) + str(self.__class__.__name__) + str(self.name))
+                logging.warning(
+                    'message: ' + str(err.args) + 
+                    str(self.__class__.__name__) + str(self.name))
                 raise err
             else:
                 logging.warning('oops')
 
-    def processor(self):
+    def processor_bak(self):
         """
         This calls the user's ``process_item`` with just the message content,
         and then returns the full message.
+
+        I think this is deprecated, which is why it's been renamed to ``processor_bak``.
         """
         logging.debug('Processing message content: {message_content}'.format(
             message_content=message.mesage_content))
@@ -561,6 +617,9 @@ class NanoNode:
     def all_connected(self, seen=None):
         '''
         Returns all the nodes connected (directly or indirectly) to ``self``.
+        This allows us to loop over all the nodes in a pipeline even if we
+        have a handle on only one. This is used by ``global_start``, for 
+        example.
 
         Args:
             seen (set): A set of all the nodes that have been identified as
@@ -595,6 +654,23 @@ class NanoNode:
 
     @property
     def logjam(self):
+        '''
+        Returns the logjam score, which measures the degree to which the
+        node is holding up progress in downstream nodes.
+        
+        We're defining a logjam as a
+        node whose input queue is full, but whose output queue(s) is not.
+        More specifically, we poll each node in the ``monitor_thread``,
+        and increment a counter if the node is a logjam at that time. This
+        property returns the percentage of samples in which the node is a
+        logjam. Our intention is that if this score exceeds a threshold,
+        the user is alerted, or the load is rebalanced somehow (not yet
+        implemented).
+
+        Returns:
+           (float): Logjam score
+        '''
+
         if self.logjam_score['polled'] == 0:
             return 0.
         else:
@@ -602,18 +678,27 @@ class NanoNode:
                 'logjam'] / self.logjam_score['polled']
 
     def global_start(
-        self, datadog=False, prometheus=False, pipeline_name=None):
+            self, datadog=False, prometheus=False, pipeline_name=None):
         '''
-        Starts every node connected to ``self``.
+        Starts every node connected to ``self``. Mainly, it:
+
+        1. calls ``start()`` on each node
+        #. sets some global variables
+        #. optionally starts some experimental code for monitoring
         '''
 
         def prometheus_init():
-            from prometheus_client import start_http_server, Summary, Gauge, Histogram, Counter
+            '''
+            Experimental code for enabling Prometheus monitoring.
+            '''
+            from prometheus_client import (
+                start_http_server, Summary, Gauge, Histogram, Counter)
             for node in self.all_connected():
                 node.prometheus_objects = {}
                 summary = Summary(node.name + '_incoming', 'Summary of incoming messages')
                 node.prometheus_objects['incoming_message_summary'] = summary
-                node.prometheus_objects['outgoing_message_summary'] = Gauge(node.name + '_outgoing', 'Summary of outgoing messages')
+                node.prometheus_objects['outgoing_message_summary'] = Gauge(
+                    node.name + '_outgoing', 'Summary of outgoing messages')
             start_http_server(8000)
 
         if PROMETHEUS:
@@ -749,16 +834,20 @@ class NanoNode:
                     output_queue.approximately_full() for output_queue in
                     node.output_queue_list]
 
-                logjam = not node.is_source and all(input_queue_full) and not any(output_queue_full)
+                logjam = (
+                    not node.is_source and all(input_queue_full) 
+                    and not any(output_queue_full))
                 node.logjam_score['polled'] += 1
-                logging.debug('LOGJAM SCORE: {logjam}'.format(logjam=str(node.logjam)))
+                logging.debug('LOGJAM SCORE: {logjam}'.format(
+                    logjam=str(node.logjam)))
                 if logjam:
                     node.logjam_score['logjam'] += 1
-                logging.debug('LOGJAM {logjam} {name}'.format(logjam=logjam, name=node.name))
+                logging.debug('LOGJAM {logjam} {name}'.format(
+                    logjam=logjam, name=node.name))
 
-        logging.debug('Pipeline finished.')
-        logging.debug('Sending terminate signal to nodes.')
-        logging.debug('Messages that are being processed will complete.')
+        logging.info('Pipeline finished.')
+        logging.info('Sending terminate signal to nodes.')
+        logging.info('Messages that are being processed will complete.')
 
         if error:
             sys.exit(1)
@@ -1021,7 +1110,8 @@ class Filter(NanoNode):
          'key': mykey}
 
     '''
-    def __init__(self, test=None, test_keypath=None, value=True, *args, **kwargs):
+    def __init__(
+            self, test=None, test_keypath=None, value=True, *args, **kwargs):
         self.test = test
         self.value = value
         self.test_keypath = test_keypath or []
@@ -1033,7 +1123,8 @@ class Filter(NanoNode):
 
     @staticmethod
     def _value_is_not_none(message, key):
-        logging.debug('value_is_not_none: {message} {key}'.format(message=str(message), key=key))
+        logging.debug('value_is_not_none: {message} {key}'.format(
+            message=str(message), key=key))
         return get_value(message, key) is not None
 
     @staticmethod
@@ -1411,7 +1502,8 @@ class Remapper(NanoNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.debug('Remapper {node}:'.format(node=self.name) + str(self.__message__))
+        logging.debug(
+            'Remapper {node}:'.format(node=self.name) + str(self.__message__))
         out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
 

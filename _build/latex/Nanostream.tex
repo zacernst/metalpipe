@@ -53,7 +53,7 @@
 
 
 \title{Nanostream Documentation}
-\date{Feb 20, 2019}
+\date{Feb 21, 2019}
 \release{0.1}
 \author{Zachary Ernst}
 \newcommand{\sphinxlogo}{\vbox{}}
@@ -615,9 +615,9 @@ operations.
 Nodes may have access to the entire message, or it is possible to specify
 which key-value pair is passed to it. This is done by using the \sphinxcode{\sphinxupquote{key}}
 option in the node definition. If the node will be generating results to be
-passed downstream, then we need to either (1) specify the for those results; or
-(2) make sure that the node is generating a dictionary. If (2), then
-by default the dictionary will be merged into the incoming message, and the
+passed downstream, then we need to either (1) specify the output key for those results; or
+(2) make sure that the node is generating a dictionary. If (2), then by default
+the dictionary will be merged into the incoming message, and the
 combined dictionary will be placed on the node’s outgoing queue. If a specific
 key is specified for the generated data, then we use the \sphinxcode{\sphinxupquote{output\_key}}
 option in the node definition.
@@ -652,7 +652,9 @@ GET requests. They are called \sphinxcode{\sphinxupquote{GetEnvironmentVariables
 \sphinxcode{\sphinxupquote{GetEnvironmentVariables}}
 \begin{itemize}
 \item {} 
-\sphinxcode{\sphinxupquote{environment\_variables}}: A list of the names of the environment variables to be fetched. The results will be put in keys named after those environment variables.
+\sphinxcode{\sphinxupquote{environment\_variables}}: A list of the names of the environment
+variables to be fetched. The results will be put in keys named after
+those environment variables.
 
 \end{itemize}
 
@@ -680,6 +682,13 @@ url.
 \label{\detokenize{treehorn:treehorn}}\label{\detokenize{treehorn::doc}}
 Treehorn is a set of classes for manipulating dictionary- and list-like objects in a declarative style. It is meant to be useful for the sort of tasks required for ETL, such as extracting structured data from JSON objects.
 
+
+\section{Using Treehorn}
+\label{\detokenize{treehorn:using-treehorn}}
+Treehorn allows you to search for information in a dictionary- or list-like object by specifying conditions. Structures that match those conditions can be returned, or they can be labeled. If they are labeled, you can use those labels to build more complex searches later, or retrieve the data. The style of Treehorn is somewhat like JQuery and similar languages that are good for manipulating tree-like data structures such as web pages.
+
+We’ll explain Treehorn by stepping through an example of how we would extract data from the following JSON blob:
+
 \fvset{hllines={, ,}}%
 \begin{sphinxVerbatim}[commandchars=\\\{\}]
 \PYG{p}{\PYGZob{}}
@@ -702,7 +711,7 @@ Treehorn is a set of classes for manipulating dictionary- and list-like objects 
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{id}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{af6de71b}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{smtpId}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{n}{null}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{portalId}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+m+mi}{537105}\PYG{p}{,}
-            \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{recipient}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{alice@gmail.com}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+            \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{email}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{alice@gmail.com}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{sentBy}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}
                 \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{id}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{befa29c9}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
                 \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{created}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+m+mi}{1550518557458}
@@ -727,7 +736,7 @@ Treehorn is a set of classes for manipulating dictionary- and list-like objects 
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{id}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{12aadd80}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{smtpId}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{n}{null}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{portalId}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+m+mi}{537105}\PYG{p}{,}
-            \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{recipient}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{bob@gmail.com}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+            \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{email}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{bob@gmail.com}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
             \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{sentBy}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}
                 \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{id}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{2cd1e257}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
                 \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{created}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{:} \PYG{l+m+mi}{1550581974777}
@@ -740,507 +749,208 @@ Treehorn is a set of classes for manipulating dictionary- and list-like objects 
 \PYG{p}{\PYGZcb{}}
 \end{sphinxVerbatim}
 
-NanoStream is a package of classes and functions that help you write consistent, efficient, configuration-driven ETL pipelines in Python. It is open-source and
-as simple as possible (but not simpler).
+As you can see, this JSON blob is similar to a typical response from a REST API (in fact, this is actually an example from a real REST API, with all personal information deleted).
 
-This overview tells you why NanoStream exists, and how it can help you escape from ETL hell.
+Let’s suppose you need to extract the email address and corresponding city name for each entry in \sphinxcode{\sphinxupquote{events}}. This example is simple enough that you might not see the usefulness of Treehorn, but it’s complex enough to get a sense of how Treehorn works. Later, we’ll look at circumstances where Treehorn’s declarative style is especially useful.
 
-
-\section{Why is it?}
-\label{\detokenize{treehorn:why-is-it}}
-Tolstoy said that every happy family is the same, but every unhappy family is
-unhappy in its own way. ETL pipelines are unhappy families.
-
-Why are they so unhappy? Every engineer who does more than one project involving
-ETL eventually goes through the same stages of ETL grief. First, they think it’s
-not so bad. Then they do another project and discover that they have to rewrite
-very similar code. Then they think, “Surely, I could have just written a few
-library functions and reused that code, saving lots of time.” But when they try
-to do this, they discover that although their ETL projects are very similar,
-they are just different enough that their code isn’t reusable. So they resign
-themselves to rewriting code over and over again. The code is unreliable,
-difficult to maintain, and usually poorly tested and documented because it’s
-such a pain to write in the first place. The task of writing ETL pipelines is
-so lousy that engineering best practices tend to go out the window because
-the engineer has better things to do.
-
-
-\section{What is it?}
-\label{\detokenize{treehorn:what-is-it}}
-NanoStream is an ETL framework for the real world. It aims to provide structure and consistency to your ETL pipelines, while still allowing you to write bespoke code for all of the weird little idiosyncratic features of your data. It is opinionated without being bossy.
-
-The overall idea of NanoStream is simple. On the surface, it looks a lot like streaming frameworks such as Spark or Storm. You hook up various tasks in a directed graph called a “pipeline”. The pipeline ingests data from or more places, transforms it, and loads the data somewhere else. But it differs from Spark-like systems in important ways:
+There are three kinds of classes that are important for Treehorn:
 \begin{enumerate}
 \def\theenumi{\arabic{enumi}}
 \def\labelenumi{\theenumi .}
 \makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
 \item {} 
-It is agnostic between stream and batch. Batches of data can be turned into streams and vice-versa.
+\sphinxcode{\sphinxupquote{Conditions}} \textendash{} These are classes that test a particular location in a tree (e.g. a dictionary) for some condition. Examples of useful conditions are being a dictionary with a certain key, being a non-empty list, having an integer value, and so on.
 
 \item {} 
-It is lightweight, requiring no specialized infrastructure or network configuration.
+\sphinxcode{\sphinxupquote{Traversal}} \textendash{} These classes move throughout a tree, recursively applying tests to each node that they visit. Traversals can be upward (toward the root) or downward (toward the leaves).
 
 \item {} 
-Its built-in functionality is specifically designed for ETL tasks.
+\sphinxcode{\sphinxupquote{Label}} \textendash{} These are nothing more than strings that are attached to particular locations in the tree. Typically, we apply a label to locations in the tree that match particular conditions.
 
 \item {} 
-It is meant to accommodate 90\% of your ETL needs entirely by writing configuration files.
+\sphinxcode{\sphinxupquote{Relations}} \textendash{} Finally, this class represents n-tuples of locations in the tree. For example, if an email address is present in the tree, and the user’s city is present, a \sphinxcode{\sphinxupquote{Relation}} can be used to denote that the person with that email address lives in that city.
 
 \end{enumerate}
 
+The workflow for a typical Treehorn query is that we (1) define some conditions (such as being an email address field); (2) traverse the tree, searching for locations that match those conditions; (3) label those locations; and (4) define a relationship from those labels, which we can use to extract the right information. We’ll gradually build up a query by adding each of these steps one at a time.
 
-\section{What isn’t it?}
-\label{\detokenize{treehorn:what-isn-t-it}}
-There are many things that NanoStream is not:
+
+\subsection{Condition objects}
+\label{\detokenize{treehorn:condition-objects}}
+For this example, let’s suppose you’ve loaded the JSON into a dictionary, like so:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{import} \PYG{n+nn}{json}
+
+\PYG{k}{with} \PYG{n+nb}{open}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{./sample\PYGZus{}api\PYGZus{}response.json}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{r}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)} \PYG{k}{as} \PYG{n}{infile}\PYG{p}{:}
+    \PYG{n}{api\PYGZus{}response} \PYG{o}{=} \PYG{n}{json}\PYG{o}{.}\PYG{n}{load}\PYG{p}{(}\PYG{n}{infile}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+Let’s extract the email addresses and corresonding cities for each user in the API response. First, we create a couple of \sphinxcode{\sphinxupquote{Condition}} objects using the built-in class \sphinxcode{\sphinxupquote{HasKey}}:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{has\PYGZus{}email\PYGZus{}key} \PYG{o}{=} \PYG{n}{HasKey}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{has\PYGZus{}city\PYGZus{}key} \PYG{o}{=} \PYG{n}{HasKey}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+The \sphinxcode{\sphinxupquote{HasKey}} class is a subclass of \sphinxcode{\sphinxupquote{MeetsCondition}}, all of which are callable and return \sphinxcode{\sphinxupquote{True}} or \sphinxcode{\sphinxupquote{False}}. For example, you could do the following:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{d} \PYG{o}{=} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{myemail.com}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{name}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{carol}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}
+\PYG{n}{has\PYGZus{}email\PYGZus{}key}\PYG{p}{(}\PYG{n}{d}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} Returns True}
+\PYG{n}{has\PYGZus{}city\PYGZus{}key}\PYG{p}{(}\PYG{n}{d}\PYG{p}{)}   \PYG{c+c1}{\PYGZsh{} Returns False}
+\end{sphinxVerbatim}
+
+What if you want to test for two conditions on a single node? \sphinxcode{\sphinxupquote{MeetsCondition}} objects can be combined into larger boolean expressions using \sphinxcode{\sphinxupquote{\&}}, \sphinxcode{\sphinxupquote{\textbar{}}}, and \sphinxcode{\sphinxupquote{\textasciitilde{}}} like so:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{p}{(}\PYG{n}{has\PYGZus{}email\PYGZus{}key} \PYG{o}{\PYGZam{}} \PYG{n}{has\PYGZus{}city\PYGZus{}key}\PYG{p}{)}\PYG{p}{(}\PYG{n}{d}\PYG{p}{)}    \PYG{c+c1}{\PYGZsh{} Returns False}
+\PYG{p}{(}\PYG{n}{has\PYGZus{}email\PYGZus{}key} \PYG{o}{\PYGZam{}} \PYG{o}{\PYGZti{}} \PYG{n}{has\PYGZus{}city\PYGZus{}key}\PYG{p}{)}\PYG{p}{(}\PYG{n}{d}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} Returns True}
+\PYG{p}{(}\PYG{n}{has\PYGZus{}email\PYGZus{}key} \PYG{o}{\textbar{}} \PYG{n}{has\PYGZus{}city\PYGZus{}key}\PYG{p}{)}\PYG{p}{(}\PYG{n}{d}\PYG{p}{)}    \PYG{c+c1}{\PYGZsh{} Returns True}
+\end{sphinxVerbatim}
+
+
+\subsection{Traversal objects}
+\label{\detokenize{treehorn:traversal-objects}}
+\sphinxcode{\sphinxupquote{MeetsCondition}} objects aren’t very useful unless they’re combined with traversals. There are two types of traversal classes: \sphinxcode{\sphinxupquote{GoUp}} and \sphinxcode{\sphinxupquote{GoDown}}. Each takes a \sphinxcode{\sphinxupquote{MeetsCondition}} object as a parameter. For example, if you want to search from the root of the tree for every location that is a dictionary with the \sphinxcode{\sphinxupquote{email}} key, the traversal is:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{find\PYGZus{}email} \PYG{o}{=} \PYG{n}{GoDown}\PYG{p}{(}\PYG{n}{condition}\PYG{o}{=}\PYG{n}{has\PYGZus{}email\PYGZus{}key}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} or GoDown(condition=HasKey(\PYGZsq{}email\PYGZsq{}))}
+\end{sphinxVerbatim}
+
+Similarly for finding places with a \sphinxcode{\sphinxupquote{city}} key:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{find\PYGZus{}city} \PYG{o}{=} \PYG{n}{GoDown}\PYG{p}{(}\PYG{n}{condition}\PYG{o}{=}\PYG{n}{has\PYGZus{}city\PYGZus{}key}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} or GoDown(condition=HasKey(\PYGZsq{}city\PYGZsq{}))}
+\end{sphinxVerbatim}
+
+If you want to retrieve all of \sphinxcode{\sphinxupquote{find\_city}}’s matches, you can use its \sphinxcode{\sphinxupquote{matches}} method, which will yield each match:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{k}{for} \PYG{n}{match} \PYG{o+ow}{in} \PYG{n}{has\PYGZus{}email\PYGZus{}key}\PYG{o}{.}\PYG{n}{matches}\PYG{p}{(}\PYG{n}{api\PYGZus{}response}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n+nb}{print}\PYG{p}{(}\PYG{n}{match}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+which will yield:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{id}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{af6de71b}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{portalId}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{537105}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{location}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{state}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Massachusetts}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Boston}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{country}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{United States}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{type}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{OPEN}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{sentBy}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{id}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{befa29c9}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{created}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{1550518557458}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{appName}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{mobileapp}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{duration}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{0}\PYG{p}{,}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{smtpId}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{None}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{deviceType}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{COMPUTER}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{created}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{1550596005797}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{alice@gmail.com}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{browser}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{version}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{[}\PYG{p}{]}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{name}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Google Chrome}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{filteredEvent}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{False}\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{id}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{12aadd80}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{portalId}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{537105}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{location}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{state}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{New York}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{New York}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{country}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{United States}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{type}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{OPEN}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{sentBy}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{id}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{2cd1e257}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{created}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{1550581974777}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{appName}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{desktopapp}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{duration}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{smtpId}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{None}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{deviceType}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{COMPUTER}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{created}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+m+mi}{1550596005389}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{bob@gmail.com}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{browser}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{version}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{p}{[}\PYG{p}{]}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{name}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Firefox}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{filteredEvent}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{False}\PYG{p}{\PYGZcb{}}
+\end{sphinxVerbatim}
+
+Examining each of the dictionaries, we see that they do in fact contain an \sphinxcode{\sphinxupquote{email}} key. Note that the traversal does \sphinxstylestrong{not} return the email string itself \textendash{} we asked only for the dictionary containing the key. This is by design, as we will see soon.
+
+Because we want to retrieve not only the email addresses but also the cities, we need another traversal. Each of the two dictionaries containing the \sphinxcode{\sphinxupquote{email}} key also have a subdictionary that contains a \sphinxcode{\sphinxupquote{city}} key. So we need a second traversal to get that subdictionary. In other words, retrieving the data we need is a two-step process:
 \begin{enumerate}
 \def\theenumi{\arabic{enumi}}
 \def\labelenumi{\theenumi .}
 \makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
 \item {} 
-It is not a Big Data(tm) tool. If you’re handling petabytes of data, you do
-not want to use NanoStream.
+Starting at the root of the tree, we traverse downward until we find a dictionary with the \sphinxcode{\sphinxupquote{email}} key.
 
 \item {} 
-It is not suitable for large amounts of computation. If you need to use
-dataframes to calculate lots of complex statistical information in real-time,
-this is not the tool for you.
+From each of those dictionaries, we go down until we find a dictionary with the \sphinxcode{\sphinxupquote{city}} key.
 
 \end{enumerate}
 
-Basically, NanoStream deliberately makes two trade-offs: (1) it gives up Big Data(tm) for simplicity; and (2) it gives up being a general-purpose analytic tool in favor of being very good at ETL.
+Any non-trivial ETL task involving nested dictionary-like objects will require multi-stage traversals like this one. So Treehorn allows you to chain traversals together using the \sphinxcode{\sphinxupquote{\textgreater{}}} operator:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{chained\PYGZus{}traversal} \PYG{o}{=} \PYG{n}{find\PYGZus{}email} \PYG{o}{\PYGZgt{}} \PYG{n}{find\PYGZus{}city}
+\end{sphinxVerbatim}
+
+The \sphinxcode{\sphinxupquote{chained\_traversal}} says, in effect, “Go down into the tree and find every node that has an \sphinxcode{\sphinxupquote{email}} key. Then, from each of those, continue to go down until you find a node that contains a \sphinxcode{\sphinxupquote{city}} key. In pseudo-code:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+For each node\PYGZus{}1 starting at the root:
+    if node\PYGZus{}1 has {}`{}`email{}`{}` key:
+        for each node\PYGZus{}2 starting at node\PYGZus{}1:
+            if node\PYGZus{}2 has {}`{}`city{}`{}` key:
+                return
+\end{sphinxVerbatim}
+
+So far, we have set set up multi-stage searches for nodes in a tree that satisfy various conditions. Next, we have to extract the right data from those searches. This is where the \sphinxcode{\sphinxupquote{Label}} and \sphinxcode{\sphinxupquote{Relation}} classes come into play.
 
 
-\section{NanoStream pipelines}
-\label{\detokenize{treehorn:nanostream-pipelines}}
-An ETL pipeline in NanoStream is a series of nodes connected by queues. Data
-is generated or processed in each node, and the output is placed on a queue to
-be picked up by downstream nodes.
+\subsection{Labels}
+\label{\detokenize{treehorn:labels}}
+When nodes are identified that satisfy certain conditions, we will want to label those nodes so that we can extract data from them later. The mechanism for doing this is to use a “label”.
 
-\begin{figure}[htbp]
-\centering
-\capstart
+Continuing the example, let’s use the labels “email” and “city” to mark the respective nodes in the two-stage traversal. We do so by adding a label to the traversal chain. Recall that in the previous section, we wrote:
 
-\noindent\sphinxincludegraphics[width=600\sphinxpxdimen]{{30k_view}.png}
-\caption{Very high-level view of a NanoStream pipeline}\label{\detokenize{treehorn:id1}}\end{figure}
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{chained\PYGZus{}traversal} \PYG{o}{=} \PYG{n}{find\PYGZus{}email} \PYG{o}{\PYGZgt{}} \PYG{n}{find\PYGZus{}city}
+\end{sphinxVerbatim}
 
-For the sake of convenience, we distinguish between three types of nodes
-(although there’s no real difference in their use or implementation):
+whereas we now have:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{chained\PYGZus{}traversal} \PYG{o}{=} \PYG{n}{find\PYGZus{}email} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{\PYGZgt{}} \PYG{n}{find\PYGZus{}city} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}
+\end{sphinxVerbatim}
+
+We use \sphinxcode{\sphinxupquote{+}} to add a label, and the label is just a string. Under the hood, Treehorn is instantiating a \sphinxcode{\sphinxupquote{Label}} object, but ordinarily, you shouldn’t have to do that directly.
+
+
+\subsection{Relations}
+\label{\detokenize{treehorn:relations}}
+Lastly, we define a \sphinxcode{\sphinxupquote{Relation}} object to extract the data from our search. In this example, we might think of the search as returning data about people who live in a certain city. So we might name the \sphinxcode{\sphinxupquote{Relation}} “FROM\_CITY”.We’ll want to extract the value of the \sphinxcode{\sphinxupquote{email}} key from the node labeled with \sphinxcode{\sphinxupquote{email}}, and similarly with the \sphinxcode{\sphinxupquote{city}} node. This is accomplished by adding a little more syntax:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{n}{Relation}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{FROM\PYGZus{}CITY}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)} \PYG{o}{==} \PYG{p}{(}
+    \PYG{p}{(}\PYG{n}{find\PYGZus{}email} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]} \PYG{o}{\PYGZgt{}} \PYG{p}{(}\PYG{n}{find\PYGZus{}city} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+After executing that statement, Treehorn will create an object named \sphinxcode{\sphinxupquote{FROM\_CITY}}, which can be called on a dictionary to yield the information we want, like so:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{k}{for} \PYG{n}{email\PYGZus{}city} \PYG{o+ow}{in} \PYG{n}{FROM\PYGZus{}CITY}\PYG{p}{(}\PYG{n}{api\PYGZus{}response}\PYG{p}{)}\PYG{p}{:}
+    \PYG{n+nb}{print}\PYG{p}{(}\PYG{n}{email\PYGZus{}city}\PYG{p}{)}
+\end{sphinxVerbatim}
+
+which will give us:
+
+\fvset{hllines={, ,}}%
+\begin{sphinxVerbatim}[commandchars=\\\{\}]
+\PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Boston}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{alice@gmail.com}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{city}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{New York}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{email}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{bob@gmail.com}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{\PYGZcb{}}
+\end{sphinxVerbatim}
+
+Voila!
+
+
+\section{Summing up}
+\label{\detokenize{treehorn:summing-up}}
+Normally, ETL pipelines that extract data from dictionary-like objects involve a lot of loops and hard-coded keypaths. To accomplish the simple task of extracting emails and city names from our sample JSON blob, we’d probably hard-code paths for each specific key and value, and then we’d loop over various levels in the dictionary. This has several disadvantages:
 \begin{enumerate}
 \def\theenumi{\arabic{enumi}}
 \def\labelenumi{\theenumi .}
 \makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
 \item {} 
-Source nodes. These are nodes that generate data and send it to the rest
-of the pipeline. They might, for example, read data from an external
-data source such as an API endpoint or a database.
+It leads to brittle code. If the JSON blob changes structure in even very small ways, the hard-coded paths become obsolete and have to be rewritten.
 
 \item {} 
-Worker nodes. The workers process data by picking up messages from their
-incoming queues. Their output is placed onto any number of outgoing queues
-to be further processed by downstream nodes.
+The code is difficult to understand and debug. Given a whole bunch of nested loops and hard-coded keypaths, it’s very difficult to understand the intent of the code. Errors have to be found by painstakingly stepping through the execution.
 
 \item {} 
-Sink nodes. These are worker nodes with no outgoing queue. They will
-typically perform tasks such as inserting data into a database or generating
-statistics to be sent somewhere outside the pipeline.
+It is very difficult to accommodate JSON blobs with variable structure. Some JSON blobs returned from APIs have unpredictable levels of nesting, for example. Therefore, keypaths cannot be hard-coded and recursive searches have to be written, which are inefficient and difficult to debug.
 
 \end{enumerate}
 
-All pipelines are implemented in pure Python (version \textgreater{}=3.5). Each node is
-instantiated from a class that inherits from the \sphinxcode{\sphinxupquote{NanoNode}} class. Queues
-are never instantiated directly by the user; they are created automatically
-whenever two nodes are linked together.
-
-There is a large (and growing) number of specialized \sphinxcode{\sphinxupquote{NanoNode}} subclasses,
-each geared toward a specific task. Such tasks include:
-\begin{enumerate}
-\def\theenumi{\arabic{enumi}}
-\def\labelenumi{\theenumi .}
-\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
-\item {} 
-Querying a table in a SQL database and sending the results downstream.
-
-\item {} 
-Making a request to a REST API, paging through the responses until there are
-no more results.
-
-\item {} 
-Ingesting individual messages from an upstream node and batching them
-together into a single message, or doing the reverse.
-
-\item {} 
-Reading environment variables.
-
-\item {} 
-Watching a directory for new files and sending the names of those files
-down the pipeline when they appear.
-
-\item {} 
-Filtering messages, letting them through the pipeline only if a particular
-test is passed.
-
-\end{enumerate}
-
-\begin{figure}[htbp]
-\centering
-\capstart
-
-\noindent\sphinxincludegraphics[width=600\sphinxpxdimen]{{10k_view}.png}
-\caption{Somewhat high-level view of a NanoStream pipeline}\label{\detokenize{treehorn:id2}}\end{figure}
-
-All results and messages passed among the nodes must be dictionary-like
-objects. By default, messages retain any keys and values that were created by upstream nodes.
-
-The goal is for NanoStream to be “batteries included”, with built-in
-\sphinxcode{\sphinxupquote{NanoNode}} subclasses for every common ETL task. But because ETL pipelines
-generally have something weird going on somewhere, NanoNode makes it easy to
-roll your own node classes;
-
-
-\section{Installing NanoStream}
-\label{\detokenize{treehorn:installing-nanostream}}
-NanoStream is installed in the usual way, with pip:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{pip} \PYG{n}{install} \PYG{n}{nanostream}
-\end{sphinxVerbatim}
-
-To test your installation, try typing
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{nanostream} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{n}{help}
-\end{sphinxVerbatim}
-
-If NanoStream is installed correctly, you should see a help message.
-
-
-\section{Using NanoStream}
-\label{\detokenize{treehorn:using-nanostream}}
-You use NanoStream by (1) writing a configuration file that describes your pipeline, and (2) running the \sphinxcode{\sphinxupquote{nanostream}} command, specifying the location of your
-configuration file. NanoStream will read the configuration, create the pipeline,
-and run it.
-
-The configuration file is written in YAML. It has three parts:
-\begin{enumerate}
-\def\theenumi{\arabic{enumi}}
-\def\labelenumi{\theenumi .}
-\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
-\item {} 
-A list of global variables (optional)
-
-\item {} 
-The nodes and their options (required)
-
-\item {} 
-A list of edges connecting those nodes to each other.
-
-\end{enumerate}
-
-This is a simple configuration file. If you want to, you can copy it into a
-file called \sphinxcode{\sphinxupquote{sample\_config.yaml}}:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}
-\PYG{n}{pipeline\PYGZus{}name}\PYG{p}{:} \PYG{n}{Sample} \PYG{n}{NanoStream} \PYG{n}{configuration}
-\PYG{n}{pipeline\PYGZus{}description}\PYG{p}{:} \PYG{n}{Reads} \PYG{n}{some} \PYG{n}{environment} \PYG{n}{variables} \PYG{o+ow}{and} \PYG{n}{prints} \PYG{n}{them}
-
-\PYG{n}{nodes}\PYG{p}{:}
-  \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}\PYG{p}{:}
-    \PYG{n}{class}\PYG{p}{:} \PYG{n}{GetEnvironmentVariables}
-    \PYG{n}{summary}\PYG{p}{:} \PYG{n}{Gets} \PYG{n+nb}{all} \PYG{n}{the} \PYG{n}{necessary} \PYG{n}{environment} \PYG{n}{variables}
-    \PYG{n}{options}\PYG{p}{:}
-      \PYG{n}{environment\PYGZus{}variables}\PYG{p}{:}
-        \PYG{o}{\PYGZhy{}} \PYG{n}{API\PYGZus{}KEY}
-        \PYG{o}{\PYGZhy{}} \PYG{n}{API\PYGZus{}USER\PYGZus{}ID}
-
-  \PYG{n}{print\PYGZus{}variables}\PYG{p}{:}
-    \PYG{n}{class}\PYG{p}{:} \PYG{n}{PrinterOfThings}
-    \PYG{n}{summary}\PYG{p}{:} \PYG{n}{Prints} \PYG{n}{the} \PYG{n}{environment} \PYG{n}{variables} \PYG{n}{to} \PYG{n}{the} \PYG{n}{terminal}
-    \PYG{n}{options}\PYG{p}{:}
-      \PYG{n}{prepend}\PYG{p}{:} \PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Environment variables: }\PYG{l+s+s2}{\PYGZdq{}}
-
-\PYG{n}{paths}\PYG{p}{:}
-  \PYG{o}{\PYGZhy{}}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{print\PYGZus{}variables}
-\end{sphinxVerbatim}
-
-If you’ve installed NanoStream and copied this configuration into \sphinxcode{\sphinxupquote{sample\_config.yaml}}, then you can execute the pipeline:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{nanostream} \PYG{n}{run} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{n}{filename} \PYG{n}{sample\PYGZus{}config}\PYG{o}{.}\PYG{n}{yaml}
-\end{sphinxVerbatim}
-
-The output should look like this (you might also see some log messages):
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{Environment} \PYG{n}{variables}\PYG{p}{:}
-\PYG{p}{\PYGZob{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}USER\PYGZus{}ID}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{None}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}KEY}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{:} \PYG{k+kc}{None}\PYG{p}{\PYGZcb{}}
-\end{sphinxVerbatim}
-
-The NanoStream pipeline has found the values of two environment variables (\sphinxcode{\sphinxupquote{API\_KEY}} and \sphinxcode{\sphinxupquote{API\_USER\_ID}}) and printed them to the terminal. If those environmet variables have not been set, their values will be \sphinxcode{\sphinxupquote{None}}. But if you were to set any of them, their values would be printed.
-
-Although this is a very trivial example, it is enough to show the main functionality of NanoStream. Let’s look at the configuration file one
-part at a time.
-
-The configuration starts with two top-level options, \sphinxcode{\sphinxupquote{pipeline\_name}} and \sphinxcode{\sphinxupquote{pipeline\_description}}. These are optional, and are only used for the user’s convenience.
-
-Below those are two sections: \sphinxcode{\sphinxupquote{nodes}} and \sphinxcode{\sphinxupquote{paths}}. Each \sphinxcode{\sphinxupquote{nodes}} section contains one or more blocks that always have this form:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{do\PYGZus{}something}\PYG{p}{:}
-  \PYG{n}{class}\PYG{p}{:} \PYG{n}{node} \PYG{k}{class}
-  \PYG{n+nc}{summary}\PYG{p}{:} \PYG{n}{optional} \PYG{n}{string} \PYG{n}{describing} \PYG{n}{what} \PYG{n}{this} \PYG{n}{node} \PYG{n}{does}
-  \PYG{n}{options}\PYG{p}{:}
-    \PYG{n}{option\PYGZus{}1}\PYG{p}{:} \PYG{n}{value} \PYG{n}{of} \PYG{n}{this} \PYG{n}{option}
-    \PYG{n}{option\PYGZus{}2}\PYG{p}{:} \PYG{n}{value} \PYG{n}{of} \PYG{n}{another} \PYG{n}{option}
-\end{sphinxVerbatim}
-
-Let’s go through this one line at a time.
-
-Each node block describes a single node in the NanoStream pipeline. A node
-must be given a name, which can be any arbitrary string. This should be a
-short, descriptive string describing its action, such as \sphinxcode{\sphinxupquote{get\_environment\_variables}} or \sphinxcode{\sphinxupquote{parse\_json}}, for example. We encourage
-you to stick to a clear naming convention. We like nodes to have names of
-the form \sphinxcode{\sphinxupquote{verb\_noun}} (as in \sphinxcode{\sphinxupquote{print\_name}}).
-
-NanoStream contains a number of node classes, each of which is designed
-for a specific type of ETL task. In the sample configuration, we’re used
-the built-in classes \sphinxcode{\sphinxupquote{GetEnvironmentVariables}} and \sphinxcode{\sphinxupquote{PrinterOfThings}}; these are the value following \sphinxcode{\sphinxupquote{class}}. You can also roll your own node classes (we’ll describe how to do this later in the documentation).
-
-Next is a set of keys and values for the various options that are supported by that class. Because each node class does something different,
-the options are different as well. In the sample configuration, the
-\sphinxcode{\sphinxupquote{GetEnvironmentVariables}} node class requires a list of environment variables to retrieve, so as you would expect, we specify that list under the \sphinxcode{\sphinxupquote{environment\_variables}} option. The various options are explained in
-the documentation for each class. In addition to the options that are specific to each node, there are also options that are common to every type of node. These will be explained later.
-
-The structure of the pipeline is given in the \sphinxcode{\sphinxupquote{paths}} section, which contains a list of lists. Each list is a set of nodes that are to be linked together in
-order. In our example, the \sphinxcode{\sphinxupquote{paths}} value says that
-\sphinxcode{\sphinxupquote{get\_environment\_variables}} will send its output to \sphinxcode{\sphinxupquote{print\_variables}}.
-Paths can be arbitrarily long.
-
-If you wanted to send the environment variables down two different execution
-paths, you add another list to the \sphinxcode{\sphinxupquote{paths}}, like so:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{paths}\PYG{p}{:}
-  \PYG{o}{\PYGZhy{}}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{print\PYGZus{}variables}
-  \PYG{o}{\PYGZhy{}}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{get\PYGZus{}environment\PYGZus{}variables}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{do\PYGZus{}something\PYGZus{}else}
-    \PYG{o}{\PYGZhy{}} \PYG{n}{and\PYGZus{}then\PYGZus{}do\PYGZus{}this}
-\end{sphinxVerbatim}
-
-With this set of \sphinxcode{\sphinxupquote{paths}}, the pipeline looks like a very simple tree, with
-\sphinxcode{\sphinxupquote{get\_environment\_variables}} at the root, which branches to
-\sphinxcode{\sphinxupquote{print\_variables}} and \sphinxcode{\sphinxupquote{do\_something\_else}}.
-
-When you have written the configuration file, you’re ready to use the
-NanoStream CLI. It accepts a command, followed by some options. As of now, the
-commands it accepts are \sphinxcode{\sphinxupquote{run}}, which executes the pipeline, and \sphinxcode{\sphinxupquote{draw}},
-which generates a diagram of the pipeline. The relevant command(s) are:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{python} \PYG{n}{nanostream\PYGZus{}cli}\PYG{o}{.}\PYG{n}{py} \PYG{p}{[}\PYG{n}{run} \PYG{o}{\textbar{}} \PYG{n}{draw}\PYG{p}{]} \PYG{o}{\PYGZhy{}}\PYG{o}{\PYGZhy{}}\PYG{n}{filename} \PYG{n}{my\PYGZus{}sample\PYGZus{}config}\PYG{o}{.}\PYG{n}{yaml}
-\end{sphinxVerbatim}
-
-The \sphinxcode{\sphinxupquote{nanostream}} command can generate a pdf file containing a drawing of the pipeline, showing the flow of data through the various nodes. Just speciy \sphinxcode{\sphinxupquote{draw}} instead of \sphinxcode{\sphinxupquote{run}} to generate the diagram. For our simple little pipeline, we get this:
-
-\begin{figure}[htbp]
-\centering
-\capstart
-
-\noindent\sphinxincludegraphics[width=240\sphinxpxdimen]{{sample_config_drawing}.pdf}
-\caption{The pipeline drawing for the simple configuration example}\label{\detokenize{treehorn:id3}}\end{figure}
-
-It is also possible to skip using the configuration file and define your
-pipelines directly in code. In general, it’s better to use the configuration
-file for a variety of reasons, but you always have the option of doing this
-in Python.
-
-Nodes are defined in code by instantiating classes that inherit from
-\sphinxcode{\sphinxupquote{NanoNode}}. Upon instantiation, the constructor takes the same set of
-keyword arguments as you see in the configuration. Nodes are linked together
-by the \sphinxcode{\sphinxupquote{\textgreater{}}} operator, as in \sphinxcode{\sphinxupquote{node\_1 \textgreater{} node\_2}}. After the pipeline has been
-built in this way, it is started by calling \sphinxcode{\sphinxupquote{node.global\_start()}} on any
-of the nodes in the pipeline.
-
-The code corresponding to the configuration file above would look like this:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{c+c1}{\PYGZsh{} Define the nodes using the various subclasses of NanoNode}
-\PYG{n}{get\PYGZus{}environment\PYGZus{}variables} \PYG{o}{=}
-\PYG{n}{GetEnvironmentVariables}\PYG{p}{(}
-    \PYG{n}{environment\PYGZus{}variables}\PYG{o}{=}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}KEY}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{API\PYGZus{}USER\PYGZus{}ID}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{]}\PYG{p}{)}
-\PYG{n}{print\PYGZus{}variables} \PYG{o}{=} \PYG{n}{PrinterOfThings}\PYG{p}{(}\PYG{n}{prepend}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{Environment variables: }\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}
-
-\PYG{c+c1}{\PYGZsh{} The \PYGZsq{}\PYGZgt{}\PYGZsq{} operator can also be chained, as in:}
-\PYG{c+c1}{\PYGZsh{} node\PYGZus{}1 \PYGZgt{} node\PYGZus{}2 \PYGZgt{} node\PYGZus{}3 \PYGZgt{} ...}
-\PYG{n}{get\PYGZus{}environment\PYGZus{}variables} \PYG{o}{\PYGZgt{}} \PYG{n}{print\PYGZus{}variables}
-
-\PYG{c+c1}{\PYGZsh{} Run the pipeline. This command will not block.}
-\PYG{n}{get\PYGZus{}environment\PYGZus{}variables}\PYG{o}{.}\PYG{n}{global\PYGZus{}start}\PYG{p}{(}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-
-\section{Rolling your own \sphinxstyleliteralintitle{\sphinxupquote{NanoNode}} class}
-\label{\detokenize{treehorn:rolling-your-own-nanonode-class}}
-If there are no built-in \sphinxcode{\sphinxupquote{NanoNode}} classes suitable for your ETL pipeline,
-it is easy to write your own.
-
-For example, suppose you want to create a source node for your pipeline
-that simply emits a user-defined string every few seconds forever. The user
-would be able to specify the string and the number of seconds to pause after
-each message has been sent. The class could be defined like so:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{k}{class} \PYG{n+nc}{FooEmitter}\PYG{p}{(}\PYG{n}{NanoNode}\PYG{p}{)}\PYG{p}{:}  \PYG{c+c1}{\PYGZsh{} inherit from NanoNode}
-    \PYG{l+s+sd}{\PYGZsq{}\PYGZsq{}\PYGZsq{}}
-\PYG{l+s+sd}{    Sends {}`{}`self.output\PYGZus{}string{}`{}` every {}`{}`self.interval{}`{}` seconds.}
-\PYG{l+s+sd}{    \PYGZsq{}\PYGZsq{}\PYGZsq{}}
-    \PYG{k}{def} \PYG{n+nf}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{output\PYGZus{}string}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{n}{interval}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{o}{*}\PYG{o}{*}\PYG{n}{kwargs}\PYG{p}{)}\PYG{p}{:}
-        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{output\PYGZus{}string} \PYG{o}{=} \PYG{n}{output\PYGZus{}string}
-        \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{interval} \PYG{o}{=} \PYG{n}{interval}
-        \PYG{n+nb}{super}\PYG{p}{(}\PYG{n}{FooEmitter}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{o}{.}\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} Must call the {}`NanoNode{}` \PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}
-
-    \PYG{k}{def} \PYG{n+nf}{generator}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
-        \PYG{k}{while} \PYG{k+kc}{True}\PYG{p}{:}
-            \PYG{n}{time}\PYG{o}{.}\PYG{n}{sleep}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{interval}\PYG{p}{)}
-            \PYG{k}{yield} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{output\PYGZus{}string}  \PYG{c+c1}{\PYGZsh{} Output must be yielded, not returned}
-\end{sphinxVerbatim}
-
-Let’s look at each part of this class.
-
-The first thing to note is that the class inherits from \sphinxcode{\sphinxupquote{NanoNode}} \textendash{} this
-is the mix-in class that gives the node all of its functionality within the
-NanoStream framework.
-
-The \sphinxcode{\sphinxupquote{\_\_init\_\_}} method should take only keyword arguments, not positional
-arguments. This restriction is to guarantee that the configuration files have
-names for any options that are specified in the pipeline. In the \sphinxcode{\sphinxupquote{\_\_init\_\_}}
-function, you should also be sure to accept \sphinxcode{\sphinxupquote{**kwargs}}, because options that
-are common to all \sphinxcode{\sphinxupquote{NanoNode}} objects are expected to be there.
-
-After any attributes have been defined, the \sphinxcode{\sphinxupquote{\_\_init\_\_}} method \sphinxstylestrong{must}
-invoke the parent class’s constructor through the use of the \sphinxcode{\sphinxupquote{super}}
-function. Be sure to pass the \sphinxcode{\sphinxupquote{**kwargs}} argument into the function as
-shown in the example.
-
-If the node class is intended to be used as a source node, then you need to
-define a \sphinxcode{\sphinxupquote{generator}} method. This method can be virtually anything, so long
-as it sends its output via a \sphinxcode{\sphinxupquote{yield}} statement.
-
-If you need to define a worker node (that is, a node that accepts input
-from a queue), you will provide a \sphinxcode{\sphinxupquote{process\_item}} method instead of a
-\sphinxcode{\sphinxupquote{generator}}. But the structure of that method is the same, with the single
-exception that you will have access to a \sphinxcode{\sphinxupquote{\_\_message\_\_}} attribute which
-contains the incoming message data. The structure of a typical \sphinxcode{\sphinxupquote{process\_item}}
-method is shown in the figure.
-
-\begin{figure}[htbp]
-\centering
-\capstart
-
-\noindent\sphinxincludegraphics[width=400\sphinxpxdimen]{{process_item}.png}
-\caption{A typical \sphinxcode{\sphinxupquote{process\_item}} method for \sphinxcode{\sphinxupquote{NanoNode}} objects}\label{\detokenize{treehorn:id4}}\end{figure}
-
-For example, let’s suppose you want to create a node that is passed a string as a
-message, and returns \sphinxcode{\sphinxupquote{True}} if the message has an even number of
-characters, \sphinxcode{\sphinxupquote{False}} otherwise. The class definition would look like
-this:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{k}{class} \PYG{n+nc}{MessageLengthTester}\PYG{p}{(}\PYG{n}{NanoNode}\PYG{p}{)}\PYG{p}{:}
-    \PYG{k}{def} \PYG{n+nf}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
-        \PYG{c+c1}{\PYGZsh{} No particular initialization required in this example}
-        \PYG{n+nb}{super}\PYG{p}{(}\PYG{n}{MessageLengthTester}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{o}{.}\PYG{n+nf+fm}{\PYGZus{}\PYGZus{}init\PYGZus{}\PYGZus{}}\PYG{p}{(}\PYG{p}{)}
-
-    \PYG{k}{def} \PYG{n+nf}{process\PYGZus{}item}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{)}\PYG{p}{:}
-        \PYG{k}{if} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{\PYGZus{}\PYGZus{}message\PYGZus{}\PYGZus{}}\PYG{p}{)} \PYG{o}{\PYGZpc{}} \PYG{l+m+mi}{2} \PYG{o}{==} \PYG{l+m+mi}{0}\PYG{p}{:}
-            \PYG{k}{yield} \PYG{k+kc}{True}
-        \PYG{k}{else}\PYG{p}{:}
-            \PYG{k}{yield} \PYG{k+kc}{False}
-\end{sphinxVerbatim}
-
-
-\section{Composing and configuring \sphinxstyleliteralintitle{\sphinxupquote{NanoNode}} objects}
-\label{\detokenize{treehorn:composing-and-configuring-nanonode-objects}}
-\begin{sphinxadmonition}{warning}{Warning:}
-The code described in this section is experimental and very
-unstable. It would be bad to use it for anything important.
-\end{sphinxadmonition}
-
-Let’s suppose you’ve worked very hard to create the pipeline from the
-last example. Now, your boss says that another engineering team wants to
-use it, but they want to rename parameters and “freeze” the values of
-certain other parameters to specific values. Once that’s done, they want
-to use it as just one part of a more complicated \sphinxcode{\sphinxupquote{NanoStream}}
-pipeline.
-
-This can be accomplished using a configuration file. When \sphinxcode{\sphinxupquote{NanoStream}}
-parses the configuration file, it will dynamically create the desired
-class, which can be instantiated and used as if it were a single node in
-another pipeline.
-
-The configuration file is written in YAML, and it would look like this:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{name}\PYG{p}{:} \PYG{n}{FooMessageTester}
-
-\PYG{n}{nodes}\PYG{p}{:}
-  \PYG{o}{\PYGZhy{}} \PYG{n}{name}\PYG{p}{:} \PYG{n}{foo\PYGZus{}generator}
-    \PYG{k}{class} \PYG{n+nc}{FooEmitter}
-    \PYG{n}{frozen\PYGZus{}arguments}\PYG{p}{:}
-      \PYG{n}{message}\PYG{p}{:} \PYG{n}{foobar}
-    \PYG{n}{arg\PYGZus{}mapping}\PYG{p}{:}
-      \PYG{n}{interval}\PYG{p}{:} \PYG{n}{foo\PYGZus{}interval}
-  \PYG{o}{\PYGZhy{}} \PYG{n}{name}\PYG{p}{:} \PYG{n}{length\PYGZus{}tester}
-    \PYG{n}{class}\PYG{p}{:} \PYG{n}{MessageLengthTester}
-    \PYG{n}{arg\PYGZus{}mapping}\PYG{p}{:} \PYG{n}{null}
-\end{sphinxVerbatim}
-
-With this file saved as (e.g.) \sphinxcode{\sphinxupquote{foo\_message.yaml}}, the following code
-will create a \sphinxcode{\sphinxupquote{FooMessageTester}} class and instantiate it:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{foo\PYGZus{}message\PYGZus{}config} \PYG{o}{=} \PYG{n}{yaml}\PYG{o}{.}\PYG{n}{load}\PYG{p}{(}\PYG{n+nb}{open}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{./foo\PYGZus{}message.yaml}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{,} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+s1}{r}\PYG{l+s+s1}{\PYGZsq{}}\PYG{p}{)}\PYG{o}{.}\PYG{n}{read}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}
-\PYG{n}{class\PYGZus{}factory}\PYG{p}{(}\PYG{n}{foo\PYGZus{}message\PYGZus{}config}\PYG{p}{)}
-\PYG{c+c1}{\PYGZsh{} At this point, there is now a {}`FooMessageTester{}` class}
-\PYG{n}{foo\PYGZus{}node} \PYG{o}{=} \PYG{n}{FooMessageTester}\PYG{p}{(}\PYG{n}{foo\PYGZus{}interval}\PYG{o}{=}\PYG{l+m+mi}{1}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-You can now use \sphinxcode{\sphinxupquote{foo\_node}} just as you would any other node. So in
-order to run it, you just do:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{foo\PYGZus{}node}\PYG{o}{.}\PYG{n}{global\PYGZus{}start}\PYG{p}{(}\PYG{p}{)}
-\end{sphinxVerbatim}
-
-Because \sphinxcode{\sphinxupquote{foo\_node}} is just another node, you can insert it into a
-larger pipeline and reuse it. For example, suppose that other
-engineering team wants to add a \sphinxcode{\sphinxupquote{PrinterOfThings}} to the end of the
-pipeline. They’d do this:
-
-\fvset{hllines={, ,}}%
-\begin{sphinxVerbatim}[commandchars=\\\{\}]
-\PYG{n}{printer} \PYG{o}{=} \PYG{n}{PrinterOfThings}\PYG{p}{(}\PYG{p}{)}
-\PYG{n}{foo\PYGZus{}node} \PYG{o}{\PYGZgt{}} \PYG{n}{printer}
-\end{sphinxVerbatim}
+The approach taken by Treehorn alleviates some of this pain. For example, the \sphinxcode{\sphinxupquote{GoDown}} traversal doesn’t care how many levels down in the tree it must search; so it is often able to cope with inconsistent structures (within reason) without any code changes. It’s also much easier to understand. You can tell from glancing at the code that the intention is to search for a dictionary with a key, and then search from there for lower-level dictionaries with another key, and return the results. Treehorn is also more efficient than writing loops and keypaths because all of its evaluations are lazy \textendash{} it doesn’t hold partial results in memory any longer than necessary because everything is yielded by generators.
 
 
 \chapter{Implementation}
@@ -1308,6 +1018,10 @@ Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sp
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.BatchMessages.cleanup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{cleanup}}}{}{}
+If there is any cleanup (closing files, shutting down database connections),
+necessary when the node is stopped, then the node’s class should provide
+a \sphinxcode{\sphinxupquote{cleanup}} method. By default, the method is just a logging statement.
+
 \end{fulllineitems}
 
 \index{process\_item() (nanostream.node.BatchMessages method)}
@@ -1623,8 +1337,20 @@ of the incoming message.
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.add_edge}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{add\_edge}}}{\emph{target}, \emph{**kwargs}}{}
-Create an edge connecting \sphinxtitleref{self} to \sphinxtitleref{target}. The edge
-is really just a queue
+Create an edge connecting \sphinxtitleref{self} to \sphinxtitleref{target}.
+
+This method instantiates the \sphinxcode{\sphinxupquote{NanoStreamQueue}} object that connects the
+nodes. Connecting the nodes together consists in (1) adding the queue to 
+the other’s \sphinxcode{\sphinxupquote{input\_queue\_list}} or \sphinxcode{\sphinxupquote{output\_queue\_list}} and (2) setting
+the queue’s \sphinxcode{\sphinxupquote{source\_node}} and \sphinxcode{\sphinxupquote{target\_node}} attributes.
+\begin{description}
+\item[{Args:}] \leavevmode
+target (\sphinxcode{\sphinxupquote{NanoNode}}): The node to which \sphinxcode{\sphinxupquote{self}} will be connected.
+
+\item[{Returns:}] \leavevmode
+None
+
+\end{description}
 
 \end{fulllineitems}
 
@@ -1633,6 +1359,9 @@ is really just a queue
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.all_connected}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{all\_connected}}}{\emph{seen=None}}{}
 Returns all the nodes connected (directly or indirectly) to \sphinxcode{\sphinxupquote{self}}.
+This allows us to loop over all the nodes in a pipeline even if we
+have a handle on only one. This is used by \sphinxcode{\sphinxupquote{global\_start}}, for 
+example.
 \begin{description}
 \item[{Args:}] \leavevmode\begin{description}
 \item[{seen (set): A set of all the nodes that have been identified as}] \leavevmode
@@ -1662,6 +1391,10 @@ Puts the message into all the input queues for all connected nodes.
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.cleanup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{cleanup}}}{}{}
+If there is any cleanup (closing files, shutting down database connections),
+necessary when the node is stopped, then the node’s class should provide
+a \sphinxcode{\sphinxupquote{cleanup}} method. By default, the method is just a logging statement.
+
 \end{fulllineitems}
 
 \index{draw\_pipeline() (nanostream.node.NanoNode method)}
@@ -1676,7 +1409,21 @@ Draw the pipeline structure using graphviz.
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.global_start}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{global\_start}}}{\emph{datadog=False}, \emph{prometheus=False}, \emph{pipeline\_name=None}}{}
-Starts every node connected to \sphinxcode{\sphinxupquote{self}}.
+Starts every node connected to \sphinxcode{\sphinxupquote{self}}. Mainly, it:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+calls \sphinxcode{\sphinxupquote{start()}} on each node
+
+\item {} 
+sets some global variables
+
+\item {} 
+optionally starts some experimental code for monitoring
+
+\end{enumerate}
 
 \end{fulllineitems}
 
@@ -1695,6 +1442,11 @@ to this node.
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.is_sink}}\pysigline{\sphinxbfcode{\sphinxupquote{is\_sink}}}
 Tests whether the node is a sink or not, i.e. whether there are no
 outputs from the node.
+\begin{description}
+\item[{Returns:}] \leavevmode
+(bool): \sphinxcode{\sphinxupquote{True}} if the node has no output nodes, \sphinxcode{\sphinxupquote{False}} otherwise.
+
+\end{description}
 
 \end{fulllineitems}
 
@@ -1704,6 +1456,11 @@ outputs from the node.
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.is_source}}\pysigline{\sphinxbfcode{\sphinxupquote{is\_source}}}
 Tests whether the node is a source or not, i.e. whether there are no
 inputs to the node.
+\begin{description}
+\item[{Returns:}] \leavevmode
+(bool): \sphinxcode{\sphinxupquote{True}} if the node has no inputs, \sphinxcode{\sphinxupquote{False}} otherwise.
+
+\end{description}
 
 \end{fulllineitems}
 
@@ -1723,6 +1480,23 @@ inputs to the node.
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.logjam}}\pysigline{\sphinxbfcode{\sphinxupquote{logjam}}}
+Returns the logjam score, which measures the degree to which the
+node is holding up progress in downstream nodes.
+
+We’re defining a logjam as a
+node whose input queue is full, but whose output queue(s) is not.
+More specifically, we poll each node in the \sphinxcode{\sphinxupquote{monitor\_thread}},
+and increment a counter if the node is a logjam at that time. This
+property returns the percentage of samples in which the node is a
+logjam. Our intention is that if this score exceeds a threshold,
+the user is alerted, or the load is rebalanced somehow (not yet
+implemented).
+\begin{description}
+\item[{Returns:}] \leavevmode
+(float): Logjam score
+
+\end{description}
+
 \end{fulllineitems}
 
 \index{process\_item() (nanostream.node.NanoNode method)}
@@ -1733,12 +1507,14 @@ Default no-op for nodes.
 
 \end{fulllineitems}
 
-\index{processor() (nanostream.node.NanoNode method)}
+\index{processor\_bak() (nanostream.node.NanoNode method)}
 
 \begin{fulllineitems}
-\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.processor}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{processor}}}{}{}
+\phantomsection\label{\detokenize{api:nanostream.node.NanoNode.processor_bak}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{processor\_bak}}}{}{}
 This calls the user’s \sphinxcode{\sphinxupquote{process\_item}} with just the message content,
 and then returns the full message.
+
+I think this is deprecated, which is why it’s been renamed to \sphinxcode{\sphinxupquote{processor\_bak}}.
 
 \end{fulllineitems}
 
@@ -1746,8 +1522,12 @@ and then returns the full message.
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.setup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{setup}}}{}{}
-To be overridden by child classes when we need to do something
-after setting attributes and the pre-flight function.
+For classes that require initialization at runtime, which can’t be done
+when the class’s \sphinxcode{\sphinxupquote{\_\_init\_\_}} function is called. The \sphinxcode{\sphinxupquote{NanoNode}} base
+class’s setup function is just a logging call.
+
+It should be unusual to have to make use of \sphinxcode{\sphinxupquote{setup}} because in practice,
+initialization can be done in the \sphinxcode{\sphinxupquote{\_\_init\_\_}} function.
 
 \end{fulllineitems}
 
@@ -1756,6 +1536,48 @@ after setting attributes and the pre-flight function.
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.start}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{start}}}{}{}
 Starts the node. This is called by \sphinxcode{\sphinxupquote{NanoNode.global\_start()}}.
+
+The node’s main loop is contained in this method. The main loop does
+the following:
+\begin{enumerate}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumi{\theenumi .}
+\makeatletter\def\p@enumii{\p@enumi \theenumi .}\makeatother
+\item {} 
+records the timestamp to the node’s \sphinxcode{\sphinxupquote{started\_at}} attribute.
+
+\item {} 
+calls \sphinxcode{\sphinxupquote{get\_runtime\_attrs}} (TODO: check if we can deprecate this)
+
+\item {} 
+calls the \sphinxcode{\sphinxupquote{setup}} method for the class (which is a no-op by default)
+
+\item {} 
+if the node is a source, then successively yield all the results of
+the node’s \sphinxcode{\sphinxupquote{generator}} method, then exit.
+
+\item {} 
+if the node is not a source, then loop over the input queues, getting
+the next message. Note that when the message is pulled from the queue,
+the \sphinxcode{\sphinxupquote{NanoStreamQueue}} yields it as a dictionary.
+
+\item {} 
+gets either the content of the entire message if the node has no \sphinxcode{\sphinxupquote{key}}
+attribute, or the value of \sphinxcode{\sphinxupquote{message{[}self.key{]}}}.
+
+\item {} 
+remaps the message content if a \sphinxcode{\sphinxupquote{remapping}} dictionary has been
+given in the node’s configuration
+
+\item {} 
+calls the node’s \sphinxcode{\sphinxupquote{process\_item}} method, yielding back the results.
+(Note that a single input message may cause the node to yield zero,
+one, or more than one output message.)
+
+\item {} 
+places the results into each of the node’s output queues.
+
+\end{enumerate}
 
 \end{fulllineitems}
 
@@ -1772,7 +1594,12 @@ Called in each \sphinxcode{\sphinxupquote{NanoNode}} thread.
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.NanoNode.terminate_pipeline}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{terminate\_pipeline}}}{\emph{error=False}}{}
 This method can be called on any node in a pipeline, and it will cause
-all of the nodes to terminate.
+all of the nodes to terminate if they haven’t stopped already.
+\begin{description}
+\item[{Args:}] \leavevmode
+error (bool): Not yet implemented.
+
+\end{description}
 
 \end{fulllineitems}
 
@@ -1805,14 +1632,6 @@ started.
 Bases: \sphinxcode{\sphinxupquote{object}}
 
 Vacuous class used as a no-op message type.
-
-\end{fulllineitems}
-
-\index{Parameters (class in nanostream.node)}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{api:nanostream.node.Parameters}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{Parameters}}}{\emph{**kwargs}}{}
-Bases: \sphinxcode{\sphinxupquote{object}}
 
 \end{fulllineitems}
 
@@ -1949,8 +1768,12 @@ Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sp
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.StreamMySQLTable.setup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{setup}}}{}{}
-To be overridden by child classes when we need to do something
-after setting attributes and the pre-flight function.
+For classes that require initialization at runtime, which can’t be done
+when the class’s \sphinxcode{\sphinxupquote{\_\_init\_\_}} function is called. The \sphinxcode{\sphinxupquote{NanoNode}} base
+class’s setup function is just a logging call.
+
+It should be unusual to have to make use of \sphinxcode{\sphinxupquote{setup}} because in practice,
+initialization can be done in the \sphinxcode{\sphinxupquote{\_\_init\_\_}} function.
 
 \end{fulllineitems}
 
@@ -2107,6 +1930,121 @@ No-op function to serve as default \sphinxcode{\sphinxupquote{get\_runtime\_attr
 
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{api:nanostream.node.template_class}}\pysiglinewithargsret{\sphinxcode{\sphinxupquote{nanostream.node.}}\sphinxbfcode{\sphinxupquote{template\_class}}}{\emph{class\_name}, \emph{parent\_class}, \emph{kwargs\_remapping}, \emph{frozen\_arguments\_mapping}}{}
+\end{fulllineitems}
+
+\phantomsection\label{\detokenize{api:module-nanostream.civis_nodes}}\index{nanostream.civis\_nodes (module)}
+
+\section{Civis-specific node types}
+\label{\detokenize{api:civis-specific-node-types}}
+This is where any classes specific to the Civis API live.
+\index{CivisSQLExecute (class in nanostream.civis\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.CivisSQLExecute}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.civis\_nodes.}}\sphinxbfcode{\sphinxupquote{CivisSQLExecute}}}{\emph{*args}, \emph{sql=None}, \emph{civis\_api\_key=None}, \emph{civis\_api\_key\_env\_var='CIVIS\_API\_KEY'}, \emph{database=None}, \emph{dummy\_run=False}, \emph{query\_dict=None}, \emph{returned\_columns=None}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Execute a SQL statement and return the results.
+\index{process\_item() (nanostream.civis\_nodes.CivisSQLExecute method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.CivisSQLExecute.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Execute a SQL statement and return the result.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{CivisToCSV (class in nanostream.civis\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.CivisToCSV}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.civis\_nodes.}}\sphinxbfcode{\sphinxupquote{CivisToCSV}}}{\emph{*args}, \emph{sql=None}, \emph{civis\_api\_key=None}, \emph{civis\_api\_key\_env\_var='CIVIS\_API\_KEY'}, \emph{database=None}, \emph{dummy\_run=False}, \emph{query\_dict=None}, \emph{returned\_columns=None}, \emph{include\_headers=True}, \emph{delimiter='}, \emph{'}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+
+Execute a SQL statement and return the results via a CSV file.
+\index{process\_item() (nanostream.civis\_nodes.CivisToCSV method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.CivisToCSV.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Execute a SQL statement and return the result.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{EnsureCivisRedshiftTableExists (class in nanostream.civis\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.EnsureCivisRedshiftTableExists}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.civis\_nodes.}}\sphinxbfcode{\sphinxupquote{EnsureCivisRedshiftTableExists}}}{\emph{on\_failure='exit'}, \emph{table=None}, \emph{schema=None}, \emph{columns=None}, \emph{block=True}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{generator() (nanostream.civis\_nodes.EnsureCivisRedshiftTableExists method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.EnsureCivisRedshiftTableExists.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.civis\_nodes.EnsureCivisRedshiftTableExists method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.EnsureCivisRedshiftTableExists.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{FindValueInRedshiftColumn (class in nanostream.civis\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.FindValueInRedshiftColumn}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.civis\_nodes.}}\sphinxbfcode{\sphinxupquote{FindValueInRedshiftColumn}}}{\emph{on\_failure='exit'}, \emph{table=None}, \emph{database=None}, \emph{schema=None}, \emph{column=None}, \emph{choice='max'}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{generator() (nanostream.civis\_nodes.FindValueInRedshiftColumn method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.FindValueInRedshiftColumn.generator}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{generator}}}{}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.civis\_nodes.FindValueInRedshiftColumn method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.FindValueInRedshiftColumn.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Default no-op for nodes.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+\index{SendToCivis (class in nanostream.civis\_nodes)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.SendToCivis}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class }}\sphinxcode{\sphinxupquote{nanostream.civis\_nodes.}}\sphinxbfcode{\sphinxupquote{SendToCivis}}}{\emph{*args}, \emph{civis\_api\_key=None}, \emph{civis\_api\_key\_env\_var='CIVIS\_API\_KEY'}, \emph{database=None}, \emph{schema=None}, \emph{existing\_table\_rows='append'}, \emph{include\_columns=None}, \emph{dummy\_run=False}, \emph{block=False}, \emph{max\_errors=0}, \emph{table=None}, \emph{columns=None}, \emph{remap=None}, \emph{recorded\_tables=\{\}}, \emph{**kwargs}}{}
+Bases: {\hyperref[\detokenize{api:nanostream.node.NanoNode}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{nanostream.node.NanoNode}}}}}
+\index{monitor\_futures() (nanostream.civis\_nodes.SendToCivis method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.SendToCivis.monitor_futures}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{monitor\_futures}}}{}{}
+\end{fulllineitems}
+
+\index{process\_item() (nanostream.civis\_nodes.SendToCivis method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.SendToCivis.process_item}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{process\_item}}}{}{}
+Accept a bunch of dictionaries mapping column names to values.
+
+\end{fulllineitems}
+
+\index{setup() (nanostream.civis\_nodes.SendToCivis method)}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{api:nanostream.civis_nodes.SendToCivis.setup}}\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{setup}}}{}{}
+Not sure if we’ll need this. We could get a client and pass it around.
+
+\end{fulllineitems}
+
+
 \end{fulllineitems}
 
 \phantomsection\label{\detokenize{api:module-nanostream.utils.data_structures}}\index{nanostream.utils.data\_structures (module)}
@@ -3972,6 +3910,7 @@ along with this program.  If not, see \textless{}\sphinxurl{http://www.gnu.org/l
 \begin{sphinxtheindex}
 \let\bigletter\sphinxstyleindexlettergroup
 \bigletter{n}
+\item\relax\sphinxstyleindexentry{nanostream.civis\_nodes}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.civis_nodes}}
 \item\relax\sphinxstyleindexentry{nanostream.message.batch}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.batch}}
 \item\relax\sphinxstyleindexentry{nanostream.message.canary}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.canary}}
 \item\relax\sphinxstyleindexentry{nanostream.message.message}\sphinxstyleindexpageref{api:\detokenize{module-nanostream.message.message}}
