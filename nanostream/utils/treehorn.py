@@ -5,7 +5,7 @@ import hashlib
 from nanostream.utils.helpers import *
 
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 def cast_generators(some_dict):
@@ -78,17 +78,17 @@ class GoSomewhere(TreeHorn, dict):
 
         if not isinstance(thing, (TracedObject,)):
             thing = splitter(thing)
-        
+
         start_traversal = self
 
         def _generator(_traversal, _tree):
             _inner_generator = (
-                _tree.descendants if _traversal.direction == 'down' 
+                _tree.descendants if _traversal.direction == 'down'
                 else _tree.ancestors)
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
-                if (_traversal.condition(inner_node) == 
+                if (_traversal.condition(inner_node) ==
                         _traversal.condition.truth_value):
                     if _traversal._next_traversal is None:
                         _traversal._current_result = inner_node
@@ -459,26 +459,26 @@ class Relation:
         traversal_head(tree)
         traversals = traversal_head.all_traversals()
         with_labels = [
-            traversal for traversal in traversals 
+            traversal for traversal in traversals
             if traversal.label is not None]
         traversal_head(tree)
         for _ in traversal_head._generator:
             d = {}
             for node_with_label in with_labels:
                 d[node_with_label.label.label] = (
-                    node_with_label._current_result 
-                    if node_with_label._retrieve_key is None 
+                    node_with_label._current_result
+                    if node_with_label._retrieve_key is None
                     else node_with_label._current_result.get(
                         node_with_label._retrieve_key))
             yield d
 
-    
+
 if __name__ == '__main__':
     SAMPLE_FILE = '/home/zac/projects/nanostream/sample_output.json'
 
     with open(SAMPLE_FILE, 'r') as infile:
         tree = json.load(infile)
-    
+
     # tree = splitter(tree)
 
     has_email_key = GoDown(condition=HasKey('email'))

@@ -52,7 +52,6 @@ LOGJAM_THRESHOLD = .25
 
 PROMETHEUS = False
 
-logging.basicConfig(level=logging.INFO)
 
 def no_op(*args, **kwargs):
     '''
@@ -241,7 +240,7 @@ class NanoNode:
         For classes that require initialization at runtime, which can't be done
         when the class's ``__init__`` function is called. The ``NanoNode`` base
         class's setup function is just a logging call.
-        
+
         It should be unusual to have to make use of ``setup`` because in practice,
         initialization can be done in the ``__init__`` function.
         '''
@@ -265,7 +264,7 @@ class NanoNode:
 
         Returns:
            (bool): ``True`` if the node has no inputs, ``False`` otherwise.
-           
+
         '''
         return len(self.input_queue_list) == 0
 
@@ -285,7 +284,7 @@ class NanoNode:
         Create an edge connecting `self` to `target`.
 
         This method instantiates the ``NanoStreamQueue`` object that connects the
-        nodes. Connecting the nodes together consists in (1) adding the queue to 
+        nodes. Connecting the nodes together consists in (1) adding the queue to
         the other's ``input_queue_list`` or ``output_queue_list`` and (2) setting
         the queue's ``source_node`` and ``target_node`` attributes.
 
@@ -530,7 +529,7 @@ class NanoNode:
 
         try:
             for out in self.process_item(*args, **kwargs):
-                if (not isinstance(out, (dict, NothingToSeeHere)) 
+                if (not isinstance(out, (dict, NothingToSeeHere))
                         and self.output_key is None):
                     logging.debug(
                         'Exception raised due to no key' + str(self.name))
@@ -557,7 +556,7 @@ class NanoNode:
             self.error_counter += 1
             if self.error_counter > self.max_errors:
                 logging.warning(
-                    'message: ' + str(err.args) + 
+                    'message: ' + str(err.args) +
                     str(self.__class__.__name__) + str(self.name))
                 raise err
             else:
@@ -618,7 +617,7 @@ class NanoNode:
         '''
         Returns all the nodes connected (directly or indirectly) to ``self``.
         This allows us to loop over all the nodes in a pipeline even if we
-        have a handle on only one. This is used by ``global_start``, for 
+        have a handle on only one. This is used by ``global_start``, for
         example.
 
         Args:
@@ -657,7 +656,7 @@ class NanoNode:
         '''
         Returns the logjam score, which measures the degree to which the
         node is holding up progress in downstream nodes.
-        
+
         We're defining a logjam as a
         node whose input queue is full, but whose output queue(s) is not.
         More specifically, we poll each node in the ``monitor_thread``,
@@ -835,7 +834,7 @@ class NanoNode:
                     node.output_queue_list]
 
                 logjam = (
-                    not node.is_source and all(input_queue_full) 
+                    not node.is_source and all(input_queue_full)
                     and not any(output_queue_full))
                 node.logjam_score['polled'] += 1
                 logging.debug('LOGJAM SCORE: {logjam}'.format(
