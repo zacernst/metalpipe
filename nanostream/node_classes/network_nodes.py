@@ -55,9 +55,12 @@ class PaginatedHttpGetRequest:
         '''
         Generator. Yields each response until empty.
         '''
+
+        GET_ONLY = True
+
         offset_set = set()
         session = requests.Session()
-        retries = Retry(total=self.retries, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+        retries = Retry(total=self.retries, read=self.retries, connect=self.retries, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
 
         session.mount('{protocol}://'.format(protocol=self.protocol), HTTPAdapter(max_retries=retries))
 
@@ -65,8 +68,11 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(
             **get_request_parameters)
-        logging.debug('paginator url: ' + endpoint_url)
-        out = session.get(endpoint_url)
+        logging.info('paginator url: ' + endpoint_url)
+        if GET_ONLY:
+            out = requests.get(endpoint_url)
+        else:
+            out = session.get(endpoint_url)
         # out = out.json()
         out = json.loads(out.text)
         offset = out.get(self.pagination_key, None)
@@ -86,7 +92,17 @@ class PaginatedHttpGetRequest:
                 **get_request_parameters)
             logging.debug('paginator url: ' + endpoint_url)
             try:
-                response = session.get(endpoint_url)
+                # response = session.get(endpoint_url)
+
+
+
+                if GET_ONLY:
+                    response = requests.get(endpoint_url)
+                else:
+                    response = session.get(endpoint_url)
+
+
+
                 out = response.json()
             except:
                 logging.warning('Error parsing. Assuming this is the end of the responses.')
@@ -136,7 +152,6 @@ class HttpGetRequest(NanoNode):
             raise Exception()
         logging.debug('Http GET request: {endpoint}'.format(endpoint=formatted_endpoint))
 
-
         session = requests.Session()
         retries = Retry(total=self.retries, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
         session.mount('{protocol}://'.format(protocol=self.protocol), HTTPAdapter(max_retries=retries))
@@ -144,7 +159,7 @@ class HttpGetRequest(NanoNode):
         get_response = session.get(formatted_endpoint)
         try:
             output = get_response.json()
-        except JSONDecodeError:
+        except json.JSONDecodeError:
             output = get_response.text
         logging.debug(formatted_endpoint + ' GET RESPONSE: ' + str(output) + str(type(output)))
         yield output

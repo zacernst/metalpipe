@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="nanostream",
-    version="0.1.16",
+    version="0.1.21",
     author="Zachary Ernst",
     author_email="zac.ernst@gmail.com",
     description="Small-scale stream processing for ETL",
