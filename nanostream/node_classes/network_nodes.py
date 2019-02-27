@@ -7,6 +7,8 @@ Classes that deal with sending and receiving data across the interwebs.
 
 import requests
 import json
+import time
+import random
 import logging
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -60,25 +62,45 @@ class PaginatedHttpGetRequest:
 
         offset_set = set()
         session = requests.Session()
-        retries = Retry(total=self.retries, read=self.retries, connect=self.retries, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
+        retries = Retry(
+            total=self.retries, read=self.retries, connect=self.retries,
+            backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
 
-        session.mount('{protocol}://'.format(protocol=self.protocol), HTTPAdapter(max_retries=retries))
+        session.mount(
+            '{protocol}://'.format(protocol=self.protocol), HTTPAdapter(
+                max_retries=retries))
 
         get_request_parameters = {
             self.pagination_get_request_key: self.default_offset_value}
         endpoint_url = self.endpoint_template.format(
             **get_request_parameters)
         logging.info('paginator url: ' + endpoint_url)
-        if GET_ONLY:
-            out = requests.get(endpoint_url)
-        else:
-            out = session.get(endpoint_url)
+        successful = False
+        retry_counter = 0
+        sleep_time= 1.
+        while not successful and retry_counter <= self.retries:
+            try:
+                out = requests.get(endpoint_url)
+                successful = True
+            except:
+                logging.info('sleeping randomly... retry: {retry}'.format(
+                    retry=str(retry_counter)))
+                retry_counter += 1
+                time.sleep(sleep_time + (random.random() * 2))
+
+        # Check if successful
+        if not successful:
+            logging.info('Unsuccessful request to {url}'.format(
+                url=endpoint_url))
+            raise Exception('Unsuccessful GET request')
+
         # out = out.json()
         out = json.loads(out.text)
         offset = out.get(self.pagination_key, None)
         offset_set.add(offset)
 
-        while self.additional_data_key in out and additional_data_test(out[self.additional_data_key]):
+        while (self.additional_data_key in out and
+                additional_data_test(out[self.additional_data_key])):
             yield out
             try:
                 offset = out[self.pagination_key]
@@ -94,18 +116,16 @@ class PaginatedHttpGetRequest:
             try:
                 # response = session.get(endpoint_url)
 
-
-
                 if GET_ONLY:
                     response = requests.get(endpoint_url)
                 else:
                     response = session.get(endpoint_url)
 
-
-
                 out = response.json()
             except:
-                logging.warning('Error parsing. Assuming this is the end of the responses.')
+                logging.warning(
+                    'Error parsing. Assuming this is the '
+                    'end of the responses.')
                 break
 
 
@@ -144,7 +164,8 @@ class HttpGetRequest(NanoNode):
         '''
 
         # Hit the parameterized endpoint and yield back the results
-        formatted_endpoint = self.endpoint_template.format_map(SafeMap(**(self.message or {})))
+        formatted_endpoint = self.endpoint_template.format_map(
+            SafeMap(**(self.message or {})))
         try:
             formatted_endpoint = formatted_endpoint.format_map(SafeMap(**(self.endpoint_dict or {})))
         except Exception as err:
