@@ -4,13 +4,13 @@ import time
 
 import pytest
 from timed_dict.timed_dict import TimedDict
-import metalpipe.node as node
-import metalpipe.node_queue.queue as queue
-import metalpipe.message.poison_pill as poison_pill
-from metalpipe.utils.required_arguments import (
+import nanostream.node as node
+import nanostream.node_queue.queue as queue
+import nanostream.message.poison_pill as poison_pill
+from nanostream.utils.required_arguments import (
     MissingRequiredArgument, required_arguments)
-from metalpipe.utils.set_attributes import set_kwarg_attributes
-from metalpipe.utils.helpers import (
+from nanostream.utils.set_attributes import set_kwarg_attributes
+from nanostream.utils.helpers import (
     aggregate_values, list_to_dict, to_bool, get_value,
     set_value, ListIndex, replace_by_path)
 
@@ -32,12 +32,12 @@ def simple_timed_dict():
 
 
 @pytest.fixture(scope='function')
-def bar_class_required_argument_bar():
+def foo_class_required_argument_foo():
 
     class Foo:
-        @required_arguments('bar')
-        def __init__(self, bar='bar', bar='baz'):
-            self.bar = bar
+        @required_arguments('foo')
+        def __init__(self, foo='bar', bar='baz'):
+            self.foo = foo
             self.bar = bar
 
     return Foo
@@ -47,52 +47,52 @@ def test_can_instantiate_timed_dict(simple_timed_dict):
     simple_timed_dict.stop_sweep()
 
 
-def test_required_arguments_decorator_passes(bar_class_required_argument_bar):
-    bar = bar_class_required_argument_bar(bar='baz')
-    assert hasattr(bar, 'bar')
-    assert hasattr(bar, 'bar')
-    assert bar.bar == 'baz'
-    assert bar.bar == 'baz'
+def test_required_arguments_decorator_passes(foo_class_required_argument_foo):
+    foo = foo_class_required_argument_foo(foo='baz')
+    assert hasattr(foo, 'foo')
+    assert hasattr(foo, 'bar')
+    assert foo.foo == 'baz'
+    assert foo.bar == 'baz'
 
 
-def test_required_arguments_decorator_fails(bar_class_required_argument_bar):
+def test_required_arguments_decorator_fails(foo_class_required_argument_foo):
     with pytest.raises(expected_exception=MissingRequiredArgument):
-        bar = bar_class_required_argument_bar()
+        foo = foo_class_required_argument_foo()
 
 
 @pytest.fixture(scope='function')
-def bar_class_set_kwarg_attributes():
+def foo_class_set_kwarg_attributes():
 
     class Foo:
         @set_kwarg_attributes()
-        def __init__(self, bar='bar', bar='baz'):
+        def __init__(self, foo='bar', bar='baz'):
             pass
 
     return Foo
 
 
-def test_kwarg_attributes_set_to_defaults(bar_class_set_kwarg_attributes):
-    bar = bar_class_set_kwarg_attributes()
-    assert hasattr(bar, 'bar')
-    assert hasattr(bar, 'bar')
-    assert bar.bar == 'bar'
-    assert bar.bar == 'baz'
+def test_kwarg_attributes_set_to_defaults(foo_class_set_kwarg_attributes):
+    foo = foo_class_set_kwarg_attributes()
+    assert hasattr(foo, 'foo')
+    assert hasattr(foo, 'bar')
+    assert foo.foo == 'bar'
+    assert foo.bar == 'baz'
 
 
-def test_kwarg_attributes_set_to_kwarg(bar_class_set_kwarg_attributes):
-    bar = bar_class_set_kwarg_attributes(bar='baz', bar='qux')
-    assert hasattr(bar, 'bar')
-    assert hasattr(bar, 'bar')
-    assert bar.bar == 'baz'
-    assert bar.bar == 'qux'
+def test_kwarg_attributes_set_to_kwarg(foo_class_set_kwarg_attributes):
+    foo = foo_class_set_kwarg_attributes(foo='baz', bar='qux')
+    assert hasattr(foo, 'foo')
+    assert hasattr(foo, 'bar')
+    assert foo.foo == 'baz'
+    assert foo.bar == 'qux'
 
 
 def test_list_to_dict():
-    some_list = ['bar', 'bar', 'baz', 'qux']
-    list_of_things = ['bar_thing', 'bar_thing', 'baz_thing', 'qux_thing']
+    some_list = ['foo', 'bar', 'baz', 'qux']
+    list_of_things = ['foo_thing', 'bar_thing', 'baz_thing', 'qux_thing']
     out = list_to_dict(list_of_things, some_list)
     correct = {
-        'bar': 'bar_thing',
+        'foo': 'foo_thing',
         'bar': 'bar_thing',
         'baz': 'baz_thing',
         'qux': 'qux_thing'}
@@ -100,8 +100,8 @@ def test_list_to_dict():
 
 
 def test_list_to_dict_error():
-    some_list = ['bar', 'bar', 'baz', 'qux', 'oops']
-    list_of_things = ['bar_thing', 'bar_thing', 'baz_thing', 'qux_thing']
+    some_list = ['foo', 'bar', 'baz', 'qux', 'oops']
+    list_of_things = ['foo_thing', 'bar_thing', 'baz_thing', 'qux_thing']
     with pytest.raises(expected_exception=Exception):
         out = list_to_dict(list_of_things, some_list)
 
@@ -149,7 +149,7 @@ def test_get_value(some_dictionary):
 
 def test_get_value_error(some_dictionary):
     with pytest.raises(expected_exception=Exception):
-        get_value(some_dictionary, {'bar': 'bar'})
+        get_value(some_dictionary, {'foo': 'bar'})
 
 
 def test_set_value_1(some_dictionary):
