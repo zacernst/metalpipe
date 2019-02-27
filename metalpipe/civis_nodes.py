@@ -15,14 +15,14 @@ import uuid
 import civis
 from civis.base import DONE
 
-from nanostream.node import *
-from nanostream.node_classes.network_nodes import HttpGetRequestPaginator
-from nanostream.utils.helpers import remap_dictionary, SafeMap, list_to_dict
+from metalpipe.node import *
+from metalpipe.node_classes.network_nodes import HttpGetRequestPaginator
+from metalpipe.utils.helpers import remap_dictionary, SafeMap, list_to_dict
 from timed_dict.timed_dict import TimedDict
 
 MONITOR_FUTURES_SLEEP = 5
 
-class SendToCivis(NanoNode):
+class SendToCivis(MetalNode):
     def __init__(
         self,
         *args,
@@ -141,7 +141,7 @@ class SendToCivis(NanoNode):
                     if self.remap is not None:
                         row = remap_dictionary(row, self.remap)
                     #if 'is_contact' in row:  # Boom
-                    #    row['is_contact'] = 'foobar'
+                    #    row['is_contact'] = 'barbar'
                     writer.writerow(row)
                     row_list.append(row)  # Will this get too slow?
                 tmp.flush()
@@ -167,7 +167,7 @@ class SendToCivis(NanoNode):
             yield self.message
 
 
-class EnsureCivisRedshiftTableExists(NanoNode):
+class EnsureCivisRedshiftTableExists(MetalNode):
 
     def __init__(
         self,
@@ -210,7 +210,7 @@ class EnsureCivisRedshiftTableExists(NanoNode):
         yield columns_spec
 
 
-class FindValueInRedshiftColumn(NanoNode):
+class FindValueInRedshiftColumn(MetalNode):
 
     def __init__(
         self,
@@ -255,7 +255,7 @@ class FindValueInRedshiftColumn(NanoNode):
         yield value
 
 
-class CivisSQLExecute(NanoNode):
+class CivisSQLExecute(MetalNode):
     '''
     Execute a SQL statement and return the results.
     '''
@@ -307,7 +307,7 @@ class CivisSQLExecute(NanoNode):
         yield {'result_rows': result_rows}
 
 
-class CivisToCSV(NanoNode):
+class CivisToCSV(MetalNode):
     '''
     Execute a SQL statement and return the results via a CSV file.
     '''

@@ -5,8 +5,8 @@ raised which lists the missing arguments.
 
 ::
 
-    @required_arguments(foo='bar', baz='qux')
-    def my_function(x, y, foo=None, baz=None):
+    @required_arguments(bar='bar', baz='qux')
+    def my_function(x, y, bar=None, baz=None):
         ...something...
 
 
@@ -14,7 +14,7 @@ Invoking the function like so:
 
 ::
 
-    my_function(1, 2, foo='foobar')
+    my_function(1, 2, bar='barbar')
 
 
 will raise:

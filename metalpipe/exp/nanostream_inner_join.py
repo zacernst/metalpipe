@@ -1,9 +1,9 @@
 
 from timed_dict import TimedDict
-from nanostream_node import NanoNode
+from metalpipe_node import MetalNode
 
 
-class InnerJoin(NanoNode):
+class InnerJoin(MetalNode):
     '''
     Joins two streams of dict-like objects.
     '''

@@ -19,12 +19,12 @@ class set_kwarg_attributes:
 
         class Foo:
             @set_kwarg_attributes()
-            def __init__(self, foo='bar', bar='baz'):
+            def __init__(self, bar='bar', bar='baz'):
                 pass
 
-    Calling ``foo = Foo()``, you'd find that ``foo.foo == 'bar`` and
-    ``foo.bar == 'baz'``, without having to go through the tedious torture
-    of explicitly writing boilerplate like ``self.foo = foo``.
+    Calling ``bar = Foo()``, you'd find that ``bar.bar == 'bar`` and
+    ``bar.bar == 'baz'``, without having to go through the tedious torture
+    of explicitly writing boilerplate like ``self.bar = bar``.
 
     You can also exclude some kwargs from this magic by passing a list
     ``exclude=[...]`` to the decorator.

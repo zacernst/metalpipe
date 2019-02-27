@@ -1,8 +1,8 @@
 """
-NanoStreamMessage module
+MetalPipeMessage module
 ========================
 
-The ``NanoStreamMesaage`` encapsulates the content of each piece of data,
+The ``MetalPipeMesaage`` encapsulates the content of each piece of data,
 along with some useful metadata.
 """
 
@@ -11,10 +11,10 @@ import uuid
 import hashlib
 
 
-class NanoStreamMessage(object):
+class MetalPipeMessage(object):
     """
     A class that contains the message payloads that are queued for
-    each ``NanoStreamProcessor``. It holds the messages and lots
+    each ``MetalPipeProcessor``. It holds the messages and lots
     of metadata used for logging, monitoring, etc.
     """
 
@@ -34,5 +34,5 @@ class NanoStreamMessage(object):
 
     def __repr__(self):
         s = ': '.join(
-            ['NanoStreamMessage', self.uuid.hex])
+            ['MetalPipeMessage', self.uuid.hex])
         return s

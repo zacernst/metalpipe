@@ -2,52 +2,52 @@
 API Documentation
 *****************
 
-.. automodule:: nanostream.node
+.. automodule:: metalpipe.node
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.civis_nodes
+.. automodule:: metalpipe.civis_nodes
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.utils.data_structures
+.. automodule:: metalpipe.utils.data_structures
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.node_classes.network_nodes
+.. automodule:: metalpipe.node_classes.network_nodes
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.message.message
+.. automodule:: metalpipe.message.message
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.message.poison_pill
+.. automodule:: metalpipe.message.poison_pill
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.message.trigger
+.. automodule:: metalpipe.message.trigger
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.message.batch
+.. automodule:: metalpipe.message.batch
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.message.canary
+.. automodule:: metalpipe.message.canary
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: nanostream.node_queue.queue
+.. automodule:: metalpipe.node_queue.queue
    :members:
    :undoc-members:
    :show-inheritance:

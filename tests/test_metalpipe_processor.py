@@ -3,9 +3,9 @@ import logging
 import time
 
 import pytest
-import nanostream.node as node
-import nanostream.node_queue.queue as queue
-import nanostream.message.poison_pill as poison_pill
+import metalpipe.node as node
+import metalpipe.node_queue.queue as queue
+import metalpipe.message.poison_pill as poison_pill
 
 os.environ['PYTHONPATH'] = '.'
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +45,7 @@ def test_linked_node_has_output_queue(simple_graph):
         len(simple_graph.output_queue_list) == 1 and
         isinstance(
             simple_graph.output_queue_list[0],
-            (queue.NanoStreamQueue,)))
+            (queue.MetalPipeQueue,)))
 
 def test_linked_node_shares_output_queue(simple_graph):
     connected_node = simple_graph.output_node_list[0]

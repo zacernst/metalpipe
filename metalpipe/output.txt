@@ -1,0 +1,12 @@
+Command line: ./nanostream_cli.py run --filename hubspot_config.yaml
+Total duration: 0s
+Traceback (most recent call last):
+  File "/home/vagrant/github/nanostream/dev/bin/pprofile", line 9, in <module>
+    load_entry_point('pprofile==2.0.2', 'console_scripts', 'pprofile')()
+  File "/home/vagrant/github/nanostream/dev/lib/python3.5/site-packages/pprofile.py", line 1411, in main
+    _main(sys.argv)
+  File "/home/vagrant/github/nanostream/dev/lib/python3.5/site-packages/pprofile.py", line 1334, in _main
+    getattr(runner, runner_method_id)(**runner_method_kw)
+  File "/home/vagrant/github/nanostream/dev/lib/python3.5/site-packages/pprofile.py", line 787, in runpath
+    return self.runfile(open(path, 'rb'), argv, fd_name=path)
+FileNotFoundError: [Errno 2] No such file or directory: './nanostream_cli.py'

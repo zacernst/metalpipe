@@ -6,7 +6,7 @@ We'll use markers to delimit batches of things, such as serialized
 files and that kind of thing.
 '''
 
-from nanostream.utils.set_attributes import set_kwarg_attributes
+from metalpipe.utils.set_attributes import set_kwarg_attributes
 
 
 class BatchStart:

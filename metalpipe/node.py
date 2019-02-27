@@ -2,8 +2,8 @@
 Node module
 ===========
 
-The ``node`` module contains the ``NanoNode`` class, which is the foundation
-for NanoStream.
+The ``node`` module contains the ``MetalNode`` class, which is the foundation
+for MetalPipe.
 """
 
 import time
@@ -30,15 +30,15 @@ import requests
 import graphviz
 
 from timed_dict.timed_dict import TimedDict
-from nanostream.message.batch import BatchStart, BatchEnd
-from nanostream.message.message import NanoStreamMessage
-from nanostream.node_queue.queue import NanoStreamQueue
-from nanostream.message.canary import Canary
-from nanostream.message.poison_pill import PoisonPill
-from nanostream.utils.set_attributes import set_kwarg_attributes
-from nanostream.utils.data_structures import Row, MySQLTypeSystem
-from nanostream.utils import data_structures as ds
-from nanostream.utils.helpers import (
+from metalpipe.message.batch import BatchStart, BatchEnd
+from metalpipe.message.message import MetalPipeMessage
+from metalpipe.node_queue.queue import MetalPipeQueue
+from metalpipe.message.canary import Canary
+from metalpipe.message.poison_pill import PoisonPill
+from metalpipe.utils.set_attributes import set_kwarg_attributes
+from metalpipe.utils.data_structures import Row, MySQLTypeSystem
+from metalpipe.utils import data_structures as ds
+from metalpipe.utils.helpers import (
     replace_by_path, remap_dictionary, set_value, get_value, to_bool,
     aggregate_values)
 
@@ -100,14 +100,14 @@ class NothingToSeeHere:
     pass
 
 
-class NanoNode:
+class MetalNode:
     '''
-    The foundational class of `NanoStream`. This class is inherited by all
+    The foundational class of `MetalPipe`. This class is inherited by all
     nodes in a computation graph.
 
     Order of operations:
     1. Child class ``__init__`` function
-    2. ``NanoNode`` ``__init__`` function
+    2. ``MetalNode`` ``__init__`` function
     3. ``preflight_function`` (Specified in initialization params)
     4. ``setup``
     5. start
@@ -115,13 +115,13 @@ class NanoNode:
 
     These methods have the following intended uses:
 
-    1. ``__init__`` Sets attribute values and calls the ``NanoNode`` ``__init__``
+    1. ``__init__`` Sets attribute values and calls the ``MetalNode`` ``__init__``
        method.
     2. ``get_runtime_attrs`` Sets any attribute values that are to be determined
        at runtime, e.g. by checking environment variables or reading values
        from a database. The ``get_runtime_attrs`` should return a dictionary
        of attributes -> values, or else ``None``.
-    3. ``setup`` Sets the state of the ``NanoNode`` and/or creates any attributes
+    3. ``setup`` Sets the state of the ``MetalNode`` and/or creates any attributes
        that require information available only at runtime.
 
     :ivar send_batch_markers: If ``True``, then a ``BatchStart`` marker will
@@ -130,7 +130,7 @@ class NanoNode:
         items will be emitted for each input received. For example, we might
         emit a table row-by-row for each input.
     :ivar get_runtime_attrs: A function that returns a dictionary-like object.
-        The keys and values will be saved to this ``NanoNode`` object's
+        The keys and values will be saved to this ``MetalNode`` object's
         attributes. The function is executed one time, upon starting the node.
     :ivar get_runtime_attrs_args: A tuple of arguments to be passed to the
         ``get_runtime_attrs`` function upon starting the node.
@@ -238,7 +238,7 @@ class NanoNode:
     def setup(self):
         '''
         For classes that require initialization at runtime, which can't be done
-        when the class's ``__init__`` function is called. The ``NanoNode`` base
+        when the class's ``__init__`` function is called. The ``MetalNode`` base
         class's setup function is just a logging call.
 
         It should be unusual to have to make use of ``setup`` because in practice,
@@ -283,18 +283,18 @@ class NanoNode:
         """
         Create an edge connecting `self` to `target`.
 
-        This method instantiates the ``NanoStreamQueue`` object that connects the
+        This method instantiates the ``MetalPipeQueue`` object that connects the
         nodes. Connecting the nodes together consists in (1) adding the queue to
         the other's ``input_queue_list`` or ``output_queue_list`` and (2) setting
         the queue's ``source_node`` and ``target_node`` attributes.
 
         Args:
-           target (``NanoNode``): The node to which ``self`` will be connected.
+           target (``MetalNode``): The node to which ``self`` will be connected.
         Returns:
            None
         """
         max_queue_size = kwargs.get('max_queue_size', DEFAULT_MAX_QUEUE_SIZE)
-        edge_queue = NanoStreamQueue(max_queue_size)
+        edge_queue = MetalPipeQueue(max_queue_size)
 
         self.output_node_list.append(target)
         target.input_node_list.append(self)
@@ -307,7 +307,7 @@ class NanoNode:
 
     def start(self):
         '''
-        Starts the node. This is called by ``NanoNode.global_start()``.
+        Starts the node. This is called by ``MetalNode.global_start()``.
 
         The node's main loop is contained in this method. The main loop does
         the following:
@@ -319,7 +319,7 @@ class NanoNode:
            the node's ``generator`` method, then exit.
         #. if the node is not a source, then loop over the input queues, getting
            the next message. Note that when the message is pulled from the queue,
-           the ``NanoStreamQueue`` yields it as a dictionary.
+           the ``MetalPipeQueue`` yields it as a dictionary.
         #. gets either the content of the entire message if the node has no ``key``
            attribute, or the value of ``message[self.key]``.
         #. remaps the message content if a ``remapping`` dictionary has been
@@ -335,7 +335,7 @@ class NanoNode:
         logging.debug('Starting node: {node}'.format(
             node=self.__class__.__name__))
         # ``get_runtime_attrs`` returns a dict-like object whose keys and
-        # values are stored as attributes of the ``NanoNode`` object.
+        # values are stored as attributes of the ``MetalNode`` object.
         if self.get_runtime_attrs is not None:
             pre_flight_results = self.get_runtime_attrs(
                 *self.get_runtime_attrs_args,
@@ -384,7 +384,7 @@ class NanoNode:
                     logging.debug('Got item: {one_item}'.format(
                         one_item=str(one_item)))
                     # Get the content of a specific keypath, if one has
-                    # been defined in the ``NanoNode`` initialization.
+                    # been defined in the ``MetalNode`` initialization.
                     message_content = (
                         get_value(
                             one_item.message_content,
@@ -404,7 +404,7 @@ class NanoNode:
                     elif message_content is None:
                         pass
                     # Otherwise, process the message as usual, by calling
-                    # the ``NanoNode`` object's ``process_item`` method.
+                    # the ``MetalNode`` object's ``process_item`` method.
                     else:
                         self.message = message_content
                         self.message_source = message_source
@@ -572,17 +572,17 @@ class NanoNode:
         logging.debug('Processing message content: {message_content}'.format(
             message_content=message.mesage_content))
         for result in self.process_item():
-            result = NanoStreamMessage(result)
+            result = MetalPipeMessage(result)
             yield result
 
     def stream(self):
         '''
-        Called in each ``NanoNode`` thread.
+        Called in each ``MetalNode`` thread.
         '''
         self.status = 'running'
         try:
             for output, previous_message in self.start():
-                logging.debug('In NanoNode.stream.stream() --> ' + str(output))
+                logging.debug('In MetalNode.stream.stream() --> ' + str(output))
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
                     output_queue.put(
@@ -624,7 +624,7 @@ class NanoNode:
             seen (set): A set of all the nodes that have been identified as
                 connected to ``self``.
         Returns:
-            (set of ``NanoNode``): All the nodes connected to ``self``. This
+            (set of ``MetalNode``): All the nodes connected to ``self``. This
                 includes ``self``.
         '''
         seen = seen or set()
@@ -726,12 +726,12 @@ class NanoNode:
             node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug('global_start:' + str(self))
-            thread = threading.Thread(target=NanoNode.stream, args=(node, ), daemon=True)
+            thread = threading.Thread(target=MetalNode.stream, args=(node, ), daemon=True)
             thread.start()
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
         monitor_thread = threading.Thread(
-            target=NanoNode.thread_monitor, args=(self,), daemon=False)
+            target=MetalNode.thread_monitor, args=(self,), daemon=False)
         monitor_thread.start()
 
     @property
@@ -854,8 +854,8 @@ class NanoNode:
             sys.exit(0)
 
 
-class CounterOfThings(NanoNode):
-    def foo__init__(self, *args, start=0, end=None, **kwargs):
+class CounterOfThings(MetalNode):
+    def bar__init__(self, *args, start=0, end=None, **kwargs):
         self.start = start
         self.end = end
         super(CounterOfThings, self).__init__(*args, **kwargs)
@@ -872,7 +872,7 @@ class CounterOfThings(NanoNode):
                 assert False
 
 
-class InsertData(NanoNode):
+class InsertData(MetalNode):
 
     def __init__(self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs):
         self.overwrite = overwrite
@@ -890,7 +890,7 @@ class InsertData(NanoNode):
         yield self.__message__
 
 
-class RandomSample(NanoNode):
+class RandomSample(MetalNode):
     '''
     Lets through only a random sample of incoming messages. Might be useful
     for testing, or when only approximate results are necessary.
@@ -903,7 +903,7 @@ class RandomSample(NanoNode):
         yield self.message if random.random() <= self.sample else None
 
 
-class SubstituteRegex(NanoNode):
+class SubstituteRegex(MetalNode):
     def __init__(self, match_regex=None, substitute_string=None, *args, **kwargs):
         self.match_regex = match_regex
         self.substitute_string = substitute_string
@@ -915,7 +915,7 @@ class SubstituteRegex(NanoNode):
         yield out
 
 
-class CSVToDictionaryList(NanoNode):
+class CSVToDictionaryList(MetalNode):
     def __init__(self, **kwargs):
         super(CSVToDictionaryList, self).__init__(**kwargs)
 
@@ -926,7 +926,7 @@ class CSVToDictionaryList(NanoNode):
         yield output
 
 
-class SequenceEmitter(NanoNode):
+class SequenceEmitter(MetalNode):
     '''
     Emits ``sequence`` ``max_sequences`` times, or forever if
     ``max_sequences`` is ``None``.
@@ -978,7 +978,7 @@ class SequenceEmitter(NanoNode):
             counter += 1
 
 
-class GetEnvironmentVariables(NanoNode):
+class GetEnvironmentVariables(MetalNode):
     def __init__(self, mappings=None, environment_variables=None, **kwargs):
         self.environment_mappings = mappings or {}
         self.environment_variables = environment_variables or []
@@ -1001,7 +1001,7 @@ class GetEnvironmentVariables(NanoNode):
         yield environment
 
 
-class SimpleTransforms(NanoNode):
+class SimpleTransforms(MetalNode):
     def __init__(self, missing_keypath_action='ignore', starting_path=None,
             transform_mapping=None, target_value=None, keypath=None, **kwargs):
 
@@ -1057,7 +1057,7 @@ class SimpleTransforms(NanoNode):
         yield self.message
 
 
-class Serializer(NanoNode):
+class Serializer(MetalNode):
     '''
     Takes an iterable thing as input, and successively yields its items.
     '''
@@ -1078,7 +1078,7 @@ class Serializer(NanoNode):
                 yield item
 
 
-class AggregateValues(NanoNode):
+class AggregateValues(MetalNode):
     '''
     Does that.
     '''
@@ -1095,7 +1095,7 @@ class AggregateValues(NanoNode):
         yield values
 
 
-class Filter(NanoNode):
+class Filter(MetalNode):
     '''
     Applies tests to each message and filters out messages that don't pass
 
@@ -1146,7 +1146,7 @@ class Filter(NanoNode):
             yield NothingToSeeHere()
 
 
-class StreamMySQLTable(NanoNode):
+class StreamMySQLTable(MetalNode):
     def __init__(
         self,
         *args,
@@ -1213,7 +1213,7 @@ class StreamMySQLTable(NanoNode):
             yield BatchEnd()
 
 
-class PrinterOfThings(NanoNode):
+class PrinterOfThings(MetalNode):
 
     @set_kwarg_attributes()
     def __init__(self, disable=False, pretty=False,
@@ -1235,7 +1235,7 @@ class PrinterOfThings(NanoNode):
         yield self.message
 
 
-class ConstantEmitter(NanoNode):
+class ConstantEmitter(MetalNode):
     '''
     Send a thing every n seconds
     '''
@@ -1253,7 +1253,7 @@ class ConstantEmitter(NanoNode):
             yield self.thing
 
 
-class TimeWindowAccumulator(NanoNode):
+class TimeWindowAccumulator(MetalNode):
     '''
     Every N seconds, put the latest M seconds data on the queue.
     '''
@@ -1263,7 +1263,7 @@ class TimeWindowAccumulator(NanoNode):
         pass
 
 
-class LocalFileReader(NanoNode):
+class LocalFileReader(MetalNode):
     @set_kwarg_attributes()
     def __init__(self,
                  directory='.',
@@ -1288,7 +1288,7 @@ class LocalFileReader(NanoNode):
                 yield output
 
 
-class CSVReader(NanoNode):
+class CSVReader(MetalNode):
     @set_kwarg_attributes()
     def __init__(self, send_batch_markers=True, to_row_obj=True, **kwargs):
         super(CSVReader, self).__init__(**kwargs)
@@ -1306,7 +1306,7 @@ class CSVReader(NanoNode):
             yield BatchEnd()
 
 
-class LocalDirectoryWatchdog(NanoNode):
+class LocalDirectoryWatchdog(MetalNode):
     def __init__(self, directory='.', check_interval=3, **kwargs):
         self.directory = directory
         self.latest_arrival = time.time()
@@ -1332,7 +1332,7 @@ class LocalDirectoryWatchdog(NanoNode):
                 self.latest_arrival = time_in_interval
 
 
-class StreamingJoin(NanoNode):
+class StreamingJoin(MetalNode):
     '''
     Joins two streams on a key, using exact match only. MVP.
     '''
@@ -1357,7 +1357,7 @@ class StreamingJoin(NanoNode):
         yield('hi')
 
 
-class DynamicClassMediator(NanoNode):
+class DynamicClassMediator(MetalNode):
     def __init__(self, *args, **kwargs):
 
         super(DynamicClassMediator, self).__init__(**kwargs)
@@ -1494,7 +1494,7 @@ def class_factory(raw_config):
     return new_class
 
 
-class Remapper(NanoNode):
+class Remapper(MetalNode):
 
     def __init__(self, mapping=None, **kwargs):
         self.remapping_dict = mapping or {}
@@ -1507,7 +1507,7 @@ class Remapper(NanoNode):
         yield out
 
 
-class BatchMessages(NanoNode):
+class BatchMessages(MetalNode):
     def __init__(
         self, batch_size=None, batch_list=None,
             counter=0, timeout=5, **kwargs):

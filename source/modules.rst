@@ -1,7 +1,7 @@
-nanostream
+metalpipe
 ==========
 
 .. toctree::
    :maxdepth: 4
 
-   nanostream
+   metalpipe

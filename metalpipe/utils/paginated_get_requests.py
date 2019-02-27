@@ -9,7 +9,7 @@ Classes and helper functions for handling paginated HTTP GET requests
 import os
 import requests
 import time
-from nanostream.utils.helpers import SafeMap
+from metalpipe.utils.helpers import SafeMap
 
 
 additional_data_test = bool  # Function receiving `additional_data_key`; returns `True` if there is more pagination to request

@@ -13,8 +13,8 @@ import logging
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 
-from nanostream.node import NanoNode
-from nanostream.utils.helpers import SafeMap
+from metalpipe.node import MetalNode
+from metalpipe.utils.helpers import SafeMap
 
 additional_data_test = bool
 
@@ -129,7 +129,7 @@ class PaginatedHttpGetRequest:
                 break
 
 
-class HttpGetRequest(NanoNode):
+class HttpGetRequest(MetalNode):
     '''
     Node class for making simple GET requests.
     '''
@@ -186,7 +186,7 @@ class HttpGetRequest(NanoNode):
         yield output
 
 
-class HttpGetRequestPaginator(NanoNode):
+class HttpGetRequestPaginator(MetalNode):
     '''
     Node class for HTTP API requests that require paging through sets of
     results.

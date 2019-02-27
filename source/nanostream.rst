@@ -1,6 +1,6 @@
 Nanostream module
 =================
 
-.. automodule:: nanostream
+.. automodule:: metalpipe
     :members:
     :show-inheritance:

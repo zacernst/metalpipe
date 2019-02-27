@@ -2,7 +2,7 @@ import json
 import logging
 import types
 import hashlib
-from nanostream.utils.helpers import *
+from metalpipe.utils.helpers import *
 
 
 # logging.basicConfig(level=logging.INFO)
@@ -474,7 +474,7 @@ class Relation:
 
 
 if __name__ == '__main__':
-    SAMPLE_FILE = '/home/zac/projects/nanostream/sample_output.json'
+    SAMPLE_FILE = '/home/zac/projects/metalpipe/sample_output.json'
 
     with open(SAMPLE_FILE, 'r') as infile:
         tree = json.load(infile)

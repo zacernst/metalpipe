@@ -1,9 +1,9 @@
 import json
 from jsonschema import validate
-from nanostream.nanostream_processor import (NanoStreamProcessor)
+from metalpipe.metalpipe_processor import (MetalPipeProcessor)
 
 
-class JsonValidator(NanoStreamProcessor):
+class JsonValidator(MetalPipeProcessor):
     def __init__(self, schema_filename):
 
         with open(schema_filename, 'r') as json_schema_file:

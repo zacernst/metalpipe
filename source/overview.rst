@@ -117,20 +117,20 @@ NanoStream is installed in the usual way, with pip:
 
 ::
 
-    pip install nanostream
+    pip install metalpipe
 
 To test your installation, try typing
 
 ::
 
-    nanostream --help
+    metalpipe --help
 
 If NanoStream is installed correctly, you should see a help message.
 
 Using NanoStream
 ----------------
 
-You use NanoStream by (1) writing a configuration file that describes your pipeline, and (2) running the ``nanostream`` command, specifying the location of your
+You use NanoStream by (1) writing a configuration file that describes your pipeline, and (2) running the ``metalpipe`` command, specifying the location of your
 configuration file. NanoStream will read the configuration, create the pipeline,
 and run it.
 
@@ -173,7 +173,7 @@ If you've installed NanoStream and copied this configuration into ``sample_confi
 
 ::
 
-    nanostream run --filename sample_config.yaml
+    metalpipe run --filename sample_config.yaml
 
 
 The output should look like this (you might also see some log messages):
@@ -251,10 +251,10 @@ which generates a diagram of the pipeline. The relevant command(s) are:
 
 ::
 
-    python nanostream_cli.py [run | draw] --filename my_sample_config.yaml
+    python metalpipe_cli.py [run | draw] --filename my_sample_config.yaml
 
 
-The ``nanostream`` command can generate a pdf file containing a drawing of the pipeline, showing the flow of data through the various nodes. Just speciy ``draw`` instead of ``run`` to generate the diagram. For our simple little pipeline, we get this:
+The ``metalpipe`` command can generate a pdf file containing a drawing of the pipeline, showing the flow of data through the various nodes. Just speciy ``draw`` instead of ``run`` to generate the diagram. For our simple little pipeline, we get this:
 
 .. figure:: sample_config_drawing.pdf
   :width: 240

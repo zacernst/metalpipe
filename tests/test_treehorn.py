@@ -2,7 +2,7 @@ import os
 import logging
 import time
 import pytest
-import nanostream.utils.treehorn as treehorn
+import metalpipe.utils.treehorn as treehorn
 
 
 os.environ['PYTHONPATH'] = '.'
@@ -22,7 +22,7 @@ def test_assert_generates_true_wrong_order():
 
 def test_assert_generates_false_too_many():
     with pytest.raises(expected_exception=Exception):
-        assert_generates(range(3), [1, 2, 0, 'foo'])
+        assert_generates(range(3), [1, 2, 0, 'bar'])
 
 def test_assert_generates_false_not_enough():
     with pytest.raises(expected_exception=Exception):
@@ -31,10 +31,10 @@ def test_assert_generates_false_not_enough():
 @pytest.fixture(scope='function')
 def sample_dictionary():
     d = {
-        'foo': 'bar',
+        'bar': 'bar',
         'bar': 'baz',
-        'baz': {'foobar': 1, 'goober': 2},
-        'qux': ['foo', 'foobarbaz', 'ding', {'goo': 'blergh'}],
+        'baz': {'barbar': 1, 'goober': 2},
+        'qux': ['bar', 'barbarbaz', 'ding', {'goo': 'blergh'}],
         'a': {'b': {'c': 'd', 'some_list': [1, 2, 4,]}},
         'a1': {'b1': {'c1': 'd1', 'some_list': [10, 20, 40,], 'e': 'whatever'}}}
     return d
@@ -51,7 +51,7 @@ def test_splitter_generates_traced_dictionary(sample_traced_object):
     assert isinstance(sample_traced_object, (treehorn.TracedDictionary,))
 
 def test_splitter_generates_traced_primitive(sample_traced_object):
-    obj = sample_traced_object['foo']
+    obj = sample_traced_object['bar']
     assert isinstance(obj, (treehorn.TracedPrimitive,))
 
 def test_splitter_generates_traced_list(sample_traced_object):
@@ -80,7 +80,7 @@ def test_not_list(sample_traced_object):
     obj(sample_traced_object)
     result = list(obj._generator)
     objects_in = [
-        sample_traced_object['foo'],
+        sample_traced_object['bar'],
         sample_traced_object['bar'],
         sample_traced_object['baz'],
         sample_traced_object['a'],
@@ -107,12 +107,12 @@ def test_and(sample_traced_object):
     assert len(result) == 1
 
 def test_traced_object_equality():
-    d = {'foo': ['bar', 'baz'], 'qux': 0}
+    d = {'bar': ['bar', 'baz'], 'qux': 0}
     assert treehorn.splitter(d) == treehorn.splitter(d)
 
 def test_traced_object_not_equal():
-    d1 = {'foo': ['bar', 'baz'], 'qux': 0}
-    d2 = {'foo': ['bar', 'baz'], 'qux': 1}
+    d1 = {'bar': ['bar', 'baz'], 'qux': 0}
+    d2 = {'bar': ['bar', 'baz'], 'qux': 1}
     assert treehorn.splitter(d1) != treehorn.splitter(d2)
 
 def test_list_index_equal():

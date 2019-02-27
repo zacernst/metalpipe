@@ -1,5 +1,5 @@
 """
-NanoStreamQueue module
+MetalPipeQueue module
 =====================
 
 These are queues that form the directed edges between nodes.
@@ -9,15 +9,15 @@ import queue
 import uuid
 import logging
 import time
-from nanostream.message.message import NanoStreamMessage
-from nanostream.message.batch import BatchStart, BatchEnd
-from nanostream import node
+from metalpipe.message.message import MetalPipeMessage
+from metalpipe.message.batch import BatchStart, BatchEnd
+from metalpipe import node
 
 
 QUEUE_TIME_WINDOW = 100
 
 
-class NanoStreamQueue:
+class MetalPipeQueue:
     """
     """
 
@@ -57,7 +57,7 @@ class NanoStreamQueue:
         Places a message on the output queues. If the message is ``None``,
         then the queue is skipped.
 
-        Messages are ``NanoStreamMessage`` objects; the payload of the
+        Messages are ``MetalPipeMessage`` objects; the payload of the
         message is message.message_content.
         '''
         if isinstance(message, (node.NothingToSeeHere,)):
@@ -81,6 +81,6 @@ class NanoStreamQueue:
                 else:
                     pass
 
-        message_obj = NanoStreamMessage(message)
+        message_obj = MetalPipeMessage(message)
         message_obj.time_queued = time.time()
         self.queue.put(message_obj)

@@ -1,12 +1,11 @@
 |Build Status|
 
-nanostream: Small-scale streaming data
-======================================
+MetalPipe: Modules for ETL Pipelines
+====================================
 
 What is it? Why is it?
 ----------------------
 
-**Hadoop is to Redis as Spark is to NanoStream**
 
 We love stream processing. It's a great model for lots of work,
 especially ETL. There are excellent stream processing tools such as
@@ -19,26 +18,26 @@ Data. They're Medium Data -- that is, data that's big enough to require
 some planning, but not so big as to justify the infrastructure and
 complexity overhead that come with Spark and its cousins.
 
-NanoStream lets you deploy a streaming application with no overhead.
+MetalPipe lets you deploy a streaming application with no overhead.
 It's entirely self-contained, and runs on a single core (which, let's
 face is, is more than enough processing power for 99% of your work).
-NanoStream sets up each step in your pipeline in its own thread, so
+MetalPipe sets up each step in your pipeline in its own thread, so
 there are no bottlenecks. It monitors all the threads and queues, and
-logs any problems. If the data comes in faster than NanoStream can
+logs any problems. If the data comes in faster than MetalPipe can
 handle, it applies back-pressure to the data stream. But in reality,
-because NanoStream doesn't have any of the overhead of distributed
+because MetalPipe doesn't have any of the overhead of distributed
 systems, it's pretty fast.
 
-Using NanoStream
-================
+Using MetalPipe
+===============
 
-You use NanoStream by specifying one or more ``NanoNode`` objects,
+You use MetalPipe by specifying one or more ``MetalNode`` objects,
 linking them together into a pipeline (an acyclic directed graph), and
-starting them. Several ``NanoNode`` classes are provided, and it's easy
+starting them. Several ``MetalNode`` classes are provided, and it's easy
 to create new ones. Here are some types of examples:
 
-Using built-in ``NanoNode`` classes
------------------------------------
+Using built-in ``MetalNode`` classes
+------------------------------------
 
 Let's say you want to watch a directory for new CSV files, read them
 when they appear, iterate over all the rows, and print those rows as
@@ -65,15 +64,15 @@ The result will be a streaming pipeline that monitors
 ``data_directory/``, printing the rows of any CSV file that appears
 there (or is modified).
 
-Rolling your own ``NanoNode`` class
+Rolling your own ``MetalNode`` class
 -----------------------------------
 
-``NanoNode`` objects fall into one of two categories, depending on
+``MetalNode`` objects fall into one of two categories, depending on
 whether they ingest data from other nodes, or generate data another way.
-If they accept data from an upstream ``NanoNode``, then you specify a
+If they accept data from an upstream ``MetalNode``, then you specify a
 ``process_item`` method; if they generate their own data (i.e. they're
 at the beginning of the pipeline), then you specify a ``generator``
-method. Your class should inherit from ``NanoNode``, and you provide the
+method. Your class should inherit from ``MetalNode``, and you provide the
 appropriate method (``process_item`` or ``generator``), and if
 necessary, define an ``__init__`` method.
 
@@ -84,11 +83,11 @@ defined like so:
 
 ::
 
-    class FooEmitter(NanoNode):  # inherit from NanoNode
+    class FooEmitter(MetalNode):  # inherit from MetalNode
         def __init__(self, message='', interval=1):
             self.message = message
             self.interval = interval
-            super(FooEmitter, self).__init__()  # Must call the `NanoNode` __init__
+            super(FooEmitter, self).__init__()  # Must call the `MetalNode` __init__
 
         def generator(self):
             while 1:
@@ -107,7 +106,7 @@ this:
 
 ::
 
-    class MessageLengthTester(NanoNode):
+    class MessageLengthTester(MetalNode):
         def __init__(self):
             # No particular initialization required in this example
             super(MessageLengthTester, self).__init__()
@@ -132,17 +131,17 @@ instantiating the classes and hooking them together:
 
     message_node.global_start()
 
-Composing and configuring ``NanoNode`` objects
-----------------------------------------------
+Composing and configuring ``MetalNode`` objects
+-----------------------------------------------
 
 Let's suppose you've worked very hard to create the pipeline from the
 last example. Now, your boss says that another engineering team wants to
 use it, but they want to rename parameters and "freeze" the values of
 certain other parameters to specific values. Once that's done, they want
-to use it as just one part of a more complicated ``NanoStream``
+to use it as just one part of a more complicated ``MetalPipe``
 pipeline.
 
-This can be accomplished using a configuration file. When ``NanoStream``
+This can be accomplished using a configuration file. When ``MetalPipe``
 parses the configuration file, it will dynamically create the desired
 class, which can be instantiated and used as if it were a single node in
 another pipeline.
@@ -198,5 +197,5 @@ This is an alpha release
 
 zac.ernst@gmail.com
 
-.. |Build Status| image:: https://travis-ci.org/zacernst/nanostream.svg?branch=master
-   :target: https://travis-ci.org/zacernst/nanostream
+.. |Build Status| image:: https://travis-ci.org/zacernst/metalpipe.svg?branch=master
+   :target: https://travis-ci.org/zacernst/metalpipe

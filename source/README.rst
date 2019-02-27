@@ -1,6 +1,6 @@
 |Build Status|
 
-nanostream: Small-scale streaming data
+metalpipe: Small-scale streaming data
 ======================================
 
 What is it? Why is it?
@@ -198,5 +198,5 @@ This is an alpha release
 
 zac.ernst@gmail.com
 
-.. |Build Status| image:: https://travis-ci.org/zacernst/nanostream.svg?branch=master
-   :target: https://travis-ci.org/zacernst/nanostream
+.. |Build Status| image:: https://travis-ci.org/zacernst/metalpipe.svg?branch=master
+   :target: https://travis-ci.org/zacernst/metalpipe

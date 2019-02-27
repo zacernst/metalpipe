@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 class NoisyImportFinder:
 
-    PATH_TRIGGER = '__nanostream__'
+    PATH_TRIGGER = '__metalpipe__'
 
     def __init__(self, path_entry):
         self.path_entry = path_entry
@@ -37,6 +37,6 @@ if __name__ == '__main__':
 
     try:
         print('importing target_module')
-        import __nanostream__.foo
+        import __metalpipe__.bar
     except Exception as e:
         print('Import failed:', e)

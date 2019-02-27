@@ -379,9 +379,9 @@ def get_type_system(obj):
 
 
 if __name__ == '__main__':
-    foo = MYSQL_VARCHAR16('foo', name='foo')
+    bar = MYSQL_VARCHAR16('bar', name='bar')
     bar = MYSQL_INTEGER8(12)
-    r = Row(foo, bar, type_system=MySQLTypeSystem)
+    r = Row(bar, bar, type_system=MySQLTypeSystem)
     t = Row(type_system=PythonTypeSystem)
     intermediate = bar.to_intermediate_type()
-    converted_foo = MySQLTypeSystem.convert(intermediate)
+    converted_bar = MySQLTypeSystem.convert(intermediate)
