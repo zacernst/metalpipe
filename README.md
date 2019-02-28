@@ -7,9 +7,9 @@ MetalPipe is a lightweight, multithreaded framework for building ETL pipelines. 
 The goals of MetalPipe are:
 
 1. To speed up ETL pipeline development by replacing as much code as possible with simple configurations.
-#. To make ETL pipelines faster by eliminating IO bottlenecks.
-#. To enable robust monitoring and error-handling into all ETL pipelines by default.
-#. To eliminate the need for specialized, heavyweight infrastructure for ETL jobs.
+2. To make ETL pipelines faster by eliminating IO bottlenecks.
+3. To enable robust monitoring and error-handling into all ETL pipelines by default.
+4. To eliminate the need for specialized, heavyweight infrastructure for ETL jobs.
 
 Documentation lives here:
 
