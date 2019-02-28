@@ -2,10 +2,10 @@ import setuptools
 
 setuptools.setup(
     name="metalpipe",
-    version="0.1.22",
+    version="0.1.1",
     author="Zachary Ernst",
     author_email="zac.ernst@gmail.com",
-    description="Small-scale stream processing for ETL",
+    description="Modules for ETL Pipelines",
     url="https://github.com/zacernst/metalpipe",
     scripts=['metalpipe/bin/metalpipe'],
     packages=[
