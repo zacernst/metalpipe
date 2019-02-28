@@ -4,7 +4,7 @@ Flow
 Initialization and startup:
 
 1. Child class initialization.
-1. `NanoNode` init called (with `super`), passing `*arga` and `**kwargs`.
+1. `MetalNode` init called (with `super`), passing `*arga` and `**kwargs`.
 1. Call `node.global_start()`
 1. `node.global_start()` calls `node.start()` for each connected node.
 1. If it is defined, `node.get_runtime_attrs(*self.get_runtime_attrs_args,

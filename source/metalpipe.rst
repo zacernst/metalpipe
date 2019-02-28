@@ -1,4 +1,4 @@
-Nanostream module
+MetalNode module
 =================
 
 .. automodule:: metalpipe

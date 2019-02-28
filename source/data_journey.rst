@@ -5,7 +5,7 @@ The Data Journey
 Overview
 --------
 
-NanoStream pipelines create dictionary-like objects as messages, and those
+MetalPipe pipelines create dictionary-like objects as messages, and those
 messages move through the various nodes until they reach a sink. As they move
 through the nodes, they are modified in one or more of the following ways:
 
@@ -54,7 +54,7 @@ be generated at runtime and passed to the node. In our example, the
 date will be passed to the pipeline as an environment variables ``DATE``
 when the pipeline is executed.
 
-NanoNode contains node classes for reading environment variables and for making
+MetalNode contains node classes for reading environment variables and for making
 GET requests. They are called ``GetEnvironmentVariables`` and
 ``HttpGetRequest``. They take the following options:
 

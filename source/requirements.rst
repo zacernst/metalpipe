@@ -2,7 +2,7 @@
 Requirements
 ============
 
-NanoStream is written in Python 3.5. All requirements are pip-installable and
+MetalPipe is written in Python 3.5. All requirements are pip-installable and
 are listed n the ``requirements.txt`` file:
 
 ```
