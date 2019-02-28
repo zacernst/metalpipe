@@ -4,13 +4,13 @@ import time
 
 import pytest
 from timed_dict.timed_dict import TimedDict
-import nanostream.node as node
-import nanostream.node_queue.queue as queue
-import nanostream.message.poison_pill as poison_pill
-from nanostream.utils.required_arguments import (
+import metalpipe.node as node
+import metalpipe.node_queue.queue as queue
+import metalpipe.message.poison_pill as poison_pill
+from metalpipe.utils.required_arguments import (
     MissingRequiredArgument, required_arguments)
-from nanostream.utils.set_attributes import set_kwarg_attributes
-from nanostream.utils.helpers import (
+from metalpipe.utils.set_attributes import set_kwarg_attributes
+from metalpipe.utils.helpers import (
     aggregate_values, list_to_dict, to_bool, get_value,
     set_value, ListIndex, replace_by_path)
 
