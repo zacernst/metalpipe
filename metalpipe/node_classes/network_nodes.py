@@ -53,6 +53,28 @@ class PaginatedHttpGetRequest:
         self.default_offset_value = default_offset_value
         self.additional_data_test = additional_data_test
 
+    def get_with_retry(self, url, error_on_none=True, **kwargs):
+        error_counter = 0
+        success = False
+        hibernate = 1.
+        while error_counter < self.retries and not success:
+            try:
+                output = requests.get(url)
+                if output is None:
+                    logging.info('Request to {url} returned None'.format(url=url))
+                elif output.status_code >= 300:
+                    logging.info('Request to {url} returned {code} status code'.format(url=url, code=str(output.status_code)))
+                else:
+                    success = True
+            except:
+                error_counter += 1
+                time.sleep(hibernate)
+                hibernate *= 2
+        if success:
+            return output
+        else:
+            raise Exception('Failure for URL: {url}'.format(url=url))
+
     def responses(self):
         '''
         Generator. Yields each response until empty.
@@ -117,7 +139,7 @@ class PaginatedHttpGetRequest:
                 # response = session.get(endpoint_url)
 
                 if GET_ONLY:
-                    response = requests.get(endpoint_url)
+                    response = self.get_with_retry(endpoint_url)
                 else:
                     response = session.get(endpoint_url)
 

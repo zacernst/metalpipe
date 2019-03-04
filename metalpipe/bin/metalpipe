@@ -9,9 +9,9 @@ import jinja2
 from jinja2 import meta
 import argparse
 
-from nanostream.node import *
-from nanostream.node_classes.network_nodes import *
-from nanostream.node_classes.civis_nodes import *
+from metalpipe.node import *
+from metalpipe.node_classes.network_nodes import *
+from metalpipe.node_classes.civis_nodes import *
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -90,7 +90,7 @@ def draw_pipeline(config_file, module_paths=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run a NanoStream pipeline.')
+    parser = argparse.ArgumentParser(description='Run a metalpipe pipeline.')
     parser.add_argument('command', choices=['run', 'draw', 'dump'])
     parser.add_argument(
         '--filename',

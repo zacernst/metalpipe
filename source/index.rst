@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-MetalPipe: Stream processing without the hassle
-================================================
+MetalPipe: Modules for ETL Pipelines
+====================================
 
 .. toctree::
    :maxdepth: 2
