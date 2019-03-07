@@ -21,10 +21,13 @@ class MetalPipeMessage(object):
     def __init__(self, message_content):
         if not isinstance(message_content, (dict,)):
             raise Exception(
-                'Message content must be a dictionary or '
-                '`output_keypath` must be specified.')
+                "Message content must be a dictionary or "
+                "`output_keypath` must be specified."
+            )
         self.message_content = message_content
-        self.message_hash = hashlib.md5(bytes(str(message_content), encoding='utf8'))
+        self.message_hash = hashlib.md5(
+            bytes(str(message_content), encoding="utf8")
+        )
         self.history = []
         self.time_created = time.time()
         self.time_queued = None
@@ -33,6 +36,5 @@ class MetalPipeMessage(object):
         self.accumulator = {}
 
     def __repr__(self):
-        s = ': '.join(
-            ['MetalPipeMessage', self.uuid.hex])
+        s = ": ".join(["MetalPipeMessage", self.uuid.hex])
         return s

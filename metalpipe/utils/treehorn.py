@@ -20,7 +20,6 @@ class TreeHorn:
 
 
 class Label:
-
     def __init__(self, label):
         self.label = label
         self.treehorns = []
@@ -29,20 +28,19 @@ class Label:
         if isinstance(other, (TreeHorn,)):
             self.treehorns.append(other)
         else:
-            raise Exception('Right side of Label assignment must be TreeHorn.')
+            raise Exception("Right side of Label assignment must be TreeHorn.")
 
     def __repr__(self):
-        return 'Label({label})'.format(label=self.label)
+        return "Label({label})".format(label=self.label)
 
     def __eq__(self, other):
         return self.label == other.label
 
     def __hash__(self):
-        return int(hashlib.md5(bytes(self.label, 'utf8')).hexdigest(), 16)
+        return int(hashlib.md5(bytes(self.label, "utf8")).hexdigest(), 16)
 
 
 class GoSomewhere(TreeHorn, dict):
-
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
         self.label = None
@@ -83,13 +81,17 @@ class GoSomewhere(TreeHorn, dict):
 
         def _generator(_traversal, _tree):
             _inner_generator = (
-                _tree.descendants if _traversal.direction == 'down'
-                else _tree.ancestors)
+                _tree.descendants
+                if _traversal.direction == "down"
+                else _tree.ancestors
+            )
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
-                if (_traversal.condition(inner_node) ==
-                        _traversal.condition.truth_value):
+                if (
+                    _traversal.condition(inner_node)
+                    == _traversal.condition.truth_value
+                ):
                     if _traversal._next_traversal is None:
                         _traversal._current_result = inner_node
                         yield inner_node
@@ -112,7 +114,7 @@ class GoSomewhere(TreeHorn, dict):
 
     def __getattr__(self, thing):
 
-        raise Exception('not implemented...' + thing)
+        raise Exception("not implemented..." + thing)
 
     def apply_label(self, label):
         self.label = label
@@ -133,31 +135,28 @@ class GoSomewhere(TreeHorn, dict):
     def get(self, key_or_keys):
         if isinstance(key_or_keys, (str,)):
             return self.get(key)
-        elif isinstance(key_or_keys, (list, tuple,)):
+        elif isinstance(key_or_keys, (list, tuple)):
             return [self.get(key) for key in key_or_keys]
 
 
 class GoDown(GoSomewhere):
     def __init__(self, **kwargs):
-        self.direction = 'down'
+        self.direction = "down"
         super(GoDown, self).__init__(**kwargs)
 
 
 class GoUp(GoSomewhere):
     def __init__(self, **kwargs):
-        self.direction = 'up'
+        self.direction = "up"
         super(GoDown, self).__init__(**kwargs)
 
 
 class MeetsCondition(TreeHorn):
-
-    def __init__(
-        self, test_function=None,
-            truth_value=True, **kwargs):
-        '''
+    def __init__(self, test_function=None, truth_value=True, **kwargs):
+        """
         Fix generator in __call__ so that it depends on whether the argument
         is a generator or a TracedObject.
-        '''
+        """
         self.test_function = test_function or (lambda x: True)
         self.truth_value = truth_value
 
@@ -178,25 +177,26 @@ class MeetsCondition(TreeHorn):
         return Not(self)
 
     def __or__(self, other):
-        return ~ (~ self & ~ other)
+        return ~(~self & ~other)
 
     def __eq__(self, other):
-        return (self & other) | (~ self & ~ other)
+        return (self & other) | (~self & ~other)
 
     def __ne__(self, other):
-        return ~ (self == other)
+        return ~(self == other)
 
 
 class HasDescendantOrAncestor(MeetsCondition):
-
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
         super(HasDescendantOrAncestor, self).__init__(**kwargs)
 
     def __call__(self, thing):
         generator = (
-            thing.descendants() if isinstance(self, (HasDescendant,)) else
-            thing.ancestors())
+            thing.descendants()
+            if isinstance(self, (HasDescendant,))
+            else thing.ancestors()
+        )
         for outer_node in generator:
             sentinal = False
             for _ in self.condition(outer_node):
@@ -207,22 +207,18 @@ class HasDescendantOrAncestor(MeetsCondition):
 
 
 class HasDescendant(HasDescendantOrAncestor):
-
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
-        super(HasDescendant, self).__init__(
-            condition=condition, **kwargs)
+        super(HasDescendant, self).__init__(condition=condition, **kwargs)
 
     def __call__(self, thing):
         return any(self.condition(node) for node in thing.descendants())
 
 
 class HasAncestor(HasDescendantOrAncestor):
-
     def __init__(self, condition=None, **kwargs):
         self.condition = condition
-        super(HasAncestor, self).__init__(
-            condition=condition, **kwagrs)
+        super(HasAncestor, self).__init__(condition=condition, **kwagrs)
 
     def __call__(self, thing):
         return any(self.condition(node) for node in thing.descendants())
@@ -239,21 +235,19 @@ class HasKey(MeetsCondition):
 
 
 class And(MeetsCondition):
-
     def __init__(self, conjunct_1, conjunct_2, **kwargs):
         self.conjunct_1 = conjunct_1
         self.conjunct_2 = conjunct_2
 
         def _test_function(node):
-            return (
-                self.conjunct_1.test_function(node) and
-                self.conjunct_2.test_function(node))
+            return self.conjunct_1.test_function(
+                node
+            ) and self.conjunct_2.test_function(node)
 
         super(And, self).__init__(test_function=_test_function, **kwargs)
 
 
 class Not(MeetsCondition):
-
     def __init__(self, condition, **kwargs):
         self.condition = condition
 
@@ -264,28 +258,24 @@ class Not(MeetsCondition):
 
 
 class IsList(MeetsCondition):
-
-    def __init__(self, direction='down', **kwargs):
+    def __init__(self, direction="down", **kwargs):
         super(IsList, self).__init__(
-            test_function=(lambda x: isinstance(x, (TracedList,))), **kwargs)
+            test_function=(lambda x: isinstance(x, (TracedList,))), **kwargs
+        )
 
 
 class IsDictionary(MeetsCondition):
-
-    def __init__(self, direction='down', **kwargs):
+    def __init__(self, direction="down", **kwargs):
         super(IsDictionary, self).__init__(
             direction=direction,
-            test_function=(lambda x: isinstance(x, (TracedDictionary,))))
+            test_function=(lambda x: isinstance(x, (TracedDictionary,))),
+        )
 
 
 class TracedObject:
-
     def __init__(
-        self,
-        path=None,
-        parent=None,
-        parent_key=None,
-            parent_list_index=None):
+        self, path=None, parent=None, parent_key=None, parent_list_index=None
+    ):
         self.path = path or []
         self.parent = parent
         self.parent_key = parent_key
@@ -300,9 +290,9 @@ class TracedObject:
         return self.to_python() == other.to_python()
 
     def to_python(self):
-        '''
+        """
         Disfrobulates the object back into Python primitive types.
-        '''
+        """
         if isinstance(self, (TracedDictionary,)):
             out = {key: value.to_python() for key, value in self.items()}
         elif isinstance(self, (TracedList,)):
@@ -324,7 +314,7 @@ class TracedObject:
             yield self
         if self.parent is not None:
             yield self.parent
-            for i in  self.parent.ancestors(include_self=False):
+            for i in self.parent.ancestors(include_self=False):
                 yield i
 
     def descendants(self, include_self=False):
@@ -347,103 +337,106 @@ class TracedObject:
 
 
 class ListIndex:
-
     def __init__(self, index):
         self.index = index
 
     def __repr__(self):
-        return 'ListIndex({index})'.format(index=self.index)
+        return "ListIndex({index})".format(index=self.index)
 
     def __eq__(self, other):
         return self.index == other.index
 
 
 class TracedList(TracedObject, list):
-
     def __init__(
         self,
         *args,
         path=None,
         parent=None,
         parent_key=None,
-            parent_list_index=None):
+        parent_list_index=None
+    ):
 
         super(TracedList, self).__init__(
             path=path,
             parent=parent,
             parent_key=parent_key,
-            parent_list_index=parent_list_index)
+            parent_list_index=parent_list_index,
+        )
         for index, item in enumerate(args):
             child = splitter(
                 item,
                 path=self.path + [ListIndex(index)],
                 parent=self,
                 parent_key=None,
-                parent_list_index=ListIndex(index))
+                parent_list_index=ListIndex(index),
+            )
             self.children.append(child)
             self.append(child)
 
     def __repr__(self):
-        return '[' + ', '.join([item.__repr__() for item in self]) + ']'
+        return "[" + ", ".join([item.__repr__() for item in self]) + "]"
 
 
 class PathEndsIn(MeetsCondition):
     def __init__(self, path=None, **kwargs):
         self.path = path or []
-        _test_function = (lambda x: x.path[-1 * len(self.path):] == self.path)
-        super(PathEndsIn, self).__init__(test_function=_test_function, **kwargs)
+        _test_function = lambda x: x.path[-1 * len(self.path) :] == self.path
+        super(PathEndsIn, self).__init__(
+            test_function=_test_function, **kwargs
+        )
 
 
 def splitter(
-    thing,
-    path=None,
-    parent=None,
-    parent_key=None,
-        parent_list_index=None):
+    thing, path=None, parent=None, parent_key=None, parent_list_index=None
+):
 
     if isinstance(thing, (dict,)):
         return TracedDictionary(
-            thing, path=path, parent=parent, parent_key=parent_key)
-    elif isinstance(thing, (list, tuple,)):
+            thing, path=path, parent=parent, parent_key=parent_key
+        )
+    elif isinstance(thing, (list, tuple)):
         return TracedList(
-            *thing, path=path, parent=parent, parent_key=parent_key)
+            *thing, path=path, parent=parent, parent_key=parent_key
+        )
     else:
         return TracedPrimitive(
-            thing, path=path, parent=parent, parent_key=parent_key)
+            thing, path=path, parent=parent, parent_key=parent_key
+        )
 
 
 class TracedPrimitive(TracedObject):
-
     def __init__(self, thing, path=None, parent=None, parent_key=None):
 
         self.thing = thing
         super(TracedPrimitive, self).__init__(
-            path=path, parent=parent, parent_key=parent_key)
+            path=path, parent=parent, parent_key=parent_key
+        )
 
 
 class TracedDictionary(TracedObject, dict):
-
     def __init__(
         self,
         thing,
         path=None,
         parent=None,
         parent_key=None,
-            parent_list_index=None):
+        parent_list_index=None,
+    ):
 
         self.thing = thing
-        super(
-            TracedDictionary, self).__init__(
-                path=path, parent=parent, parent_key=parent_key)
+        super(TracedDictionary, self).__init__(
+            path=path, parent=parent, parent_key=parent_key
+        )
         for key, value in thing.items():
             child = splitter(
-                value, parent=self, parent_key=key, path=self.path + [key])
+                value, parent=self, parent_key=key, path=self.path + [key]
+            )
             self[key] = child
             self.children.append(child)
 
 
 class Relation:
-
     def __init__(self, name):
         self.name = name
         globals()[name] = self
@@ -459,8 +452,10 @@ class Relation:
         traversal_head(tree)
         traversals = traversal_head.all_traversals()
         with_labels = [
-            traversal for traversal in traversals
-            if traversal.label is not None]
+            traversal
+            for traversal in traversals
+            if traversal.label is not None
+        ]
         traversal_head(tree)
         for _ in traversal_head._generator:
             d = {}
@@ -469,26 +464,29 @@ class Relation:
                     node_with_label._current_result
                     if node_with_label._retrieve_key is None
                     else node_with_label._current_result.get(
-                        node_with_label._retrieve_key))
+                        node_with_label._retrieve_key
+                    )
+                )
             yield d
 
 
-if __name__ == '__main__':
-    SAMPLE_FILE = '/home/zac/projects/metalpipe/sample_output.json'
+if __name__ == "__main__":
+    SAMPLE_FILE = "/home/zac/projects/metalpipe/sample_output.json"
 
-    with open(SAMPLE_FILE, 'r') as infile:
+    with open(SAMPLE_FILE, "r") as infile:
         tree = json.load(infile)
 
     # tree = splitter(tree)
 
-    has_email_key = GoDown(condition=HasKey('email'))
-    has_city_key = GoDown(condition=HasKey('city'))
+    has_email_key = GoDown(condition=HasKey("email"))
+    has_city_key = GoDown(condition=HasKey("city"))
 
     for i in has_email_key.matches(tree):
         print(i)
 
-    Relation('FROM_CITY') == (
-        (has_email_key + 'email')['email'] > (has_city_key + 'city')['city'])
+    Relation("FROM_CITY") == (
+        (has_email_key + "email")["email"] > (has_city_key + "city")["city"]
+    )
     for email_city in FROM_CITY(tree):
         pass
         print(email_city)
