@@ -78,7 +78,7 @@ As you can see, this JSON blob is similar to a typical response from a REST API 
 
 Let's suppose you need to extract the email address and corresponding city name for each entry in ``events``. This example is simple enough that you might not see the usefulness of Treehorn, but it's complex enough to get a sense of how Treehorn works. Later, we'll look at circumstances where Treehorn's declarative style is especially useful.
 
-There are three kinds of classes that are important for Treehorn:
+There are four classes that are important for Treehorn:
 
 1. ``Conditions`` -- These are classes that test a particular location in a tree (e.g. a dictionary) for some condition. Examples of useful conditions are being a dictionary with a certain key, being a non-empty list, having an integer value, and so on.
 #. ``Traversal`` -- These classes move throughout a tree, recursively applying tests to each node that they visit. Traversals can be upward (toward the root) or downward (toward the leaves).
