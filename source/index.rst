@@ -6,17 +6,20 @@
 MetalPipe: Modules for ETL Pipelines
 ====================================
 
+MetalPipe is a set of modules for building configuration-driven, efficient ETL
+pipelines with a minimum amount of custom code.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    Overview <overview>
    The Data Journey <data_journey>
+   Monitoring <monitoring>
    Treehorn <treehorn>
    Implementation notes <implementation>
    API documentation <api>
    License <license>
-
 
 Indices and tables
 ==================
