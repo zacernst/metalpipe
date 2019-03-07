@@ -1,9 +1,9 @@
-'''
+"""
 Helper module
 *************
 
 Misc. helper functions for other classes.
-'''
+"""
 
 import copy
 import types
@@ -20,39 +20,44 @@ UNIX_EPOCH = datetime.datetime(month=1, year=1970, day=1)
 
 def list_to_dict(some_list, list_of_keys):
     if len(some_list) != len(list_of_keys):
-        raise Exception('Length of list elements and key list must be equal.')
-    out = {
-        list_of_keys[index]: item for index, item in enumerate(some_list)}
+        raise Exception("Length of list elements and key list must be equal.")
+    out = {list_of_keys[index]: item for index, item in enumerate(some_list)}
     return out
 
 
 def timestamp_to_redshift(timestamp):
     if isinstance(timestamp, (str,)):
         return timestamp
-    return timestamp.strftime('%b %d,%Y  %H:%M:%S')
+    return timestamp.strftime("%b %d,%Y  %H:%M:%S")
 
 
 def string_to_redshift(timestamp):
-    '''
+    """
     TODO: Consider removing this function.
-    '''
-    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ''):
+    """
+    if timestamp is None or (
+        isinstance(timestamp, (str,)) and timestamp == ""
+    ):
         return timestamp
-    return datetime.datetime.strptime(timestamp, '%b %d,%Y  %H:%M:%S')
+    return datetime.datetime.strptime(timestamp, "%b %d,%Y  %H:%M:%S")
+
 
 def string_to_datetime(timestamp):
-    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ''):
+    if timestamp is None or (
+        isinstance(timestamp, (str,)) and timestamp == ""
+    ):
         return timestamp
-    return datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+    return datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
 
 def milliseconds_epoch_to_datetime(milliseconds_epoch):
-    if isinstance(milliseconds_epoch, (datetime.datetime, str,)):
+    if isinstance(milliseconds_epoch, (datetime.datetime, str)):
         return milliseconds_epoch
-    logging.debug('milliseconds_epoch_to_datetime: ' + str(milliseconds_epoch))
-    out = UNIX_EPOCH + datetime.timedelta(seconds=(
-        int(milliseconds_epoch)/1000))
-    logging.debug('milliseconds_epoch_to_datetime output: ' + str(out))
+    logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))
+    out = UNIX_EPOCH + datetime.timedelta(
+        seconds=(int(milliseconds_epoch) / 1000)
+    )
+    logging.debug("milliseconds_epoch_to_datetime output: " + str(out))
     return out
 
 
@@ -62,28 +67,34 @@ def seconds_epoch_to_datetime(seconds_epoch):
 
 def to_bool(thing):
     if isinstance(thing, (str,)):
-        return len(thing) > 0 and thing[0].lower() in ['t', 'y']
-    elif isinstance(thing, (int, float,)):
+        return len(thing) > 0 and thing[0].lower() in ["t", "y"]
+    elif isinstance(thing, (int, float)):
         return thing > 0
     elif isinstance(thing, (bool,)):
         return thing
     else:
         raise Exception(
-            'Do not know how to convert {thing} to bool'.format(
-                thing=str(thing)))
+            "Do not know how to convert {thing} to bool".format(
+                thing=str(thing)
+            )
+        )
 
 
 def get_value(
-    dictionary, path, delimiter='.',
-        use_default_value=False, default_value=None):
+    dictionary,
+    path,
+    delimiter=".",
+    use_default_value=False,
+    default_value=None,
+):
 
     # dictionary = copy.deepcopy(dictionary)
     if isinstance(path, (str,)):
         path = path.split(delimiter)
-    elif isinstance(path, (list, tuple,)):
+    elif isinstance(path, (list, tuple)):
         pass
     else:
-        raise Exception('what?')
+        raise Exception("what?")
     if len(path) == 0:
         dictionary = dictionary
     else:
@@ -96,25 +107,28 @@ def get_value(
 
 
 def hi(*args, **kwargs):
-    return 'hi'
+    return "hi"
 
 
 def pdb(*args, **kwargs):
-    import pdb; pdb.set_trace()
+    import pdb
+
+    pdb.set_trace()
 
 
 def convert_date_format(date_string, source_format=None, target_format=None):
-    return datetime.datetime.strptime(
-        date_string, source_format).strftime(target_format)
+    return datetime.datetime.strptime(date_string, source_format).strftime(
+        target_format
+    )
 
 
 def engaging_networks_date(result, **kwargs):
-    '''
+    """
     This is a very redundant function, but it's here mostly to test the
     functionality of the ``post_process_function``.
-    '''
-    out = datetime.datetime.strptime(result[0]['date_modified'], '%Y-%m-%d')
-    out = out.strftime('%Y%m%d')
+    """
+    out = datetime.datetime.strptime(result[0]["date_modified"], "%Y-%m-%d")
+    out = out.strftime("%Y%m%d")
     return out
 
 
@@ -122,13 +136,13 @@ def set_value(dictionary, path, value):
     for step in path[:-1]:
         if not isinstance(step, (ListIndex,)):
             if step not in dictionary:
-                raise Exception('Path not found.')
+                raise Exception("Path not found.")
             dictionary = dictionary[step]
         else:
             dictionary = dictionary[step.index]
     dictionary[
-        path[-1] if not isinstance(path[-1], (ListIndex,))
-        else path[-1].index] = value
+        path[-1] if not isinstance(path[-1], (ListIndex,)) else path[-1].index
+    ] = value
 
 
 def iterate_leaves(dictionary, keypath=None):
@@ -142,8 +156,11 @@ def iterate_leaves(dictionary, keypath=None):
 
 
 def remap_dictionary(
-    source_dictionary, target_dictionary,
-        use_default_value=False, default_value=None):
+    source_dictionary,
+    target_dictionary,
+    use_default_value=False,
+    default_value=None,
+):
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
         set_value(
@@ -153,7 +170,9 @@ def remap_dictionary(
                 source_dictionary,
                 value,
                 use_default_value=use_default_value,
-                default_value=default_value))
+                default_value=default_value,
+            ),
+        )
     return target_dictionary
 
 
@@ -166,7 +185,7 @@ def two_weeks_ago():
 
 
 def now_redshift():
-    return datetime.datetime.now().strftime('%b %d,%Y  %H:%M:%S')
+    return datetime.datetime.now().strftime("%b %d,%Y  %H:%M:%S")
 
 
 def now_datetime():
@@ -178,7 +197,7 @@ def two_weeks_ago_datetime():
 
 
 def datetime_to_redshift(datetime_obj):
-    return datetime_obj.strftime('%b %d,%Y  %H:%M:%S')
+    return datetime_obj.strftime("%b %d,%Y  %H:%M:%S")
 
 
 def datetime_to_milliseconds(datetime_obj):
@@ -187,7 +206,7 @@ def datetime_to_milliseconds(datetime_obj):
 
 class SafeMap(dict):
     def __missing__(self, key):
-        return '{' + str(key) + '}'
+        return "{" + str(key) + "}"
 
 
 class ListIndex:
@@ -195,7 +214,7 @@ class ListIndex:
         self.index = index
 
     def __repr__(self):
-        return 'ListIndex({index})'.format(index=str(self.index))
+        return "ListIndex({index})".format(index=str(self.index))
 
     def __eq__(self, other):
         return isinstance(other, (ListIndex,)) and self.index == other.index
@@ -247,14 +266,13 @@ def matching_tail_paths(target_path, structure, starting_path=None):
         else:
             seen.add(path)
 
-
         temp_list = remove_list_indexes(path)
 
         if len(temp_list) < len(target_path):
             continue
-        tail_of_path = temp_list[-1 * len(target_path):]
+        tail_of_path = temp_list[-1 * len(target_path) :]
         if lists_equal(tail_of_path, target_path):
-            logging.debug('tail path: ' + str(target_path) + ' ' + str(path))
+            logging.debug("tail path: " + str(target_path) + " " + str(path))
             yield (starting_path or tuple([])) + path
 
 
@@ -267,19 +285,27 @@ def nevermind(thing):
 
 
 def replace_by_path(
-    dictionary, target_path, target_value=None, function=None,
-        function_args=None, function_kwargs=None, starting_path=None):
+    dictionary,
+    target_path,
+    target_value=None,
+    function=None,
+    function_args=None,
+    function_kwargs=None,
+    starting_path=None,
+):
 
     function = function or nevermind
     function_args = function_args or tuple([])
     function_kwargs = function_kwargs or {}
-    #dictionary_clone = copy.deepcopy(dictionary)
+    # dictionary_clone = copy.deepcopy(dictionary)
     dictionary_clone = dictionary
     for path in matching_tail_paths(
-            target_path, dictionary_clone, starting_path=starting_path):
+        target_path, dictionary_clone, starting_path=starting_path
+    ):
         current_value = get_value(dictionary, path)
         one_target_value = target_value or function(
-            current_value, *function_args, **function_kwargs)
+            current_value, *function_args, **function_kwargs
+        )
         set_value(dictionary, path, one_target_value)
 
 
@@ -288,13 +314,13 @@ def aggregate_values(dictionary, target_path, values=False):
     for path in matching_tail_paths(target_path, dictionary):
         current_value = get_value(dictionary, path)
         aggregated_values.append(
-            list(current_value.values()) if values else current_value)
-    logging.debug('aggregated_values: ' + str(aggregated_values))
+            list(current_value.values()) if values else current_value
+        )
+    logging.debug("aggregated_values: " + str(aggregated_values))
     return aggregated_values if not values else aggregated_values[0]
 
 
 class UberDict(dict):
-
     def rget(self, value):
         for i in meets_condition(self, lambda x: isinstance(x, (dict,))):
             for _key, _value in i.items():
@@ -303,24 +329,26 @@ class UberDict(dict):
 
 
 def iterate(thing, path=None, seen=None, start_path=None):
-    '''
+    """
     TODO: allow specification of `start_path` to speed this up.
-    '''
+    """
     hashed_thing = hash(str(thing))
     path = path or []
     start_path = start_path or []
     seen = seen or set([])
     if hashed_thing not in seen:
-        if isinstance(thing, (list, tuple, dict,)):
+        if isinstance(thing, (list, tuple, dict)):
             yield thing
         seen.add(hashed_thing)
         if isinstance(thing, (dict,)):
             for key, value in thing.items():
                 for item in iterate(value, path=path + [key], seen=seen):
                     yield item
-        elif isinstance(thing, (list, tuple,)):
+        elif isinstance(thing, (list, tuple)):
             for index, item in enumerate(thing):
-                for thingie in iterate(item, path=path + [ListIndex(index)], seen=seen):
+                for thingie in iterate(
+                    item, path=path + [ListIndex(index)], seen=seen
+                ):
                     yield thingie
         else:
             yield thing
@@ -332,16 +360,18 @@ def meets_condition(thing, func):
             yield item
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     import json
-    d = json.load(open('./sample.json', 'r'))
+
+    d = json.load(open("./sample.json", "r"))
     counter = 0
     while counter < 100:
-        replace_by_path(d, ['vid'], target_value='hithere')
+        replace_by_path(d, ["vid"], target_value="hithere")
         counter += 1
         print(counter)
     import random
+
     logging.basicConfig(level=logging.debug)
-    replace_by_path(d, ['vid'], function=lambda x: str(x) + str(random.random()))
+    replace_by_path(
+        d, ["vid"], function=lambda x: str(x) + str(random.random())
+    )

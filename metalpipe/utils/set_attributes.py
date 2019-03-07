@@ -1,13 +1,13 @@
-'''
+"""
 Decorator that eliminates the need to assign attributes to the keys
 and values of kwargs in an ``__init__`` function.
-'''
+"""
 
 import inspect
 
 
 class set_kwarg_attributes:
-    '''
+    """
     Function decorator to be used on ``__init__`` methods. It examines the
     signature of the ``__init__`` method and any kwargs passed to the
     constructor. It creates attributes named after the keys, and assigns
@@ -28,16 +28,16 @@ class set_kwarg_attributes:
 
     You can also exclude some kwargs from this magic by passing a list
     ``exclude=[...]`` to the decorator.
-    '''
+    """
 
     def __init__(self, exclude=None):
-        '''
+        """
         Constructor for the decorator.
 
         Args:
             exclude (list of str): Names of kwargs that will **not** be
                 assigned to attributes of the object.
-        '''
+        """
         self.exclude = exclude or []
 
     def __call__(self, f):

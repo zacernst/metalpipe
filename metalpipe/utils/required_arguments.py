@@ -1,4 +1,4 @@
-'''
+"""
 A decorator that allows you to specify a set of keyword arguments that
 are required by the function. If any are missing, an exception is
 raised which lists the missing arguments.
@@ -23,7 +23,7 @@ will raise:
 
     MissingRequiredArgument: Missing required argument(s): bar
 
-'''
+"""
 
 
 class MissingRequiredArgument(Exception):
@@ -42,9 +42,9 @@ class required_arguments:
                     missing_kwargs.append(kwarg)
             if len(missing_kwargs) > 0:
                 raise MissingRequiredArgument(
-                    'Missing required argument(s): '
-                    '{kwarg_list}'.format(
-                        kwarg_list=', '.join(missing_kwargs)))
+                    "Missing required argument(s): "
+                    "{kwarg_list}".format(kwarg_list=", ".join(missing_kwargs))
+                )
             out = f(*args, **kwargs)
             return out
 

@@ -32,8 +32,8 @@ class MetalPipeQueue:
     def size(self):
         return self.queue.qsize()
 
-    def approximately_full(self, error=.95):
-        return self.size() >= (self.max_queue_size -1)
+    def approximately_full(self, error=0.95):
+        return self.size() >= (self.max_queue_size - 1)
 
     @property
     def empty(self):
@@ -43,23 +43,33 @@ class MetalPipeQueue:
         try:
             message = self.queue.get(block=False)
             self.queue_times.append(time.time() - message.time_queued)
-            self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW:]
-            logging.debug('QUEUE TIMES: {queue_times}'.format(queue_times=str(self.queue_times)))
-            logging.debug('QUEUE SIZE: {queue_size}'.format(queue_size=str(self.size())))
-            logging.debug('QUEUE FULL: {queue_full}'.format(queue_full=str(self.approximately_full())))
+            self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW :]
+            logging.debug(
+                "QUEUE TIMES: {queue_times}".format(
+                    queue_times=str(self.queue_times)
+                )
+            )
+            logging.debug(
+                "QUEUE SIZE: {queue_size}".format(queue_size=str(self.size()))
+            )
+            logging.debug(
+                "QUEUE FULL: {queue_full}".format(
+                    queue_full=str(self.approximately_full())
+                )
+            )
         except queue.Empty:
             message = None
-        logging.debug('Retrieved message: ' + str(message))
+        logging.debug("Retrieved message: " + str(message))
         return message
 
     def put(self, message, *args, previous_message=None, **kwargs):
-        '''
+        """
         Places a message on the output queues. If the message is ``None``,
         then the queue is skipped.
 
         Messages are ``MetalPipeMessage`` objects; the payload of the
         message is message.message_content.
-        '''
+        """
         if isinstance(message, (node.NothingToSeeHere,)):
             return
         elif previous_message is not None:
@@ -75,8 +85,11 @@ class MetalPipeQueue:
             for key, value in previous_message.items():
                 if key not in message:
                     message[key] = value
-                elif (key in message and value is not None
-                        and self.source_node.prefer_existing_value):
+                elif (
+                    key in message
+                    and value is not None
+                    and self.source_node.prefer_existing_value
+                ):
                     message[key] = value
                 else:
                     pass
