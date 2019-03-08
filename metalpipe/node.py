@@ -967,6 +967,26 @@ class CounterOfThings(MetalNode):
                 assert False
 
 
+class FunctionOfMessage(MetalNode):
+    def __init__(self, function_name, *args, **kwargs):
+        self.function_name = function_name
+        components = self.function_name.split("__")
+        if len(components) == 1:
+            module = None
+            function_name = components[0]
+            function_obj = globals()[function_name]
+        else:
+            module = ".".join(components[:-1])
+            function_name = components[-1]
+            module = importlib.import_module(module)
+            function = getattr(module, function_name)
+        self.function = function
+        super(FunctionOfMessage, self).__init__(*args, **kwargs)
+
+    def process_item(self):
+        yield self.function(self.__message__)
+
+
 class InsertData(MetalNode):
     def __init__(
         self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs

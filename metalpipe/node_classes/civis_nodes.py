@@ -11,6 +11,7 @@ import tempfile
 import time
 import hashlib
 import csv
+import random
 import uuid
 import civis
 import threading
@@ -65,7 +66,7 @@ class SendToCivis(MetalNode):
                 [
                     table,
                     "staging",
-                    hashlib.md5().hexdigest()[:HASH_SUFFIX_LENGTH],
+                    hashlib.md5(bytes(str(random.random()), 'ascii')).hexdigest()[:HASH_SUFFIX_LENGTH],
                 ]
             )
         else:

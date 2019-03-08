@@ -1,12 +1,93 @@
-==============
-Implementation
-==============
+=======================
+Node and Data Lifecycle
+=======================
 
 This section describes what's happening under the hood in a ``MetalPipe``
-data pipeline. Most people won't need to read this section.
+data pipeline. Most people won't need to read this section. But if you're
+planning on writing custom classes that inherit from ``MetalNode``, this
+will be helpful.
+
+The Node Lifecycle
+------------------
+
+The ``MetalNode`` class is where the crucial work happens in a pipeline. The
+lifecycle of a ``MetalNode`` object comprises several steps.
+
+Instantiating the node and pipeline
+===================================
+
+Recall that when a node is defined in a configuration file, the definition
+looks like this:
+
+::
+
+  my_node:
+    class: MyMetalNodeClass
+    options:
+      an_option: foo
+      another_option: bar
+
+The code for any ``MetalNode`` subclass has an ``__init__`` method that has
+the following form:
+
+::
+
+  class MyMetalNodeClass(MetalNode):
+      def __init__(self, an_option=None, another_option=None, **kwargs):
+          self.an_option = an_option
+          self.another_option = another_option
+          super(MyMetalNodeClass, self).__init__(**kwargs)
+
+As you can see, the keyword arguments directly correspond to the keys under
+the ``options`` key in the configuration file. When the configuration file is
+read by the command-line tool, the class is instantiated and the options
+are converted to keyword arguments to be passed to the constructor. Keyword
+arguments will typically be a combination of options that are specific to
+that class and options that are inherited by any subclass of ``MetalNode``.
+
+Instantiating the class does not create any input or output queues. That
+happens only when two nodes are hooked together. In python code, you can
+hook up two or more nodes by using the ``>`` operator, as in:
+
+::
+
+  node_1 > node_2 > node_3
+
+In a configuration file, this is accomplished with the ``paths`` key, like so:
+
+::
+
+  paths:
+    -
+      - node_1
+      - node_2
+      - node_3
+
+
+Starting the node
+=================
+
+To do.
+
+Processing data in the pipeline
+===============================
+
+To do.
+
+Shutting down normally
+======================
+
+To do.
+
+Shutting down due to error
+==========================
+
+To do.
 
 The data journey
 ----------------
+
+REVISE THIS
 
 MetalPipe pipelines are sets of ``MetalNode`` objects connected by ``MetalPipeQueue``
 objects. Think of each ``MetalNode`` as a vertex in a directed graph, and each
@@ -21,7 +102,3 @@ The data from the source's ``generator`` is handled by the ``MetalPipeQueue`` ob
 
 #. It wraps the data into a ``MetalPipeMessage`` object, which also holds useful metadata including a UUID, the ID of the node that generated the data, and a timestamp.
 #. If the ``MetalPipeQueue`` receives data that is simply a ``None`` object, then it is skipped.
-
-
-
-

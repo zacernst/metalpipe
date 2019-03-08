@@ -17,7 +17,7 @@ pipelines with a minimum amount of custom code.
    The Data Journey <data_journey>
    Monitoring <monitoring>
    Treehorn <treehorn>
-   Implementation notes <implementation>
+   Node and Data Lifecycle <implementation>
    API documentation <api>
    License <license>
 
