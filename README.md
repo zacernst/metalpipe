@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/zacernst/metalpipe.svg?branch=master)](https://travis-ci.org/zacernst/nanostream)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-[![Readthedocs](https://readthedocs.org/projects/metalpipe/badge/)](http://metalpipe.reathedocs.io)
+[![Readthedocs](https://readthedocs.org/projects/metalpipe/badge/)](http://metalpipe.reathedocs.io/en/latest)
 
 
 # MetalPipe: Modules for ETL Pipelines
