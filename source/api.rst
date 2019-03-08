@@ -7,7 +7,7 @@ API Documentation
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: metalpipe.civis_nodes
+.. automodule:: metalpipe.node_classes.civis_nodes
    :members:
    :undoc-members:
    :show-inheritance:
