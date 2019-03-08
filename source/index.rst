@@ -14,7 +14,6 @@ pipelines with a minimum amount of custom code.
    :caption: Contents:
 
    Overview <overview>
-   The Data Journey <data_journey>
    Monitoring <monitoring>
    Treehorn <treehorn>
    Node and Data Lifecycle <implementation>
