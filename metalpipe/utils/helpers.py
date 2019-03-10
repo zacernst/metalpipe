@@ -9,6 +9,7 @@ import copy
 import types
 import time
 import logging
+import importlib
 import datetime
 import pickle
 import hashlib
@@ -23,6 +24,15 @@ def list_to_dict(some_list, list_of_keys):
         raise Exception("Length of list elements and key list must be equal.")
     out = {list_of_keys[index]: item for index, item in enumerate(some_list)}
     return out
+
+
+def load_function(function_name):
+    components = function_name.split("__")
+    module = ".".join(components[:-1])
+    function_name = components[-1]
+    module = importlib.import_module(module)
+    function = getattr(module, function_name)
+    return function
 
 
 def timestamp_to_redshift(timestamp):

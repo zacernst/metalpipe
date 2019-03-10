@@ -40,6 +40,7 @@ from metalpipe.utils.set_attributes import set_kwarg_attributes
 from metalpipe.utils.data_structures import Row, MySQLTypeSystem
 from metalpipe.utils import data_structures as ds
 from metalpipe.utils.helpers import (
+    load_function,
     replace_by_path,
     remap_dictionary,
     set_value,
@@ -187,6 +188,7 @@ class MetalNode:
         summary="",
         post_process_function_kwargs=None,
         output_key=None,
+        break_test=None,
         **kwargs
     ):
         self.name = name or uuid.uuid4().hex
@@ -206,6 +208,10 @@ class MetalNode:
         self.retain_input = (
             retain_input
         )  # Keep the input dictionary and send it downstream
+        if break_test is not None:
+            self.break_test = load_function(break_test)
+        else:
+            self.break_test = None
         self.throttle = throttle
         self.get_runtime_attrs = get_runtime_attrs
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
@@ -393,9 +399,6 @@ class MetalNode:
                 )
             )
             while not self.finished:
-                new_input_sentinal = (
-                    False
-                )  # Set to ``True`` when we have a new input
                 for input_queue in self.input_queue_list:
                     one_item = input_queue.get()
                     if one_item is None:
@@ -405,13 +408,9 @@ class MetalNode:
                     # managing streaming joins, e.g.
                     message_source = input_queue.source_node
 
-                    new_input_sentinal = True
                     self.messages_received_counter += 1
 
                     time.sleep(self.throttle)
-                    logging.debug(
-                        "Got item: {one_item}".format(one_item=str(one_item))
-                    )
                     # Get the content of a specific keypath, if one has
                     # been defined in the ``MetalNode`` initialization.
                     message_content = (
@@ -435,6 +434,8 @@ class MetalNode:
                     # If we receive ``None``, then pass.
                     elif message_content is None:
                         pass
+
+
                     # Otherwise, process the message as usual, by calling
                     # the ``MetalNode`` object's ``process_item`` method.
                     else:
@@ -486,12 +487,29 @@ class MetalNode:
 
                         for output in self._process_item():
                             if self.datadog:
+                                # Experimental code
                                 self.datadog_stats.increment(
                                     "{pipeline_name}.{node_name}.output_counter".format(
                                         pipeline_name=self.pipeline_name,
                                         node_name=self.name,
                                     )
                                 )
+
+
+
+                            ### Do the self.break_test() if it's been defined
+                            ### Execute the function and break
+                            ### if it returns True
+                            if self.break_test is not None:
+                                break_test_result = self.break_test(output_message=output, input_message=self.__message__)
+                                logging.info('NODE BREAK TEST: ' + str(break_test_result))
+                                self.finished = break_test_result
+
+
+
+
+
+
                             yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
@@ -501,7 +519,15 @@ class MetalNode:
                 ) and all(queue.empty for queue in self.input_queue_list)
                 if this_node_finished:
                     self.finished = True
-            self.cleanup()
+            logging.info('checking whether cleanup is a generator. ' + str(self.name))
+            cleanup_output = self.cleanup()
+
+            if isinstance(cleanup_output, (types.GeneratorType,)):
+                logging.info('GeneratorType found. Calling cleanup.')
+                for i in cleanup_output:
+                    yield i, one_item
+            else:
+                pass
 
     def cleanup(self):
         """
@@ -572,6 +598,7 @@ class MetalNode:
                 random.random()
             )
         message_arrival_time = time.time()
+
 
         try:
             for out in self.process_item(*args, **kwargs):
@@ -1704,6 +1731,7 @@ class BatchMessages(MetalNode):
         yield out
 
     def cleanup(self):
+        logging.info('in cleanup, sending remainder of batch...')
         yield self.batch_list
 
 
