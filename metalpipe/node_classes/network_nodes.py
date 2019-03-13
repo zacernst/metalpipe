@@ -146,7 +146,6 @@ class PaginatedHttpGetRequest:
         while self.additional_data_key in out and additional_data_test(
             out[self.additional_data_key]
         ):
-            yield out
             try:
                 offset = out[self.pagination_key]
                 offset_set.add(offset)
@@ -173,6 +172,7 @@ class PaginatedHttpGetRequest:
                     "end of the responses."
                 )
                 break
+            yield out
 
 
 class HttpGetRequest(MetalNode):
@@ -221,7 +221,7 @@ class HttpGetRequest(MetalNode):
         except Exception:
             logging.error("formatted endpoint: " + formatted_endpoint)
             raise Exception()
-        logging.debug(
+        logging.info(
             "Http GET request: {endpoint}".format(endpoint=formatted_endpoint)
         )
 
@@ -299,6 +299,7 @@ class HttpGetRequestPaginator(MetalNode):
                 + " "
                 + str(self.requestor.endpoint_template)
             )
+            logging.info('::'.join([self.name, 'events', str(len(i.get('events', '')))]))
+            yield i
             if self.finished:
                 break
-            yield i

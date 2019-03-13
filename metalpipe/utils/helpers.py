@@ -191,7 +191,10 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
+    return (
+        datetime.datetime(year=2019, month=1, day=1) - UNIX_EPOCH
+    ).total_seconds() * 1000
+    # return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
 
 
 def now_redshift():
@@ -204,6 +207,9 @@ def now_datetime():
 
 def two_weeks_ago_datetime():
     return datetime.datetime.now() - datetime.timedelta(days=14)
+
+def january_1_2019():
+    return datetime.datetime(year=2019, month=1, day=1)
 
 
 def datetime_to_redshift(datetime_obj):
@@ -323,11 +329,21 @@ def aggregate_values(dictionary, target_path, values=False):
     aggregated_values = []
     for path in matching_tail_paths(target_path, dictionary):
         current_value = get_value(dictionary, path)
-        aggregated_values.append(
-            list(current_value.values()) if values else current_value
-        )
+        try:
+            aggregated_values.append(
+                list(current_value.values()) if values else current_value
+            )
+        except AttributeError:
+            logging.info(
+                "Attribute error in aggregate values. No list returned."
+            )
+
     logging.debug("aggregated_values: " + str(aggregated_values))
-    return aggregated_values if not values else aggregated_values[0]
+    try:
+        out = aggregated_values if not values else aggregated_values[0]
+    except IndexError:
+        out = []
+    return out
 
 
 class UberDict(dict):

@@ -177,6 +177,7 @@ class MetalNode:
         throttle=0,
         keep_alive=True,
         max_errors=0,
+        max_messages_received=None,
         name=None,
         input_message_keypath=None,
         key=None,
@@ -198,6 +199,7 @@ class MetalNode:
         self.input_node_list = []
         self.input_message_keypath = input_message_keypath or []
         self.output_node_list = []
+        self.max_messages_received = max_messages_received
         self.global_dict = None  # We'll add a dictionary upon startup
         self.thread_dict = {}
         self.kill_thread = False
@@ -234,6 +236,7 @@ class MetalNode:
         self.summary = summary
         self.prometheus_objects = None
         self.logjam_score = {"polled": 0.0, "logjam": 0.0}
+        self.finished_cleanup = False
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -391,7 +394,7 @@ class MetalNode:
         if self.is_source and not isinstance(self, (DynamicClassMediator,)):
             for output in self.generator():
                 yield output, None
-            self.finished = True
+            self.finished_cleanup = True
         else:
             logging.debug(
                 "About to enter loop for reading input queue in {node}.".format(
@@ -409,6 +412,13 @@ class MetalNode:
                     message_source = input_queue.source_node
 
                     self.messages_received_counter += 1
+                    if (
+                        self.max_messages_received is not None
+                        and self.messages_received_counter
+                        > self.max_messages_received
+                    ):
+                        self.finished = True
+                        break
 
                     time.sleep(self.throttle)
                     # Get the content of a specific keypath, if one has
@@ -434,7 +444,6 @@ class MetalNode:
                     # If we receive ``None``, then pass.
                     elif message_content is None:
                         pass
-
 
                     # Otherwise, process the message as usual, by calling
                     # the ``MetalNode`` object's ``process_item`` method.
@@ -495,39 +504,46 @@ class MetalNode:
                                     )
                                 )
 
-
+                            yield output, one_item  # yield previous message
 
                             ### Do the self.break_test() if it's been defined
                             ### Execute the function and break
                             ### if it returns True
                             if self.break_test is not None:
-                                break_test_result = self.break_test(output_message=output, input_message=self.__message__)
-                                logging.info('NODE BREAK TEST: ' + str(break_test_result))
+                                break_test_result = self.break_test(
+                                    output_message=output,
+                                    input_message=self.__message__,
+                                )
+                                logging.info(
+                                    "NODE BREAK TEST: "
+                                    + str(break_test_result)
+                                )
                                 self.finished = break_test_result
 
-
-
-
-
-
-                            yield output, one_item  # yield previous message
                 if self.kill_thread:
                     break
                 # Check input node(s) here to see if they're all ``.finished``
-                this_node_finished = all(
-                    node.finished for node in self.input_node_list
+                self.finished = all(
+                    node.finished_cleanup for node in self.input_node_list
                 ) and all(queue.empty for queue in self.input_queue_list)
-                if this_node_finished:
-                    self.finished = True
-            logging.info('checking whether cleanup is a generator. ' + str(self.name))
+                # logging.info('::'.join([self.name, str(self.finished)]))
+            logging.info(
+                "checking whether cleanup is a generator. " + str(self.name)
+            )
             cleanup_output = self.cleanup()
 
             if isinstance(cleanup_output, (types.GeneratorType,)):
-                logging.info('GeneratorType found. Calling cleanup.')
+                logging.info("GeneratorType found. Calling cleanup.")
                 for i in cleanup_output:
+                    logging.info("cleanup output yield statement:" + str(i))
                     yield i, one_item
             else:
                 pass
+            self.finished_cleanup = True
+            logging.info(
+                "Setting finished_cleanup to True: "
+                + str(self.finished_cleanup)
+            )
 
     def cleanup(self):
         """
@@ -598,7 +614,6 @@ class MetalNode:
                 random.random()
             )
         message_arrival_time = time.time()
-
 
         try:
             for out in self.process_item(*args, **kwargs):
@@ -823,13 +838,13 @@ class MetalNode:
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug("global_start:" + str(self))
             thread = threading.Thread(
-                target=MetalNode.stream, args=(node,), daemon=True
+                target=MetalNode.stream, args=(node,), daemon=False
             )
             thread.start()
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
         monitor_thread = threading.Thread(
-            target=MetalNode.thread_monitor, args=(self,), daemon=False
+            target=MetalNode.thread_monitor, args=(self,), daemon=True
         )
         monitor_thread.start()
 
@@ -872,7 +887,9 @@ class MetalNode:
         """
 
         counter = 0
-        pipeline_finished = all(node.finished for node in self.all_connected())
+        pipeline_finished = all(
+            node.finished_cleanup for node in self.all_connected()
+        )
         error = False
         while not pipeline_finished:
             logging.debug("MONITOR THREAD")
@@ -934,7 +951,7 @@ class MetalNode:
                     break
 
             pipeline_finished = all(
-                node.finished for node in self.all_connected()
+                node.finished_cleanup for node in self.all_connected()
             )
 
             # Check for blocked nodes
@@ -972,7 +989,9 @@ class MetalNode:
 
         if error:
             sys.exit(1)
+            logging.info("Abnormal exit")
         else:
+            logging.info("Normal exit.")
             sys.exit(0)
 
 
@@ -1731,7 +1750,7 @@ class BatchMessages(MetalNode):
         yield out
 
     def cleanup(self):
-        logging.info('in cleanup, sending remainder of batch...')
+        logging.info(self.name + " in cleanup, sending remainder of batch...")
         yield self.batch_list
 
 
