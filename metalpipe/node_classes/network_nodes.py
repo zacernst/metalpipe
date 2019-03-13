@@ -299,7 +299,9 @@ class HttpGetRequestPaginator(MetalNode):
                 + " "
                 + str(self.requestor.endpoint_template)
             )
-            logging.info('::'.join([self.name, 'events', str(len(i.get('events', '')))]))
+            logging.info(
+                "::".join([self.name, "events", str(len(i.get("events", "")))])
+            )
             yield i
             if self.finished:
                 break
