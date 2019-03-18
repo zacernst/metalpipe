@@ -101,6 +101,7 @@ class NothingToSeeHere:
     """
     Vacuous class used as a no-op message type.
     """
+
     pass
 
 
@@ -332,10 +333,7 @@ class MetalNode:
         # Get the content of a specific keypath, if one has
         # been defined in the ``MetalNode`` initialization.
         message_content = (
-            get_value(
-                one_item.message_content,
-                self.input_message_keypath,
-            )
+            get_value(one_item.message_content, self.input_message_keypath)
             if len(self.input_message_keypath) > 0
             else one_item.message_content
         )
@@ -448,10 +446,10 @@ class MetalNode:
                         self.finished = True
 
                     # If we receive ``None`` or a ``NothingToSeeHere``, continue.
-                    elif (
-                        message_content is None or
-                        isinstance(message_content, (NothingToSeeHere,))):
-                            continue
+                    elif message_content is None or isinstance(
+                        message_content, (NothingToSeeHere,)
+                    ):
+                        continue
 
                     # Record the message and its source in the node's attributes
                     self.message = message_content
@@ -459,7 +457,6 @@ class MetalNode:
 
                     # Otherwise, process the message as usual, by calling
                     # the ``MetalNode`` object's ``process_item`` method.
-
 
                     for output in self._process_item():
                         yield output, one_item  # yield previous message
@@ -473,8 +470,7 @@ class MetalNode:
                                 input_message=self.__message__,
                             )
                             logging.debug(
-                                "NODE BREAK TEST: "
-                                + str(break_test_result)
+                                "NODE BREAK TEST: " + str(break_test_result)
                             )
                             self.finished = break_test_result
 
@@ -729,9 +725,7 @@ class MetalNode:
         else:
             return self.logjam_score["logjam"] / self.logjam_score["polled"]
 
-    def global_start(
-        self, prometheus=False, pipeline_name=None
-    ):
+    def global_start(self, prometheus=False, pipeline_name=None):
         """
         Starts every node connected to ``self``. Mainly, it:
 

@@ -1,1 +1,1 @@
-PYTHONPATH=. pytest -v ./tests
+PYTHONPATH=. pytest -vvv ./tests

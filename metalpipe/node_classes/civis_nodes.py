@@ -158,7 +158,8 @@ class SendToCivis(MetalNode):
             logging.debug(
                 "Dropping staging table {staging_table}.".format(
                     staging_table=self.staging_table
-                ))
+                )
+            )
             fut = civis.io.query_civis(
                 sql_query,
                 database=self.database,
