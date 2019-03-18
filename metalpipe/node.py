@@ -26,7 +26,6 @@ import types
 import inspect
 import prettytable
 
-# import MySQLdb  #  Fix this for container script
 import requests
 import graphviz
 
@@ -48,9 +47,6 @@ from metalpipe.utils.helpers import (
     to_bool,
     aggregate_values,
 )
-
-from datadog import api, statsd, ThreadStats
-from datadog import initialize as initialize_datadog
 
 DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get("DEFAULT_MAX_QUEUE_SIZE", 128))
 MONITOR_INTERVAL = 1
@@ -105,7 +101,6 @@ class NothingToSeeHere:
     """
     Vacuous class used as a no-op message type.
     """
-
     pass
 
 
@@ -332,6 +327,27 @@ class MetalNode:
         target.input_queue_list.append(edge_queue)
         self.output_queue_list.append(edge_queue)
 
+    def _get_message_content(self, one_item):
+
+        # Get the content of a specific keypath, if one has
+        # been defined in the ``MetalNode`` initialization.
+        message_content = (
+            get_value(
+                one_item.message_content,
+                self.input_message_keypath,
+            )
+            if len(self.input_message_keypath) > 0
+            else one_item.message_content
+        )
+
+        if (
+            isinstance(message_content, (dict,))
+            and len(message_content) == 1
+            and "__value__" in message_content
+        ):
+            message_content = message_content["__value__"]
+        return message_content
+
     def start(self):
         """
         Starts the node. This is called by ``MetalNode.global_start()``.
@@ -420,113 +436,52 @@ class MetalNode:
                         self.finished = True
                         break
 
+                    # The ``throttle`` keyword introduces a delay in seconds
                     time.sleep(self.throttle)
-                    # Get the content of a specific keypath, if one has
-                    # been defined in the ``MetalNode`` initialization.
-                    message_content = (
-                        get_value(
-                            one_item.message_content,
-                            self.input_message_keypath,
-                        )
-                        if len(self.input_message_keypath) > 0
-                        else one_item.message_content
-                    )
-                    if (
-                        isinstance(message_content, (dict,))
-                        and len(message_content) == 1
-                        and "__value__" in message_content
-                    ):
-                        message_content = message_content["__value__"]
+
+                    # Retrieve the ``message_content``
+                    message_content = self._get_message_content(one_item)
+
                     # If we receive a ``PoisonPill`` object, kill the thread.
                     if isinstance(message_content, (PoisonPill,)):
                         logging.debug("received poision pill.")
                         self.finished = True
-                    # If we receive ``None``, then pass.
-                    elif message_content is None:
-                        pass
+
+                    # If we receive ``None`` or a ``NothingToSeeHere``, continue.
+                    elif (
+                        message_content is None or
+                        isinstance(message_content, (NothingToSeeHere,))):
+                            continue
+
+                    # Record the message and its source in the node's attributes
+                    self.message = message_content
+                    self.message_source = message_source
 
                     # Otherwise, process the message as usual, by calling
                     # the ``MetalNode`` object's ``process_item`` method.
-                    else:
-                        self.message = message_content
-                        self.message_source = message_source
-                        # Remap inputs; if input_mapping is a string,
-                        # assume we're mapping to {input_mapping: value}, else
-                        # assume we're renaming keys
 
-                        if isinstance(self.input_mapping, (str,)):
-                            self.message = {self.input_mapping: self.message}
-                        elif (
-                            isinstance(self.input_mapping, (dict,))
-                            and len(self.input_mapping) > 0
-                            and isinstance(self.message, (dict,))
-                        ):
-                            for key, value in list(self.message.items()):
-                                if key in self.input_mapping:
-                                    self.message[
-                                        self.input_mapping[key]
-                                    ] = value
-                        elif (
-                            isinstance(self.input_mapping, (dict,))
-                            and len(self.input_mapping) > 0
-                            and hasattr(self.message, "__dict__")
-                            and not isinstance(self.message, (dict,))
-                        ):
-                            for key, value in self.message.__dict__.items():
-                                if key in self.input_mapping:
-                                    self.message.__dict__[
-                                        self.input_mapping[key]
-                                    ] = value
-                        elif (
-                            isinstance(self.input_mapping, (dict,))
-                            and len(self.input_mapping) > 0
-                        ):
-                            raise Exception("Bad case in input remapping.")
-                        else:
-                            pass
 
-                        # Datadog
-                        if self.datadog:
-                            self.datadog_stats.increment(
-                                "{pipeline_name}.{node_name}.input_counter".format(
-                                    pipeline_name=self.pipeline_name,
-                                    node_name=self.name,
-                                )
+                    for output in self._process_item():
+                        yield output, one_item  # yield previous message
+
+                        ### Do the self.break_test() if it's been defined
+                        ### Execute the function and break
+                        ### if it returns True
+                        if self.break_test is not None:
+                            break_test_result = self.break_test(
+                                output_message=output,
+                                input_message=self.__message__,
                             )
+                            logging.debug(
+                                "NODE BREAK TEST: "
+                                + str(break_test_result)
+                            )
+                            self.finished = break_test_result
 
-                        for output in self._process_item():
-                            if self.datadog:
-                                # Experimental code
-                                self.datadog_stats.increment(
-                                    "{pipeline_name}.{node_name}.output_counter".format(
-                                        pipeline_name=self.pipeline_name,
-                                        node_name=self.name,
-                                    )
-                                )
-
-                            yield output, one_item  # yield previous message
-
-                            ### Do the self.break_test() if it's been defined
-                            ### Execute the function and break
-                            ### if it returns True
-                            if self.break_test is not None:
-                                break_test_result = self.break_test(
-                                    output_message=output,
-                                    input_message=self.__message__,
-                                )
-                                logging.info(
-                                    "NODE BREAK TEST: "
-                                    + str(break_test_result)
-                                )
-                                self.finished = break_test_result
-
-                if self.kill_thread:
-                    break
                 # Check input node(s) here to see if they're all ``.finished``
                 self.finished = all(
                     node.finished_cleanup for node in self.input_node_list
                 ) and all(queue.empty for queue in self.input_queue_list)
-                # logging.info('::'.join([self.name, str(self.finished)]))
             logging.info(
                 "checking whether cleanup is a generator. " + str(self.name)
             )
@@ -535,12 +490,11 @@ class MetalNode:
             if isinstance(cleanup_output, (types.GeneratorType,)):
                 logging.info("GeneratorType found. Calling cleanup.")
                 for i in cleanup_output:
-                    logging.info("cleanup output yield statement:" + str(i))
                     yield i, one_item
             else:
                 pass
             self.finished_cleanup = True
-            logging.info(
+            logging.debug(
                 "Setting finished_cleanup to True: "
                 + str(self.finished_cleanup)
             )
@@ -758,14 +712,13 @@ class MetalNode:
         Returns the logjam score, which measures the degree to which the
         node is holding up progress in downstream nodes.
 
-        We're defining a logjam as a
-        node whose input queue is full, but whose output queue(s) is not.
-        More specifically, we poll each node in the ``monitor_thread``,
-        and increment a counter if the node is a logjam at that time. This
-        property returns the percentage of samples in which the node is a
-        logjam. Our intention is that if this score exceeds a threshold,
-        the user is alerted, or the load is rebalanced somehow (not yet
-        implemented).
+        We're defining a logjam as a node whose input queue is full, but
+        whose output queue(s) is not. More specifically, we poll each node
+        in the ``monitor_thread``, and increment a counter if the node is
+        a logjam at that time. This property returns the percentage of
+        samples in which the node is a logjam. Our intention is that if
+        this score exceeds a threshold, the user is alerted, or the load
+        is rebalanced somehow (not yet implemented).
 
         Returns:
            (float): Logjam score
@@ -777,7 +730,7 @@ class MetalNode:
             return self.logjam_score["logjam"] / self.logjam_score["polled"]
 
     def global_start(
-        self, datadog=False, prometheus=False, pipeline_name=None
+        self, prometheus=False, pipeline_name=None
     ):
         """
         Starts every node connected to ``self``. Mainly, it:
@@ -816,25 +769,12 @@ class MetalNode:
         # thread_dict = self.thread_dict
         global_dict = {}
 
-        # Initialize datadog if we're doing that
-        datadog_stats = ThreadStats() if datadog else None
-        if datadog:
-            datadog_options = {
-                "api_key": os.environ["DATADOG_API_KEY"],
-                "app_key": os.environ["DATADOG_APP_KEY"],
-            }
-            initialize_datadog(**datadog_options)
-            datadog_stats.start()
-
         run_id = uuid.uuid4().hex
         for node in self.all_connected():
             # Set the pipeline name on the attribute of each node
             node.pipeline_name = pipeline_name or uuid.uuid4().hex
-            node.datadog_stats = datadog_stats
             # Set a unique run_id
             node.run_id = run_id
-            # Tell each node whether they're logging to datadog
-            node.datadog = datadog
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug("global_start:" + str(self))
             thread = threading.Thread(
@@ -950,7 +890,7 @@ class MetalNode:
                     pipeline_finished = True
                     break
 
-            pipeline_finished = all(
+            pipeline_finished = error or all(
                 node.finished_cleanup for node in self.all_connected()
             )
 
@@ -1391,6 +1331,7 @@ class StreamMySQLTable(MetalNode):
             column = mapping["column_name"]
             type_string = mapping["column_type"]
             this_type = ds.MySQLTypeSystem.type_mapping(type_string)
+            # Unfinished experimental code
             # Start here:
             #    store the type_mapping
             #    use it to cast the data into the MySQLTypeSchema
@@ -1444,17 +1385,20 @@ class ConstantEmitter(MetalNode):
     Send a thing every n seconds
     """
 
-    def __init__(self, thing=None, delay=2, **kwargs):
+    def __init__(self, thing=None, max_loops=5, delay=2, **kwargs):
         self.thing = thing
         self.delay = delay
+        self.max_loops = max_loops
         super(ConstantEmitter, self).__init__(**kwargs)
 
     def generator(self):
-        while 1:
+        counter = 0
+        while counter < self.max_loops:
             if random.random() < -0.1:
                 assert False
             time.sleep(self.delay)
             yield self.thing
+            counter += 1
 
 
 class TimeWindowAccumulator(MetalNode):
@@ -1653,7 +1597,6 @@ def get_node_dict(node_config):
         frozen_arguments = node_config.get("frozen_arguments", {})
         node_dict[node_name]["frozen_arguments"] = frozen_arguments
         node_obj = node_class(**frozen_arguments)
-        # node_dict[node_name]['obj'] = node_obj
         node_dict[node_name]["remapping"] = node_config.get("arg_mapping", {})
     return node_dict
 

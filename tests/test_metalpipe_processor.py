@@ -28,7 +28,7 @@ def simple_graph():
     Fixture. Returns a `ConstantEmitter` that feeds into a `PrinterOfThings`
     '''
     printer = node.PrinterOfThings()
-    emitter = node.ConstantEmitter()
+    emitter = node.ConstantEmitter(thing={'foo': 'bar'}, output_keypath='output')
     printer.name = 'printer'
     emitter.name = 'emitter'
     emitter > printer

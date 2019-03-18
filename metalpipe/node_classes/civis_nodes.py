@@ -158,8 +158,14 @@ class SendToCivis(MetalNode):
             logging.debug(
                 "Dropping staging table {staging_table}.".format(
                     staging_table=self.staging_table
-                )
+                ))
+            fut = civis.io.query_civis(
+                sql_query,
+                database=self.database,
+                client=self.api_client,
+                hidden=False,
             )
+            result = fut.result()
         else:
             pass
 
@@ -187,14 +193,14 @@ class SendToCivis(MetalNode):
                 future_obj = future_dict["future"]
                 # row_list = future_dict['row_list']
                 # logging.debug(future_obj.done())
-                logging.debug(
+                logging.info(
                     "poller result:"
                     + str(future_obj._state)
                     + str(type(future_obj._state))
                 )
                 if future_obj._state != "RUNNING":
                     if future_obj.failed():
-                        logging.debug(
+                        logging.info(
                             "failure in SendToCivis: "
                             + str(future_obj.exception())
                         )

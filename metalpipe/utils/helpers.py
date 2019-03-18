@@ -61,8 +61,9 @@ def string_to_datetime(timestamp):
 
 
 def milliseconds_epoch_to_datetime(milliseconds_epoch):
-    if isinstance(milliseconds_epoch, (datetime.datetime, str)):
+    if isinstance(milliseconds_epoch, (datetime.datetime,)):
         return milliseconds_epoch
+    milliseconds_epoch = int(milliseconds_epoch)
     logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))
     out = UNIX_EPOCH + datetime.timedelta(
         seconds=(int(milliseconds_epoch) / 1000)
@@ -335,7 +336,7 @@ def aggregate_values(dictionary, target_path, values=False):
                 list(current_value.values()) if values else current_value
             )
         except AttributeError:
-            logging.info(
+            logging.debug(
                 "Attribute error in aggregate values. No list returned."
             )
 
@@ -395,7 +396,6 @@ if __name__ == "__main__":
     while counter < 100:
         replace_by_path(d, ["vid"], target_value="hithere")
         counter += 1
-        print(counter)
     import random
 
     logging.basicConfig(level=logging.debug)
