@@ -194,7 +194,7 @@ class SendToCivis(MetalNode):
                 future_obj = future_dict["future"]
                 # row_list = future_dict['row_list']
                 # logging.debug(future_obj.done())
-                logging.info(
+                logging.debug(
                     "poller result:"
                     + str(future_obj._state)
                     + str(type(future_obj._state))

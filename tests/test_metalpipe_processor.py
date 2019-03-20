@@ -5,7 +5,6 @@ import time
 import pytest
 import metalpipe.node as node
 import metalpipe.node_queue.queue as queue
-import metalpipe.message.poison_pill as poison_pill
 
 os.environ['PYTHONPATH'] = '.'
 logging.basicConfig(level=logging.INFO)
@@ -22,17 +21,22 @@ def test_has_input_queue():
     obj = node.PrinterOfThings()
     assert isinstance(obj.input_queue_list, (list,))
 
+@pytest.fixture(scope='function')
+def constant_emitter():
+    emitter = node.ConstantEmitter(thing={'foo': 'bar'}, output_keypath='output')
+    return emitter
+
+@pytest.fixture(scope='function')
+def printer_of_things():
+    return node.PrinterOfThings(name='printer')
+
 @pytest.fixture(scope='function')  # By function because we terminate it
-def simple_graph():
+def simple_graph(constant_emitter, printer_of_things):
     '''
     Fixture. Returns a `ConstantEmitter` that feeds into a `PrinterOfThings`
     '''
-    printer = node.PrinterOfThings()
-    emitter = node.ConstantEmitter(thing={'foo': 'bar'}, output_keypath='output')
-    printer.name = 'printer'
-    emitter.name = 'emitter'
-    emitter > printer
-    return emitter
+    constant_emitter > printer_of_things
+    return constant_emitter
 
 def test_linked_node_has_output_node_list(simple_graph):
     assert hasattr(simple_graph, 'output_node_list')
@@ -60,3 +64,24 @@ def test_start_simple_graph(simple_graph):
     time.sleep(2)
     assert simple_graph.thread_dict['printer'].is_alive()
     simple_graph.terminate_pipeline()
+
+@pytest.fixture(scope='function')
+def exception_raiser():
+    class ExceptionRaiser(node.MetalNode):
+        def process_item(self):
+            assert False
+    return ExceptionRaiser()
+
+def test_error_throws_finished_flag(exception_raiser):
+    emitter = node.ConstantEmitter(thing={'foo': 'bar'}, output_keypath='output')
+    emitter > exception_raiser
+    emitter.global_start()
+    time.sleep(5)
+    assert emitter.finished
+
+def test_error_kills_threads(exception_raiser, constant_emitter):
+    constant_emitter > exception_raiser
+    constant_emitter.global_start()
+    time.sleep(15)
+    assert all(not i.is_alive() for i in constant_emitter.thread_dict.values())
+

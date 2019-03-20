@@ -6,7 +6,6 @@ import pytest
 from timed_dict.timed_dict import TimedDict
 import metalpipe.node as node
 import metalpipe.node_queue.queue as queue
-import metalpipe.message.poison_pill as poison_pill
 from metalpipe.utils.required_arguments import (
     MissingRequiredArgument, required_arguments)
 from metalpipe.utils.set_attributes import set_kwarg_attributes

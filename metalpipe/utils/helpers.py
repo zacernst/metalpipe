@@ -63,7 +63,11 @@ def string_to_datetime(timestamp):
 def milliseconds_epoch_to_datetime(milliseconds_epoch):
     if isinstance(milliseconds_epoch, (datetime.datetime,)):
         return milliseconds_epoch
-    milliseconds_epoch = int(milliseconds_epoch)
+    try:
+        milliseconds_epoch = int(milliseconds_epoch)
+    except:
+        logging.info('milliseconds exception: ' + str(type(milliseconds_epoch)))
+        return milliseconds_epoch
     logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))
     out = UNIX_EPOCH + datetime.timedelta(
         seconds=(int(milliseconds_epoch) / 1000)
@@ -211,7 +215,7 @@ def two_weeks_ago_datetime():
 
 
 def january_1_2019():
-    return datetime.datetime(year=2019, month=1, day=1)
+    return datetime.datetime(year=2016, month=1, day=1)
 
 
 def datetime_to_redshift(datetime_obj):

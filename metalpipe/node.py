@@ -34,7 +34,6 @@ from metalpipe.message.batch import BatchStart, BatchEnd
 from metalpipe.message.message import MetalPipeMessage
 from metalpipe.node_queue.queue import MetalPipeQueue
 from metalpipe.message.canary import Canary
-from metalpipe.message.poison_pill import PoisonPill
 from metalpipe.utils.set_attributes import set_kwarg_attributes
 from metalpipe.utils.data_structures import Row, MySQLTypeSystem
 from metalpipe.utils import data_structures as ds
@@ -440,13 +439,9 @@ class MetalNode:
                     # Retrieve the ``message_content``
                     message_content = self._get_message_content(one_item)
 
-                    # If we receive a ``PoisonPill`` object, kill the thread.
-                    if isinstance(message_content, (PoisonPill,)):
-                        logging.debug("received poision pill.")
-                        self.finished = True
 
                     # If we receive ``None`` or a ``NothingToSeeHere``, continue.
-                    elif message_content is None or isinstance(
+                    if message_content is None or isinstance(
                         message_content, (NothingToSeeHere,)
                     ):
                         continue
@@ -596,14 +591,14 @@ class MetalNode:
                 yield out
         except Exception as err:
             self.error_counter += 1
+            logging.error(
+                "message: "
+                + str(err.args)
+                + str(self.__class__.__name__)
+                + str(self.name)
+            )
             if self.error_counter > self.max_errors:
-                logging.warning(
-                    "message: "
-                    + str(err.args)
-                    + str(self.__class__.__name__)
-                    + str(self.name)
-                )
-                raise err
+                self.terminate_pipeline(error=True)
             else:
                 logging.warning("oops")
 

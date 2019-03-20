@@ -100,18 +100,28 @@ if __name__ == '__main__':
         '--module-paths',
         action='store',
         help='Additional paths for loading modules.')
+    parser.add_argument(
+        '--override-args',
+        action='store',
+        default=None,
+        help='Values to override config and message values.')
+    # node_name:optionpath.optionpath:value,
     options = parser.parse_args()
+    if options.override_args is not None:
+        for option_tuple in options.override_args.split(','):
+            node_name, option_path, option_value = option_tuple.split(':')
+            option_path = option_path.split('.')
+            print(node_name, option_path, option_value)
 
     # Run a pipeline
     if options.command == 'run':
         if options.filename is None:
             raise Exception('Filename is required for run')
         run_pipeline(options.filename, module_paths=options.module_paths)
-    # Dump the config file somewhere
     elif options.command == 'draw':
         draw_pipeline(options.filename, module_paths=options.module_paths)
+    # Dump the config file somewhere
     elif options.command == 'dump':
         raise NotImplementedError('Dump is not yet implemented')
     else:
         raise Exception('This should not happen.')
-
