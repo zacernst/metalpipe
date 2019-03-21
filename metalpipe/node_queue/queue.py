@@ -45,9 +45,7 @@ class MetalPipeQueue:
             self.queue_times.append(time.time() - message.time_queued)
             self.queue_times = self.queue_times[-1 * QUEUE_TIME_WINDOW :]
             logging.debug(
-                "QUEUE TIMES: {queue_times}".format(
-                    queue_times=str(self.queue_times)
-                )
+                "QUEUE TIMES: {queue_times}".format(queue_times=str(self.queue_times))
             )
             logging.debug(
                 "QUEUE SIZE: {queue_size}".format(queue_size=str(self.size()))

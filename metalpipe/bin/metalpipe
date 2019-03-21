@@ -79,9 +79,9 @@ def load_pipeline(config_file, module_paths=None):
     return node_dict
 
 
-def run_pipeline(config_file, module_paths=None):
+def run_pipeline(config_file, module_paths=None, max_time=None, record_to_file=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
-    list(node_dict.values())[0].global_start()
+    list(node_dict.values())[0].global_start(max_time=max_time, record_to_file=record_to_file)
 
 
 def draw_pipeline(config_file, module_paths=None):
@@ -105,6 +105,18 @@ if __name__ == '__main__':
         action='store',
         default=None,
         help='Values to override config and message values.')
+    parser.add_argument(
+        '--max-time',
+        action='store',
+        default=None,
+        type=int,
+        help='Maximum number of seconds for pipeline to run.')
+    parser.add_argument(
+        '--record-to-file',
+        action='store',
+        default=None,
+        type=str,
+        help='Record messages to a file.')
     # node_name:optionpath.optionpath:value,
     options = parser.parse_args()
     if options.override_args is not None:
@@ -117,7 +129,7 @@ if __name__ == '__main__':
     if options.command == 'run':
         if options.filename is None:
             raise Exception('Filename is required for run')
-        run_pipeline(options.filename, module_paths=options.module_paths)
+        run_pipeline(options.filename, module_paths=options.module_paths, max_time=options.max_time, record_to_file=options.record_to_file)
     elif options.command == 'draw':
         draw_pipeline(options.filename, module_paths=options.module_paths)
     # Dump the config file somewhere

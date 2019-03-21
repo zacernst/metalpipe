@@ -35,6 +35,7 @@ class PaginatedHttpGetRequest:
         retries=5,
         default_offset_value="",
         additional_data_test=bool,
+        calling_node=None,
     ):
         """
         :ivar endpoint_template: (str) Template for endpoint URL, suitable
@@ -68,9 +69,7 @@ class PaginatedHttpGetRequest:
             try:
                 output = requests.get(url)
                 if output is None:
-                    logging.info(
-                        "Request to {url} returned None".format(url=url)
-                    )
+                    logging.info("Request to {url} returned None".format(url=url))
                 elif output.status_code >= 300:
                     logging.info(
                         "Request to {url} returned {code} status code".format(
@@ -133,9 +132,7 @@ class PaginatedHttpGetRequest:
 
         # Check if successful
         if not successful:
-            logging.info(
-                "Unsuccessful request to {url}".format(url=endpoint_url)
-            )
+            logging.info("Unsuccessful request to {url}".format(url=endpoint_url))
             raise Exception("Unsuccessful GET request")
 
         # out = out.json()
@@ -153,9 +150,7 @@ class PaginatedHttpGetRequest:
                 logging.debug("No offset key. Assuming this is normal.")
                 break
             get_request_parameters = {self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(
-                **get_request_parameters
-            )
+            endpoint_url = self.endpoint_template.format(**get_request_parameters)
             logging.debug("paginator url: " + endpoint_url)
             try:
                 # response = session.get(endpoint_url)
@@ -168,8 +163,7 @@ class PaginatedHttpGetRequest:
                 out = response.json()
             except:
                 logging.warning(
-                    "Error parsing. Assuming this is the "
-                    "end of the responses."
+                    "Error parsing. Assuming this is the " "end of the responses."
                 )
                 break
             yield out
@@ -221,9 +215,7 @@ class HttpGetRequest(MetalNode):
         except Exception:
             logging.error("formatted endpoint: " + formatted_endpoint)
             raise Exception()
-        logging.info(
-            "Http GET request: {endpoint}".format(endpoint=formatted_endpoint)
-        )
+        logging.info("Http GET request: {endpoint}".format(endpoint=formatted_endpoint))
 
         session = requests.Session()
         retries = Retry(
@@ -242,10 +234,7 @@ class HttpGetRequest(MetalNode):
         except json.JSONDecodeError:
             output = get_response.text
         logging.debug(
-            formatted_endpoint
-            + " GET RESPONSE: "
-            + str(output)
-            + str(type(output))
+            formatted_endpoint + " GET RESPONSE: " + str(output) + str(type(output))
         )
         yield output
 
@@ -284,6 +273,7 @@ class HttpGetRequestPaginator(MetalNode):
     def process_item(self):
         self.requestor = PaginatedHttpGetRequest(
             pagination_get_request_key=self.pagination_get_request_key,
+            calling_node=self,
             endpoint_template=self.endpoint_template.format_map(
                 SafeMap(**(self.message or {}))
             ),
