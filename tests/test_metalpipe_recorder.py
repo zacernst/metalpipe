@@ -27,7 +27,7 @@ def constant_emitter():
 
 @pytest.fixture(scope="function")
 def printer_of_things():
-    return node.PrinterOfThings(name="printer")
+    return node.PrinterOfThings(name="printer", disable=True)
 
 
 @pytest.fixture(scope="function")
@@ -65,7 +65,6 @@ def test_instantiate_metalpipe_recorder(metalpipe_recorder_with_graph):
 
 def test_record_generator_output(simple_graph, temporary_file):
     simple_graph.global_start(record_to_file=temporary_file.name)
-    time.sleep(10)
+    simple_graph.wait_for_pipeline_finish()
     values_stored = simple_graph.recorder.num_values_stored(simple_graph)
-    print('values stored: ' + str(values_stored))
     assert values_stored == CONSTANTS_IN_LOOP

@@ -87,7 +87,7 @@ def test_error_throws_finished_flag(exception_raiser):
     emitter = node.ConstantEmitter(thing={"foo": "bar"}, output_keypath="output")
     emitter > exception_raiser
     emitter.global_start()
-    time.sleep(5)
+    emitter.wait_for_pipeline_finish()
     assert emitter.finished
 
 

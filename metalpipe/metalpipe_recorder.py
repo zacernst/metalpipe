@@ -1,73 +1,45 @@
-import ZODB, ZODB.FileStorage
-import BTrees.OOBTree
-import transaction
+import hashlib
+import redis
 
 from metalpipe.utils.helpers import package, unpackage
 
 
-class MetalPipeRecorder:
-    def __init__(self, record_to_file=None, pipeline=None):
-        if pipeline is None:
-            raise Exception("``MetalPipeRecorder`` requires pipeline.")
-        self.record_to_file = record_to_file
-        self.pipeline = pipeline
-        self.record = self.init_record()
-        for node in pipeline.all_connected():
-            self.record_value(node, "__num_values_stored__", -1)  # record_value will increment this to 0
 
-    def broken_record_storage(self):
-        storage = ZODB.FileStorage.FileStorage(self.record_to_file)
-        db = ZODB.DB(storage)
-        connection = db.open()
-        root = connection.root
-        root.nodes = BTrees.OOBTree.BTree()
-        return root
+class RedisFixturizer:
+    def __init__(self, db=0, host='localhost', port=6379):
+        self.db = db
+        self.host = host
+        self.port = port
+        self.redis = redis.Redis(host=host, port=port, db=db)
 
-    def init_record(self):
-        root = self.broken_record_storage()
-        for node in self.pipeline.all_connected():
-            setattr(root, node.name, BTrees.OOBTree.BTree())
-        return root
-
-    def num_values_stored(self, node):
-        return int(self.get_value(node, '__num_values_stored__'))
-
-    def record_value(self, node, key, value):
-        self.node_record(node)[key] = package(value)
-        self.node_record(node)["__num_values_stored__"] = package(
-            unpackage(self.node_record(node)["__num_values_stored__"]) + 1
-        )
-        transaction.commit()
-
-    def get_value(self, node, key):
+    def get_num_source_messages(self, node):
+        node_key = '__num_values_stored_{node_name}__'.format(node_name=node.name)
         try:
-            value = unpackage(self.node_record(node)[key])
+            num_messages = self.redis.get(node_key)
+        except:
+            num_messages = -1
+        if num_messages is None:
+            num_messages = -1
+        return num_messages
+
+    def record_source_node(self, node, value):
+        num_messages = int(self.get_num_source_messages(node))
+        message_number = num_messages + 1
+        key = '{node_name}_{message_number}'.format(node_name=node.name, message_number=str(message_number))
+        self.redis.set(key, package(value))
+        node_key = '__num_values_stored_{node_name}__'.format(node_name=node.name)
+        self.redis.set(node_key, message_number)
+
+    def record_worker_node(self, node, input_value, output_value):
+        input_hash = hashlib.md5(bytes(str(input_value), 'utf8')).hexdigest()
+        key = '{node_name}_{input_hash}'.format(node_name=node.name, input_hash=input_hash)
+        try:
+            value = self.redis.get(key)
         except:
             value = None
-        return value
-
-    def node_record(self, node):
-        return getattr(self.record, node.name)
-
-    def delete_value(self, node, key):
-        del self.node_record(node)[key]
-
-    def push_value(self, node, key, value):
-        current_value = self.get_value(node, key) or []
-        current_value.append(value)
-        self.record_value(node, key, current_value)
-
-    def pop_value(self, node, key):
-        """
-        FIFO
-        """
-        value_list = self.get_value(node, key)
-        popped_value = value_list[0]
-        value_list = value_list[1:]
-        if len(value_list) == 0:
-            value_list = None
-        self.record_value(node, key, value_list)
-        return value_list
+        value = unpackage(value) if value is not None else []
+        value.append(output_value)
+        self.redis.set(key, package(value))
 
 
 if __name__ == "__main__":
@@ -76,15 +48,12 @@ if __name__ == "__main__":
     from metalpipe.node_classes.network_nodes import *
     from metalpipe.node_classes.civis_nodes import *
 
-    node_1 = ConstantEmitter(name="node_1", thing={"hi": "there"})
-    node_2 = PrinterOfThings(name="node_2")
-    node_1 > node_2
+    node_1 = ConstantEmitter(name="node_1", delay=.01, max_loops=200, thing={"hi": "there"}, fixturize=True)
+    node_2 = PrinterOfThings(fixturize=True, name="node_2")
+    node_3 = PrinterOfThings(fixturize=True, name='node_3')
+    node_1 > node_2 > node_3
 
-    record = MetalPipeRecorder(record_to_file="test_file.fs", pipeline=node_1)
-    node_1.global_start(record_to_file="record_1.fs")
-    record.record_value(node_1, "hi", "there")
-    record.push_value(node_2, "hi", "bob")
-    record.push_value(node_2, "hi", "alice")
-
-    print(record.get_value(node_1, "hi"))
-    print(record.get_value(node_2, "__num_values_stored__"))
+    # record = MetalPipeRecorder(record_to_file="test_file.fs", pipeline=node_1)
+    node_1.global_start(fixturize=True)
+    node_1.wait_for_pipeline_finish()
+    sys.exit()
