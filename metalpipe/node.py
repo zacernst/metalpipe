@@ -37,7 +37,7 @@ from metalpipe.message.canary import Canary
 from metalpipe.utils.set_attributes import set_kwarg_attributes
 from metalpipe.utils.data_structures import Row, MySQLTypeSystem
 from metalpipe.utils import data_structures as ds
-from metalpipe.metalpipe_recorder import RedisFixturizer
+# from metalpipe.metalpipe_recorder import RedisFixturizer
 from metalpipe.utils.helpers import (
     load_function,
     replace_by_path,
