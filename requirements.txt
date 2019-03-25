@@ -1,4 +1,5 @@
 alabaster==0.7.11
+appdirs==1.4.3
 argh==0.26.2
 asn1crypto==0.24.0
 atomicwrites==1.2.1
@@ -8,6 +9,7 @@ bcrypt==3.1.4
 behave==1.2.6
 boto3==1.7.62
 botocore==1.10.62
+BTrees==4.5.1
 certifi==2018.4.16
 cffi==1.11.5
 chardet==3.0.4
@@ -38,11 +40,12 @@ parse==1.8.4
 parse-type==0.4.2
 pathlib2==2.3.2
 pathtools==0.1.2
+persistent==4.4.3
 pkginfo==1.4.2
 pluggy==0.7.1
 pockets==0.6.2
 prettytable==0.7.2
-pubnub # ==4.1.0
+pubnub==4.1.2
 py==1.6.0
 pyasn1==0.4.3
 pycparser==2.18
@@ -54,7 +57,8 @@ pytest==3.8.1
 python-dateutil==2.7.3
 python-dotenv==0.6.0
 pytz==2018.5
-pyyaml>=3.0
+PyYAML==3.13
+redis==3.2.1
 requests==2.19.1
 requests-toolbelt==0.8.0
 s3fs==0.1.5
@@ -69,8 +73,15 @@ sphinxcontrib-websupport==1.1.0
 sqlparse==0.2.4
 TimedDict==0.2.4
 timeddictionary==0.1.1
+toml==0.10.0
 tqdm==4.23.4
+transaction==2.4.0
 twine==1.11.0
 urllib3==1.23
 watchdog==0.8.3
 yapf==0.24.0
+zc.lockfile==1.4
+ZConfig==3.4.0
+ZODB==5.5.1
+zodbpickle==1.0.3
+zope.interface==4.6.0

@@ -28,10 +28,6 @@ import prettytable
 
 import requests
 import graphviz
-import transaction
-import ZODB, ZODB.FileStorage
-import BTrees.OOBTree
-import transaction
 
 from timed_dict.timed_dict import TimedDict
 from metalpipe.message.batch import BatchStart, BatchEnd
@@ -56,7 +52,7 @@ DEFAULT_MAX_QUEUE_SIZE = int(os.environ.get("DEFAULT_MAX_QUEUE_SIZE", 128))
 MONITOR_INTERVAL = 1
 STATS_COUNTER_MODULO = 4
 LOGJAM_THRESHOLD = 0.25
-SHORT_DELAY = .1
+SHORT_DELAY = 0.1
 PROMETHEUS = False
 
 
@@ -358,7 +354,10 @@ class MetalNode:
         return message_content
 
     def wait_for_pipeline_finish(self):
-        while not hasattr(self, 'pipeline_finished') or not self.pipeline_finished:
+        while (
+            not hasattr(self, "pipeline_finished")
+            or not self.pipeline_finished
+        ):
             time.sleep(SHORT_DELAY)
 
     def start(self):
@@ -472,7 +471,9 @@ class MetalNode:
                     for output in self._process_item():
                         # Put redis recording here
                         if self.fixturizer:
-                            self.fixturizer.record_worker_node(self, one_item, output)
+                            self.fixturizer.record_worker_node(
+                                self, one_item, output
+                            )
                         yield output, one_item  # yield previous message
 
                         ### Do the self.break_test() if it's been defined
@@ -618,7 +619,7 @@ class MetalNode:
             )
             if self.error_counter > self.max_errors:
                 self.terminate_pipeline(error=True)
-                self.status = 'error'  #
+                self.status = "error"  #
             else:
                 logging.warning("oops")
 
@@ -729,8 +730,7 @@ class MetalNode:
         prometheus=False,
         pipeline_name=None,
         max_time=None,
-        fixturize=False
-
+        fixturize=False,
     ):
         """
         Starts every node connected to ``self``. Mainly, it:
@@ -784,7 +784,7 @@ class MetalNode:
             thread.start()
             node.thread_dict = self.thread_dict
             self.thread_dict[node.name] = thread
-            node.status = 'running'
+            node.status = "running"
         monitor_thread = threading.Thread(
             target=MetalNode.thread_monitor,
             args=(self,),
@@ -838,10 +838,6 @@ class MetalNode:
         )
         error = False
         time_started = time.time()
-
-
-
-
 
         while not self.pipeline_finished:
             logging.debug("MONITOR THREAD")
@@ -948,7 +944,6 @@ class MetalNode:
         logging.info("Messages that are being processed will complete.")
 
         # HERE
-
 
         if error:
             sys.exit(1)
@@ -1408,7 +1403,7 @@ class ConstantEmitter(MetalNode):
     Send a thing every n seconds
     """
 
-    def __init__(self, thing=None, max_loops=5, delay=.5, **kwargs):
+    def __init__(self, thing=None, max_loops=5, delay=0.5, **kwargs):
         self.thing = thing
         self.delay = delay
         self.max_loops = max_loops
