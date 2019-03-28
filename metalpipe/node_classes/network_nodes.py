@@ -69,11 +69,9 @@ class PaginatedHttpGetRequest:
             try:
                 output = requests.get(url)
                 if output is None:
-                    logging.info(
-                        "Request to {url} returned None".format(url=url)
-                    )
+                    self.log_info("Request to {url} returned None".format(url=url))
                 elif output.status_code >= 300:
-                    logging.info(
+                    self.log_info(
                         "Request to {url} returned {code} status code".format(
                             url=url, code=str(output.status_code)
                         )
@@ -115,7 +113,7 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value
         }
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
-        logging.info("paginator url: " + endpoint_url)
+        self.log_info("paginator url: " + endpoint_url)
         successful = False
         retry_counter = 0
         sleep_time = 1.0
@@ -124,7 +122,7 @@ class PaginatedHttpGetRequest:
                 out = requests.get(endpoint_url)
                 successful = True
             except:
-                logging.info(
+                self.log_info(
                     "sleeping randomly... retry: {retry}".format(
                         retry=str(retry_counter)
                     )
@@ -134,9 +132,7 @@ class PaginatedHttpGetRequest:
 
         # Check if successful
         if not successful:
-            logging.info(
-                "Unsuccessful request to {url}".format(url=endpoint_url)
-            )
+            self.log_info("Unsuccessful request to {url}".format(url=endpoint_url))
             raise Exception("Unsuccessful GET request")
 
         # out = out.json()
@@ -154,9 +150,7 @@ class PaginatedHttpGetRequest:
                 logging.debug("No offset key. Assuming this is normal.")
                 break
             get_request_parameters = {self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(
-                **get_request_parameters
-            )
+            endpoint_url = self.endpoint_template.format(**get_request_parameters)
             logging.debug("paginator url: " + endpoint_url)
             try:
                 # response = session.get(endpoint_url)
@@ -169,8 +163,7 @@ class PaginatedHttpGetRequest:
                 out = response.json()
             except:
                 logging.warning(
-                    "Error parsing. Assuming this is the "
-                    "end of the responses."
+                    "Error parsing. Assuming this is the " "end of the responses."
                 )
                 break
             yield out
@@ -222,7 +215,7 @@ class HttpGetRequest(MetalNode):
         except Exception:
             logging.error("formatted endpoint: " + formatted_endpoint)
             raise Exception()
-        logging.info(
+        self.log_info(
             "Http GET request: {endpoint}".format(endpoint=formatted_endpoint)
         )
 
@@ -243,10 +236,7 @@ class HttpGetRequest(MetalNode):
         except json.JSONDecodeError:
             output = get_response.text
         logging.debug(
-            formatted_endpoint
-            + " GET RESPONSE: "
-            + str(output)
-            + str(type(output))
+            formatted_endpoint + " GET RESPONSE: " + str(output) + str(type(output))
         )
         yield output
 
@@ -255,6 +245,55 @@ class HttpGetRequestPaginator(MetalNode):
     """
     Node class for HTTP API requests that require paging through sets of
     results.
+
+    This class handles making HTTP GET requests, determining whether there
+    are additional results, and making additional calls if necessary. A typical
+    case is to have an HTTP request something like this:
+
+    ::
+
+        http://www.someapi.com/endpoint_name?resultpage=0
+
+    with a response like:
+
+    ::
+
+        {"data": "something", "additional_pages": true, "next_page": 1}
+
+    The response contains some data, a flag ``additional_pages`` for determining
+    whether there are additional results, and a parameter that gets passed to
+    the next request for retrieving the right page of results (``next_page``).
+    So the next GET request would be:
+
+    ::
+
+        http://www.someapi.com/endpoint_name?resultpage=1
+
+    This process will repeat until ``additional_pages`` is false.
+
+    In order to use this node class, you'll need to provide arguments that
+    tell the node where to look for the equivalent of ``additional_pages``
+    and ``next_page``. These parameters are called ```additional_data_key``
+    and ``pagination_key``, respectively. Like all keypaths in
+    ``MetalPipe``, these are specified as a list of strings, as in
+    ``["path", "to", "the", "key"]``.
+
+    By default, the node will infer that there are additional page of results
+    if the value of ``additional_data_key`` is ``True``. In a typical REST
+    API, the value of ``additional_data_key`` is passed to the next response.
+    The ``HttpGetRequestPaginator`` node does this by storing the value of
+    ``additional_data_key`` in the message object under the
+    ``pagination_get_request_key``.
+
+    Bringing all this together, the parameters for our simple example would
+    be:
+
+    1. **hi** there
+    2. there
+
+
+
+
     """
 
     def __init__(

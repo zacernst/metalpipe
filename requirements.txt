@@ -85,3 +85,4 @@ ZConfig==3.4.0
 ZODB==5.5.1
 zodbpickle==1.0.3
 zope.interface==4.6.0
+black==19.3b0

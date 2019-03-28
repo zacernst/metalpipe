@@ -9,7 +9,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; Nanostream 0.1 documentation</title>
+  <title>Index &mdash; MetalPipe 0.1 documentation</title>
   
 
   
@@ -47,7 +47,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Nanostream
+            <a href="index.html" class="icon icon-home"> MetalPipe
           
 
           
@@ -80,9 +80,9 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="overview.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data_journey.html">The Data Journey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring.html">Monitoring</a></li>
 <li class="toctree-l1"><a class="reference internal" href="treehorn.html">Treehorn</a></li>
-<li class="toctree-l1"><a class="reference internal" href="implementation.html">Implementation notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation.html">Node and Data Lifecycle</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
 </ul>
@@ -99,7 +99,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Nanostream</a>
+          <a href="index.html">MetalPipe</a>
         
       </nav>
 
@@ -176,17 +176,17 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.NanoNode.add_edge">add_edge() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.add_edge">add_edge() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.AggregateValues">AggregateValues (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.AggregateValues">AggregateValues (class in metalpipe.node)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.all_bases">all_bases() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.all_bases">all_bases() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.all_connected">all_connected() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.all_connected">all_connected() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue.approximately_full">approximately_full() (nanostream.node_queue.queue.NanoStreamQueue method)</a>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue.approximately_full">approximately_full() (metalpipe.node_queue.queue.MetalPipeQueue method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -194,21 +194,23 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.message.batch.BatchEnd">BatchEnd (class in nanostream.message.batch)</a>
+      <li><a href="api.html#metalpipe.node.CounterOfThings.bar__init__">bar__init__() (metalpipe.node.CounterOfThings method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.BatchMessages">BatchMessages (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.message.batch.BatchEnd">BatchEnd (class in metalpipe.message.batch)</a>
 </li>
-      <li><a href="api.html#nanostream.message.batch.BatchStart">BatchStart (class in nanostream.message.batch)</a>
+      <li><a href="api.html#metalpipe.node.BatchMessages">BatchMessages (class in metalpipe.node)</a>
+</li>
+      <li><a href="api.html#metalpipe.message.batch.BatchStart">BatchStart (class in metalpipe.message.batch)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors">bcolors (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.bcolors">bcolors (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.bcolors.BOLD">BOLD (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.BOLD">BOLD (metalpipe.node.bcolors attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.BOOL">BOOL (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.BOOL">BOOL (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.broadcast">broadcast() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.broadcast">broadcast() (metalpipe.node.MetalNode method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -216,37 +218,39 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.message.canary.Canary">Canary (class in nanostream.message.canary)</a>
+      <li><a href="api.html#metalpipe.message.canary.Canary">Canary (class in metalpipe.message.canary)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.CivisSQLExecute">CivisSQLExecute (class in nanostream.civis_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.CivisSQLExecute">CivisSQLExecute (class in metalpipe.node_classes.civis_nodes)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.CivisToCSV">CivisToCSV (class in nanostream.civis_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.CivisToCSV">CivisToCSV (class in metalpipe.node_classes.civis_nodes)</a>
 </li>
-      <li><a href="api.html#nanostream.node.class_factory">class_factory() (in module nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.class_factory">class_factory() (in module metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.BatchMessages.cleanup">cleanup() (nanostream.node.BatchMessages method)</a>
+      <li><a href="api.html#metalpipe.node.BatchMessages.cleanup">cleanup() (metalpipe.node.BatchMessages method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.node.NanoNode.cleanup">(nanostream.node.NanoNode method)</a>
+        <li><a href="api.html#metalpipe.node.MetalNode.cleanup">(metalpipe.node.MetalNode method)</a>
+</li>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis.cleanup">(metalpipe.node_classes.civis_nodes.SendToCivis method)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.utils.data_structures.Row.concat">concat() (nanostream.utils.data_structures.Row method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#metalpipe.utils.data_structures.Row.concat">concat() (metalpipe.utils.data_structures.Row method)</a>
+</li>
       <li><a href="conf.html#module-conf">conf (module)</a>
 </li>
-      <li><a href="api.html#nanostream.node.ConstantEmitter">ConstantEmitter (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.ConstantEmitter">ConstantEmitter (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataSourceTypeSystem.convert">convert() (nanostream.utils.data_structures.DataSourceTypeSystem static method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataSourceTypeSystem.convert">convert() (metalpipe.utils.data_structures.DataSourceTypeSystem static method)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.convert_to_type_system">convert_to_type_system() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.convert_to_type_system">convert_to_type_system() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.CounterOfThings">CounterOfThings (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.CounterOfThings">CounterOfThings (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.CSVReader">CSVReader (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.CSVReader">CSVReader (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.CSVToDictionaryList">CSVToDictionaryList (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.CSVToDictionaryList">CSVToDictionaryList (class in metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -254,17 +258,17 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.DataSourceTypeSystem">DataSourceTypeSystem (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataSourceTypeSystem">DataSourceTypeSystem (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataType">DataType (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataType">DataType (class in metalpipe.utils.data_structures)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.DATETIME">DATETIME (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DATETIME">DATETIME (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.draw_pipeline">draw_pipeline() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.draw_pipeline">draw_pipeline() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator">DynamicClassMediator (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator">DynamicClassMediator (class in metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -272,13 +276,13 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue.empty">empty (nanostream.node_queue.queue.NanoStreamQueue attribute)</a>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue.empty">empty (metalpipe.node_queue.queue.MetalPipeQueue attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.ENDC">ENDC (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.ENDC">ENDC (metalpipe.node.bcolors attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.EnsureCivisRedshiftTableExists">EnsureCivisRedshiftTableExists (class in nanostream.civis_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.EnsureCivisRedshiftTableExists">EnsureCivisRedshiftTableExists (class in metalpipe.node_classes.civis_nodes)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -286,19 +290,21 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.FAIL">FAIL (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.FAIL">FAIL (metalpipe.node.bcolors attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.node.Filter">Filter (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.Filter">Filter (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.FindValueInRedshiftColumn">FindValueInRedshiftColumn (class in nanostream.civis_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.FindValueInRedshiftColumn">FindValueInRedshiftColumn (class in metalpipe.node_classes.civis_nodes)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.FLOAT">FLOAT (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.FLOAT">FLOAT (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.CounterOfThings.foo__init__">foo__init__() (nanostream.node.CounterOfThings method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.Row.from_dict">from_dict() (metalpipe.utils.data_structures.Row static method)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.Row.from_dict">from_dict() (nanostream.utils.data_structures.Row static method)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis.full_table_name">full_table_name (metalpipe.node_classes.civis_nodes.SendToCivis attribute)</a>
+</li>
+      <li><a href="api.html#metalpipe.node.FunctionOfMessage">FunctionOfMessage (class in metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -306,43 +312,45 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.civis_nodes.EnsureCivisRedshiftTableExists.generator">generator() (nanostream.civis_nodes.EnsureCivisRedshiftTableExists method)</a>
+      <li><a href="api.html#metalpipe.node.ConstantEmitter.generator">generator() (metalpipe.node.ConstantEmitter method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.civis_nodes.FindValueInRedshiftColumn.generator">(nanostream.civis_nodes.FindValueInRedshiftColumn method)</a>
+        <li><a href="api.html#metalpipe.node.CounterOfThings.generator">(metalpipe.node.CounterOfThings method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.ConstantEmitter.generator">(nanostream.node.ConstantEmitter method)</a>
+        <li><a href="api.html#metalpipe.node.GetEnvironmentVariables.generator">(metalpipe.node.GetEnvironmentVariables method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.CounterOfThings.generator">(nanostream.node.CounterOfThings method)</a>
+        <li><a href="api.html#metalpipe.node.LocalDirectoryWatchdog.generator">(metalpipe.node.LocalDirectoryWatchdog method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.GetEnvironmentVariables.generator">(nanostream.node.GetEnvironmentVariables method)</a>
+        <li><a href="api.html#metalpipe.node.SequenceEmitter.generator">(metalpipe.node.SequenceEmitter method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.LocalDirectoryWatchdog.generator">(nanostream.node.LocalDirectoryWatchdog method)</a>
+        <li><a href="api.html#metalpipe.node.StreamMySQLTable.generator">(metalpipe.node.StreamMySQLTable method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.SequenceEmitter.generator">(nanostream.node.SequenceEmitter method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.EnsureCivisRedshiftTableExists.generator">(metalpipe.node_classes.civis_nodes.EnsureCivisRedshiftTableExists method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.StreamMySQLTable.generator">(nanostream.node.StreamMySQLTable method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.FindValueInRedshiftColumn.generator">(metalpipe.node_classes.civis_nodes.FindValueInRedshiftColumn method)</a>
 </li>
       </ul></li>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue.get">get() (metalpipe.node_queue.queue.MetalPipeQueue method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue.get">get() (nanostream.node_queue.queue.NanoStreamQueue method)</a>
+      <li><a href="api.html#metalpipe.node.get_environment_variables">get_environment_variables() (in module metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.get_environment_variables">get_environment_variables() (in module nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.get_node_dict">get_node_dict() (in module metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.get_node_dict">get_node_dict() (in module nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.StreamMySQLTable.get_schema">get_schema() (metalpipe.node.StreamMySQLTable method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.StreamMySQLTable.get_schema">get_schema() (nanostream.node.StreamMySQLTable method)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator.get_sink">get_sink() (metalpipe.node.DynamicClassMediator method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator.get_sink">get_sink() (nanostream.node.DynamicClassMediator method)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator.get_source">get_source() (metalpipe.node.DynamicClassMediator method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator.get_source">get_source() (nanostream.node.DynamicClassMediator method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.get_type_system">get_type_system() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.get_type_system">get_type_system() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.node_classes.network_nodes.PaginatedHttpGetRequest.get_with_retry">get_with_retry() (metalpipe.node_classes.network_nodes.PaginatedHttpGetRequest method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.GetEnvironmentVariables">GetEnvironmentVariables (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.GetEnvironmentVariables">GetEnvironmentVariables (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.global_start">global_start() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.global_start">global_start() (metalpipe.node.MetalNode method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -350,17 +358,17 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.HEADER">HEADER (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.HEADER">HEADER (metalpipe.node.bcolors attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.message.trigger.hello_world">hello_world() (in module nanostream.message.trigger)</a>
+      <li><a href="api.html#metalpipe.message.trigger.hello_world">hello_world() (in module metalpipe.message.trigger)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator.hi">hi() (nanostream.node.DynamicClassMediator method)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator.hi">hi() (metalpipe.node.DynamicClassMediator method)</a>
 </li>
-      <li><a href="api.html#nanostream.node_classes.network_nodes.HttpGetRequest">HttpGetRequest (class in nanostream.node_classes.network_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.network_nodes.HttpGetRequest">HttpGetRequest (class in metalpipe.node_classes.network_nodes)</a>
 </li>
-      <li><a href="api.html#nanostream.node_classes.network_nodes.HttpGetRequestPaginator">HttpGetRequestPaginator (class in nanostream.node_classes.network_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.network_nodes.HttpGetRequestPaginator">HttpGetRequestPaginator (class in metalpipe.node_classes.network_nodes)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -368,37 +376,37 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.IncompatibleTypesException">IncompatibleTypesException</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.IncompatibleTypesException">IncompatibleTypesException</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.input_queue_size">input_queue_size (nanostream.node.NanoNode attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.input_queue_size">input_queue_size (metalpipe.node.MetalNode attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.node.InsertData">InsertData (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.InsertData">InsertData (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.INTEGER">INTEGER (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.INTEGER">INTEGER (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataType.intermediate_type">intermediate_type (nanostream.utils.data_structures.DataType attribute)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataType.intermediate_type">intermediate_type (metalpipe.utils.data_structures.DataType attribute)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_BOOL.intermediate_type">(nanostream.utils.data_structures.MYSQL_BOOL attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_BOOL.intermediate_type">(metalpipe.utils.data_structures.MYSQL_BOOL attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_DATE.intermediate_type">(nanostream.utils.data_structures.MYSQL_DATE attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_DATE.intermediate_type">(metalpipe.utils.data_structures.MYSQL_DATE attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_ENUM.intermediate_type">(nanostream.utils.data_structures.MYSQL_ENUM attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_ENUM.intermediate_type">(metalpipe.utils.data_structures.MYSQL_ENUM attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER_BASE.intermediate_type">(nanostream.utils.data_structures.MYSQL_INTEGER_BASE attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER_BASE.intermediate_type">(metalpipe.utils.data_structures.MYSQL_INTEGER_BASE attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR_BASE.intermediate_type">(nanostream.utils.data_structures.MYSQL_VARCHAR_BASE attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR_BASE.intermediate_type">(metalpipe.utils.data_structures.MYSQL_VARCHAR_BASE attribute)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.IntermediateTypeSystem">IntermediateTypeSystem (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.IntermediateTypeSystem">IntermediateTypeSystem (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.Row.is_empty">is_empty() (nanostream.utils.data_structures.Row method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.Row.is_empty">is_empty() (metalpipe.utils.data_structures.Row method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.is_sink">is_sink (nanostream.node.NanoNode attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.is_sink">is_sink (metalpipe.node.MetalNode attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.is_source">is_source (nanostream.node.NanoNode attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.is_source">is_source (metalpipe.node.MetalNode attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -406,13 +414,13 @@
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.Row.keys">keys() (nanostream.utils.data_structures.Row method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.Row.keys">keys() (metalpipe.utils.data_structures.Row method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.NanoNode.kill_pipeline">kill_pipeline() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.kill_pipeline">kill_pipeline() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.kwarg_remapper">kwarg_remapper() (in module nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.kwarg_remapper">kwarg_remapper() (in module metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -420,15 +428,15 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.LocalDirectoryWatchdog">LocalDirectoryWatchdog (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.LocalDirectoryWatchdog">LocalDirectoryWatchdog (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.LocalFileReader">LocalFileReader (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.LocalFileReader">LocalFileReader (class in metalpipe.node)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.NanoNode.log_info">log_info() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.log_info">log_info() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.logjam">logjam (nanostream.node.NanoNode attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.logjam">logjam (metalpipe.node.MetalNode attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -436,375 +444,401 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.make_types">make_types() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.make_types">make_types() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER0.max_length">max_length (nanostream.utils.data_structures.MYSQL_INTEGER0 attribute)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER0.max_length">max_length (metalpipe.utils.data_structures.MYSQL_INTEGER0 attribute)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER1.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER1 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER1.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER1 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER10.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER10 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER10.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER10 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER1024.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER1024 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER1024.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER1024 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER11.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER11 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER11.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER11 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER12.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER12 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER12.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER12 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER128.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER128 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER128.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER128 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER13.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER13 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER13.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER13 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER14.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER14 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER14.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER14 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER15.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER15 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER15.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER15 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER16.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER16 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER16.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER16 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER16384.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER16384 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER16384.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER16384 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER17.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER17 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER17.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER17 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER18.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER18 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER18.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER18 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER19.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER19 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER19.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER19 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER2.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER2 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER2.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER2 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER20.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER20 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER20.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER20 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER2048.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER2048 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER2048.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER2048 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER21.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER21 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER21.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER21 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER22.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER22 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER22.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER22 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER23.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER23 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER23.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER23 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER24.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER24 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER24.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER24 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER25.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER25 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER25.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER25 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER256.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER256 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER256.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER256 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER26.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER26 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER26.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER26 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER27.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER27 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER27.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER27 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER28.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER28 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER28.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER28 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER29.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER29 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER29.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER29 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER3.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER3 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER3.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER3 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER30.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER30 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER30.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER30 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER31.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER31 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER31.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER31 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER32.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER32 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER32.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER32 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER32768.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER32768 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER32768.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER32768 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER4.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER4 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER4.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER4 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER4096.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER4096 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER4096.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER4096 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER5.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER5 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER5.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER5 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER512.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER512 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER512.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER512 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER6.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER6 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER6.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER6 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER64.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER64 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER64.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER64 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER7.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER7 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER7.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER7 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER8.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER8 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER8.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER8 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER8192.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER8192 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER8192.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER8192 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER9.max_length">(nanostream.utils.data_structures.MYSQL_INTEGER9 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER9.max_length">(metalpipe.utils.data_structures.MYSQL_INTEGER9 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR0.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR0 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR0.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR0 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR1.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR1 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR1.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR1 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR10.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR10 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR10.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR10 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR1024.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR1024 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR1024.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR1024 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR11.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR11 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR11.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR11 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR12.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR12 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR12.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR12 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR128.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR128 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR128.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR128 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR13.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR13 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR13.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR13 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR14.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR14 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR14.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR14 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR15.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR15 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR15.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR15 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR16.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR16 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR16.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR16 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR16384.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR16384 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR16384.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR16384 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR17.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR17 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR17.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR17 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR18.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR18 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR18.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR18 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR19.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR19 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR19.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR19 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR2.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR2 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR2.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR2 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR20.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR20 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR20.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR20 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR2048.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR2048 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR2048.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR2048 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR21.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR21 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR21.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR21 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR22.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR22 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR22.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR22 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR23.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR23 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR23.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR23 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR24.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR24 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR24.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR24 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR25.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR25 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR25.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR25 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR256.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR256 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR256.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR256 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR26.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR26 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR26.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR26 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR27.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR27 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR27.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR27 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR28.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR28 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR28.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR28 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR29.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR29 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR29.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR29 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR3.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR3 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR3.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR3 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR30.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR30 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR30.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR30 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR31.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR31 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR31.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR31 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR32.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR32 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR32.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR32 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR32768.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR32768 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR32768.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR32768 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR4.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR4 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR4.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR4 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR4096.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR4096 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR4096.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR4096 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR5.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR5 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR5.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR5 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR512.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR512 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR512.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR512 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR6.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR6 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR6.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR6 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR64.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR64 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR64.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR64 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR7.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR7 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR7.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR7 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR8.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR8 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR8.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR8 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR8192.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR8192 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR8192.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR8192 attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR9.max_length">(nanostream.utils.data_structures.MYSQL_VARCHAR9 attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR9.max_length">(metalpipe.utils.data_structures.MYSQL_VARCHAR9 attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.civis_nodes.SendToCivis.monitor_futures">monitor_futures() (nanostream.civis_nodes.SendToCivis method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode">MetalNode (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_BOOL">MYSQL_BOOL (class in nanostream.utils.data_structures)</a>
+      <li><a href="metalpipe.html#module-metalpipe">metalpipe (module)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_DATE">MYSQL_DATE (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#module-metalpipe.message.batch">metalpipe.message.batch (module)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_ENUM">MYSQL_ENUM (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#module-metalpipe.message.canary">metalpipe.message.canary (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.message.message">metalpipe.message.message (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.message.trigger">metalpipe.message.trigger (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.node">metalpipe.node (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.node_classes.civis_nodes">metalpipe.node_classes.civis_nodes (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.node_classes.network_nodes">metalpipe.node_classes.network_nodes (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.node_queue.queue">metalpipe.node_queue.queue (module)</a>
+</li>
+      <li><a href="api.html#module-metalpipe.utils.data_structures">metalpipe.utils.data_structures (module)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER">MYSQL_INTEGER (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.message.message.MetalPipeMessage">MetalPipeMessage (class in metalpipe.message.message)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER0">MYSQL_INTEGER0 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue">MetalPipeQueue (class in metalpipe.node_queue.queue)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER1">MYSQL_INTEGER1 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis.monitor_futures">monitor_futures() (metalpipe.node_classes.civis_nodes.SendToCivis method)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER10">MYSQL_INTEGER10 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_BOOL">MYSQL_BOOL (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER1024">MYSQL_INTEGER1024 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_DATE">MYSQL_DATE (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER11">MYSQL_INTEGER11 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_ENUM">MYSQL_ENUM (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER12">MYSQL_INTEGER12 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER">MYSQL_INTEGER (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER128">MYSQL_INTEGER128 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER0">MYSQL_INTEGER0 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER13">MYSQL_INTEGER13 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER1">MYSQL_INTEGER1 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER14">MYSQL_INTEGER14 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER10">MYSQL_INTEGER10 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER15">MYSQL_INTEGER15 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER1024">MYSQL_INTEGER1024 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER16">MYSQL_INTEGER16 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER11">MYSQL_INTEGER11 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER16384">MYSQL_INTEGER16384 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER12">MYSQL_INTEGER12 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER17">MYSQL_INTEGER17 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER128">MYSQL_INTEGER128 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER18">MYSQL_INTEGER18 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER13">MYSQL_INTEGER13 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER19">MYSQL_INTEGER19 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER14">MYSQL_INTEGER14 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER2">MYSQL_INTEGER2 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER15">MYSQL_INTEGER15 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER20">MYSQL_INTEGER20 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER16">MYSQL_INTEGER16 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER2048">MYSQL_INTEGER2048 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER16384">MYSQL_INTEGER16384 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER21">MYSQL_INTEGER21 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER17">MYSQL_INTEGER17 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER22">MYSQL_INTEGER22 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER18">MYSQL_INTEGER18 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER23">MYSQL_INTEGER23 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER19">MYSQL_INTEGER19 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER24">MYSQL_INTEGER24 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER2">MYSQL_INTEGER2 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER25">MYSQL_INTEGER25 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER20">MYSQL_INTEGER20 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER256">MYSQL_INTEGER256 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER2048">MYSQL_INTEGER2048 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER26">MYSQL_INTEGER26 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER21">MYSQL_INTEGER21 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER27">MYSQL_INTEGER27 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER22">MYSQL_INTEGER22 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER28">MYSQL_INTEGER28 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER23">MYSQL_INTEGER23 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER29">MYSQL_INTEGER29 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER24">MYSQL_INTEGER24 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER3">MYSQL_INTEGER3 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER25">MYSQL_INTEGER25 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER30">MYSQL_INTEGER30 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER256">MYSQL_INTEGER256 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER31">MYSQL_INTEGER31 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER26">MYSQL_INTEGER26 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER32">MYSQL_INTEGER32 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER27">MYSQL_INTEGER27 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER32768">MYSQL_INTEGER32768 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER28">MYSQL_INTEGER28 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER4">MYSQL_INTEGER4 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER29">MYSQL_INTEGER29 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER4096">MYSQL_INTEGER4096 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER3">MYSQL_INTEGER3 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER5">MYSQL_INTEGER5 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER30">MYSQL_INTEGER30 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER512">MYSQL_INTEGER512 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER31">MYSQL_INTEGER31 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER6">MYSQL_INTEGER6 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER32">MYSQL_INTEGER32 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER64">MYSQL_INTEGER64 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER32768">MYSQL_INTEGER32768 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER7">MYSQL_INTEGER7 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER4">MYSQL_INTEGER4 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER8">MYSQL_INTEGER8 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER4096">MYSQL_INTEGER4096 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER8192">MYSQL_INTEGER8192 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER5">MYSQL_INTEGER5 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER9">MYSQL_INTEGER9 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER512">MYSQL_INTEGER512 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER_BASE">MYSQL_INTEGER_BASE (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER6">MYSQL_INTEGER6 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.mysql_type">mysql_type() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER64">MYSQL_INTEGER64 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR">MYSQL_VARCHAR (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER7">MYSQL_INTEGER7 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR0">MYSQL_VARCHAR0 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER8">MYSQL_INTEGER8 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR1">MYSQL_VARCHAR1 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER8192">MYSQL_INTEGER8192 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR10">MYSQL_VARCHAR10 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER9">MYSQL_INTEGER9 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR1024">MYSQL_VARCHAR1024 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER_BASE">MYSQL_INTEGER_BASE (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR11">MYSQL_VARCHAR11 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.mysql_type">mysql_type() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR12">MYSQL_VARCHAR12 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR">MYSQL_VARCHAR (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR128">MYSQL_VARCHAR128 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR0">MYSQL_VARCHAR0 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR13">MYSQL_VARCHAR13 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR1">MYSQL_VARCHAR1 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR14">MYSQL_VARCHAR14 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR10">MYSQL_VARCHAR10 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR15">MYSQL_VARCHAR15 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR1024">MYSQL_VARCHAR1024 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR16">MYSQL_VARCHAR16 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR11">MYSQL_VARCHAR11 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR16384">MYSQL_VARCHAR16384 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR12">MYSQL_VARCHAR12 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR17">MYSQL_VARCHAR17 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR128">MYSQL_VARCHAR128 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR18">MYSQL_VARCHAR18 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR13">MYSQL_VARCHAR13 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR19">MYSQL_VARCHAR19 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR14">MYSQL_VARCHAR14 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR2">MYSQL_VARCHAR2 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR15">MYSQL_VARCHAR15 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR20">MYSQL_VARCHAR20 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR16">MYSQL_VARCHAR16 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR2048">MYSQL_VARCHAR2048 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR16384">MYSQL_VARCHAR16384 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR21">MYSQL_VARCHAR21 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR17">MYSQL_VARCHAR17 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR22">MYSQL_VARCHAR22 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR18">MYSQL_VARCHAR18 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR23">MYSQL_VARCHAR23 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR19">MYSQL_VARCHAR19 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR24">MYSQL_VARCHAR24 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR2">MYSQL_VARCHAR2 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR25">MYSQL_VARCHAR25 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR20">MYSQL_VARCHAR20 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR256">MYSQL_VARCHAR256 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR2048">MYSQL_VARCHAR2048 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR26">MYSQL_VARCHAR26 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR21">MYSQL_VARCHAR21 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR27">MYSQL_VARCHAR27 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR22">MYSQL_VARCHAR22 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR28">MYSQL_VARCHAR28 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR23">MYSQL_VARCHAR23 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR29">MYSQL_VARCHAR29 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR24">MYSQL_VARCHAR24 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR3">MYSQL_VARCHAR3 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR25">MYSQL_VARCHAR25 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR30">MYSQL_VARCHAR30 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR256">MYSQL_VARCHAR256 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR31">MYSQL_VARCHAR31 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR26">MYSQL_VARCHAR26 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR32">MYSQL_VARCHAR32 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR27">MYSQL_VARCHAR27 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR32768">MYSQL_VARCHAR32768 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR28">MYSQL_VARCHAR28 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR4">MYSQL_VARCHAR4 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR29">MYSQL_VARCHAR29 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR4096">MYSQL_VARCHAR4096 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR3">MYSQL_VARCHAR3 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR5">MYSQL_VARCHAR5 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR30">MYSQL_VARCHAR30 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR512">MYSQL_VARCHAR512 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR31">MYSQL_VARCHAR31 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR6">MYSQL_VARCHAR6 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR32">MYSQL_VARCHAR32 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR64">MYSQL_VARCHAR64 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR32768">MYSQL_VARCHAR32768 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR7">MYSQL_VARCHAR7 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR4">MYSQL_VARCHAR4 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR8">MYSQL_VARCHAR8 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR4096">MYSQL_VARCHAR4096 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR8192">MYSQL_VARCHAR8192 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR5">MYSQL_VARCHAR5 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR9">MYSQL_VARCHAR9 (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR512">MYSQL_VARCHAR512 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR_BASE">MYSQL_VARCHAR_BASE (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR6">MYSQL_VARCHAR6 (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.MySQLTypeSystem">MySQLTypeSystem (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR64">MYSQL_VARCHAR64 (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR7">MYSQL_VARCHAR7 (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR8">MYSQL_VARCHAR8 (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR8192">MYSQL_VARCHAR8192 (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR9">MYSQL_VARCHAR9 (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR_BASE">MYSQL_VARCHAR_BASE (class in metalpipe.utils.data_structures)</a>
+</li>
+      <li><a href="api.html#metalpipe.utils.data_structures.MySQLTypeSystem">MySQLTypeSystem (class in metalpipe.utils.data_structures)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -812,39 +846,11 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.NanoNode">NanoNode (class in nanostream.node)</a>
-</li>
-      <li><a href="nanostream.html#module-nanostream">nanostream (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.civis_nodes">nanostream.civis_nodes (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.message.batch">nanostream.message.batch (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.message.canary">nanostream.message.canary (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.message.message">nanostream.message.message (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.message.poison_pill">nanostream.message.poison_pill (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.message.trigger">nanostream.message.trigger (module)</a>
+      <li><a href="api.html#metalpipe.node.no_op">no_op() (in module metalpipe.node)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#module-nanostream.node">nanostream.node (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.node_classes.network_nodes">nanostream.node_classes.network_nodes (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.node_queue.queue">nanostream.node_queue.queue (module)</a>
-</li>
-      <li><a href="api.html#module-nanostream.utils.data_structures">nanostream.utils.data_structures (module)</a>
-</li>
-      <li><a href="api.html#nanostream.message.message.NanoStreamMessage">NanoStreamMessage (class in nanostream.message.message)</a>
-</li>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue">NanoStreamQueue (class in nanostream.node_queue.queue)</a>
-</li>
-      <li><a href="api.html#nanostream.node.no_op">no_op() (in module nanostream.node)</a>
-</li>
-      <li><a href="api.html#nanostream.node.NothingToSeeHere">NothingToSeeHere (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.NothingToSeeHere">NothingToSeeHere (class in metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -852,11 +858,11 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.OKBLUE">OKBLUE (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.OKBLUE">OKBLUE (metalpipe.node.bcolors attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.OKGREEN">OKGREEN (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.OKGREEN">OKGREEN (metalpipe.node.bcolors attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -864,99 +870,99 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node_classes.network_nodes.PaginatedHttpGetRequest">PaginatedHttpGetRequest (class in nanostream.node_classes.network_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.network_nodes.PaginatedHttpGetRequest">PaginatedHttpGetRequest (class in metalpipe.node_classes.network_nodes)</a>
 </li>
-      <li><a href="api.html#nanostream.message.poison_pill.PoisonPill">PoisonPill (class in nanostream.message.poison_pill)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.pipeline_finished">pipeline_finished (metalpipe.node.MetalNode attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.primitive_to_intermediate_type">primitive_to_intermediate_type() (in module nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.primitive_to_intermediate_type">primitive_to_intermediate_type() (in module metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.PrimitiveTypeSystem">PrimitiveTypeSystem (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.PrimitiveTypeSystem">PrimitiveTypeSystem (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.PrinterOfThings">PrinterOfThings (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.PrinterOfThings">PrinterOfThings (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.CivisSQLExecute.process_item">process_item() (nanostream.civis_nodes.CivisSQLExecute method)</a>
+      <li><a href="api.html#metalpipe.node.AggregateValues.process_item">process_item() (metalpipe.node.AggregateValues method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.civis_nodes.CivisToCSV.process_item">(nanostream.civis_nodes.CivisToCSV method)</a>
+        <li><a href="api.html#metalpipe.node.BatchMessages.process_item">(metalpipe.node.BatchMessages method)</a>
 </li>
-        <li><a href="api.html#nanostream.civis_nodes.EnsureCivisRedshiftTableExists.process_item">(nanostream.civis_nodes.EnsureCivisRedshiftTableExists method)</a>
+        <li><a href="api.html#metalpipe.node.CSVReader.process_item">(metalpipe.node.CSVReader method)</a>
 </li>
-        <li><a href="api.html#nanostream.civis_nodes.FindValueInRedshiftColumn.process_item">(nanostream.civis_nodes.FindValueInRedshiftColumn method)</a>
+        <li><a href="api.html#metalpipe.node.CSVToDictionaryList.process_item">(metalpipe.node.CSVToDictionaryList method)</a>
 </li>
-        <li><a href="api.html#nanostream.civis_nodes.SendToCivis.process_item">(nanostream.civis_nodes.SendToCivis method)</a>
+        <li><a href="api.html#metalpipe.node.Filter.process_item">(metalpipe.node.Filter method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.AggregateValues.process_item">(nanostream.node.AggregateValues method)</a>
+        <li><a href="api.html#metalpipe.node.FunctionOfMessage.process_item">(metalpipe.node.FunctionOfMessage method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.BatchMessages.process_item">(nanostream.node.BatchMessages method)</a>
+        <li><a href="api.html#metalpipe.node.GetEnvironmentVariables.process_item">(metalpipe.node.GetEnvironmentVariables method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.CSVReader.process_item">(nanostream.node.CSVReader method)</a>
+        <li><a href="api.html#metalpipe.node.InsertData.process_item">(metalpipe.node.InsertData method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.CSVToDictionaryList.process_item">(nanostream.node.CSVToDictionaryList method)</a>
+        <li><a href="api.html#metalpipe.node.LocalFileReader.process_item">(metalpipe.node.LocalFileReader method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.Filter.process_item">(nanostream.node.Filter method)</a>
+        <li><a href="api.html#metalpipe.node.MetalNode.process_item">(metalpipe.node.MetalNode method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.GetEnvironmentVariables.process_item">(nanostream.node.GetEnvironmentVariables method)</a>
+        <li><a href="api.html#metalpipe.node.PrinterOfThings.process_item">(metalpipe.node.PrinterOfThings method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.InsertData.process_item">(nanostream.node.InsertData method)</a>
+        <li><a href="api.html#metalpipe.node.RandomSample.process_item">(metalpipe.node.RandomSample method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.LocalFileReader.process_item">(nanostream.node.LocalFileReader method)</a>
+        <li><a href="api.html#metalpipe.node.Remapper.process_item">(metalpipe.node.Remapper method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.NanoNode.process_item">(nanostream.node.NanoNode method)</a>
+        <li><a href="api.html#metalpipe.node.SequenceEmitter.process_item">(metalpipe.node.SequenceEmitter method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.PrinterOfThings.process_item">(nanostream.node.PrinterOfThings method)</a>
+        <li><a href="api.html#metalpipe.node.Serializer.process_item">(metalpipe.node.Serializer method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.RandomSample.process_item">(nanostream.node.RandomSample method)</a>
+        <li><a href="api.html#metalpipe.node.SimpleTransforms.process_item">(metalpipe.node.SimpleTransforms method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.Remapper.process_item">(nanostream.node.Remapper method)</a>
+        <li><a href="api.html#metalpipe.node.StreamingJoin.process_item">(metalpipe.node.StreamingJoin method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.SequenceEmitter.process_item">(nanostream.node.SequenceEmitter method)</a>
+        <li><a href="api.html#metalpipe.node.SubstituteRegex.process_item">(metalpipe.node.SubstituteRegex method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.Serializer.process_item">(nanostream.node.Serializer method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.CivisSQLExecute.process_item">(metalpipe.node_classes.civis_nodes.CivisSQLExecute method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.SimpleTransforms.process_item">(nanostream.node.SimpleTransforms method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.CivisToCSV.process_item">(metalpipe.node_classes.civis_nodes.CivisToCSV method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.StreamingJoin.process_item">(nanostream.node.StreamingJoin method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.EnsureCivisRedshiftTableExists.process_item">(metalpipe.node_classes.civis_nodes.EnsureCivisRedshiftTableExists method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.SubstituteRegex.process_item">(nanostream.node.SubstituteRegex method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.FindValueInRedshiftColumn.process_item">(metalpipe.node_classes.civis_nodes.FindValueInRedshiftColumn method)</a>
 </li>
-        <li><a href="api.html#nanostream.node_classes.network_nodes.HttpGetRequest.process_item">(nanostream.node_classes.network_nodes.HttpGetRequest method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis.process_item">(metalpipe.node_classes.civis_nodes.SendToCivis method)</a>
 </li>
-        <li><a href="api.html#nanostream.node_classes.network_nodes.HttpGetRequestPaginator.process_item">(nanostream.node_classes.network_nodes.HttpGetRequestPaginator method)</a>
+        <li><a href="api.html#metalpipe.node_classes.network_nodes.HttpGetRequest.process_item">(metalpipe.node_classes.network_nodes.HttpGetRequest method)</a>
+</li>
+        <li><a href="api.html#metalpipe.node_classes.network_nodes.HttpGetRequestPaginator.process_item">(metalpipe.node_classes.network_nodes.HttpGetRequestPaginator method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.NanoNode.processor_bak">processor_bak() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue.put">put() (metalpipe.node_queue.queue.MetalPipeQueue method)</a>
 </li>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue.put">put() (nanostream.node_queue.queue.NanoStreamQueue method)</a>
-</li>
-      <li><a href="api.html#nanostream.utils.data_structures.BOOL.python_cast_function">python_cast_function (nanostream.utils.data_structures.BOOL attribute)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.BOOL.python_cast_function">python_cast_function (metalpipe.utils.data_structures.BOOL attribute)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.utils.data_structures.DataType.python_cast_function">(nanostream.utils.data_structures.DataType attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.DataType.python_cast_function">(metalpipe.utils.data_structures.DataType attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.FLOAT.python_cast_function">(nanostream.utils.data_structures.FLOAT attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.FLOAT.python_cast_function">(metalpipe.utils.data_structures.FLOAT attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.INTEGER.python_cast_function">(nanostream.utils.data_structures.INTEGER attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.INTEGER.python_cast_function">(metalpipe.utils.data_structures.INTEGER attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_BOOL.python_cast_function">(nanostream.utils.data_structures.MYSQL_BOOL attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_BOOL.python_cast_function">(metalpipe.utils.data_structures.MYSQL_BOOL attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_ENUM.python_cast_function">(nanostream.utils.data_structures.MYSQL_ENUM attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_ENUM.python_cast_function">(metalpipe.utils.data_structures.MYSQL_ENUM attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_INTEGER_BASE.python_cast_function">(nanostream.utils.data_structures.MYSQL_INTEGER_BASE attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_INTEGER_BASE.python_cast_function">(metalpipe.utils.data_structures.MYSQL_INTEGER_BASE attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_VARCHAR_BASE.python_cast_function">(nanostream.utils.data_structures.MYSQL_VARCHAR_BASE attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_VARCHAR_BASE.python_cast_function">(metalpipe.utils.data_structures.MYSQL_VARCHAR_BASE attribute)</a>
 </li>
-        <li><a href="api.html#nanostream.utils.data_structures.STRING.python_cast_function">(nanostream.utils.data_structures.STRING attribute)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.STRING.python_cast_function">(metalpipe.utils.data_structures.STRING attribute)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.utils.data_structures.DATETIME.python_cast_function">python_cast_function() (nanostream.utils.data_structures.DATETIME method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DATETIME.python_cast_function">python_cast_function() (metalpipe.utils.data_structures.DATETIME method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.utils.data_structures.MYSQL_DATE.python_cast_function">(nanostream.utils.data_structures.MYSQL_DATE method)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MYSQL_DATE.python_cast_function">(metalpipe.utils.data_structures.MYSQL_DATE method)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.utils.data_structures.PythonTypeSystem">PythonTypeSystem (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.PythonTypeSystem">PythonTypeSystem (class in metalpipe.utils.data_structures)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -964,15 +970,15 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.RandomSample">RandomSample (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.RandomSample">RandomSample (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.Remapper">Remapper (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.Remapper">Remapper (class in metalpipe.node)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node_classes.network_nodes.PaginatedHttpGetRequest.responses">responses() (nanostream.node_classes.network_nodes.PaginatedHttpGetRequest method)</a>
+      <li><a href="api.html#metalpipe.node_classes.network_nodes.PaginatedHttpGetRequest.responses">responses() (metalpipe.node_classes.network_nodes.PaginatedHttpGetRequest method)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.Row">Row (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.Row">Row (class in metalpipe.utils.data_structures)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -980,41 +986,41 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.civis_nodes.SendToCivis">SendToCivis (class in nanostream.civis_nodes)</a>
+      <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis">SendToCivis (class in metalpipe.node_classes.civis_nodes)</a>
 </li>
-      <li><a href="api.html#nanostream.node.SequenceEmitter">SequenceEmitter (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.SequenceEmitter">SequenceEmitter (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.Serializer">Serializer (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.Serializer">Serializer (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.civis_nodes.SendToCivis.setup">setup() (nanostream.civis_nodes.SendToCivis method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.setup">setup() (metalpipe.node.MetalNode method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.node.NanoNode.setup">(nanostream.node.NanoNode method)</a>
+        <li><a href="api.html#metalpipe.node.StreamMySQLTable.setup">(metalpipe.node.StreamMySQLTable method)</a>
 </li>
-        <li><a href="api.html#nanostream.node.StreamMySQLTable.setup">(nanostream.node.StreamMySQLTable method)</a>
+        <li><a href="api.html#metalpipe.node_classes.civis_nodes.SendToCivis.setup">(metalpipe.node_classes.civis_nodes.SendToCivis method)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.node.SimpleTransforms">SimpleTransforms (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.SimpleTransforms">SimpleTransforms (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator.sink_list">sink_list() (nanostream.node.DynamicClassMediator method)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator.sink_list">sink_list() (metalpipe.node.DynamicClassMediator method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node_queue.queue.NanoStreamQueue.size">size() (nanostream.node_queue.queue.NanoStreamQueue method)</a>
+      <li><a href="api.html#metalpipe.node_queue.queue.MetalPipeQueue.size">size() (metalpipe.node_queue.queue.MetalPipeQueue method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.DynamicClassMediator.source_list">source_list() (nanostream.node.DynamicClassMediator method)</a>
+      <li><a href="api.html#metalpipe.node.DynamicClassMediator.source_list">source_list() (metalpipe.node.DynamicClassMediator method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.start">start() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.start">start() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.stream">stream() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.stream">stream() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.StreamingJoin">StreamingJoin (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.StreamingJoin">StreamingJoin (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.StreamMySQLTable">StreamMySQLTable (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.StreamMySQLTable">StreamMySQLTable (class in metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.STRING">STRING (class in nanostream.utils.data_structures)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.STRING">STRING (class in metalpipe.utils.data_structures)</a>
 </li>
-      <li><a href="api.html#nanostream.node.SubstituteRegex">SubstituteRegex (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.SubstituteRegex">SubstituteRegex (class in metalpipe.node)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1022,31 +1028,31 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.template_class">template_class() (in module nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.template_class">template_class() (in module metalpipe.node)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.terminate_pipeline">terminate_pipeline() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.terminate_pipeline">terminate_pipeline() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.thread_monitor">thread_monitor() (nanostream.node.NanoNode method)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.thread_monitor">thread_monitor() (metalpipe.node.MetalNode method)</a>
 </li>
-      <li><a href="api.html#nanostream.node.NanoNode.time_running">time_running (nanostream.node.NanoNode attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.time_running">time_running (metalpipe.node.MetalNode attribute)</a>
 </li>
-      <li><a href="api.html#nanostream.node.TimeWindowAccumulator">TimeWindowAccumulator (class in nanostream.node)</a>
+      <li><a href="api.html#metalpipe.node.TimeWindowAccumulator">TimeWindowAccumulator (class in metalpipe.node)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.utils.data_structures.DataType.to_intermediate_type">to_intermediate_type() (nanostream.utils.data_structures.DataType method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataType.to_intermediate_type">to_intermediate_type() (metalpipe.utils.data_structures.DataType method)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataType.to_python">to_python() (nanostream.utils.data_structures.DataType method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataType.to_python">to_python() (metalpipe.utils.data_structures.DataType method)</a>
 </li>
-      <li><a href="api.html#nanostream.message.trigger.Trigger">Trigger (class in nanostream.message.trigger)</a>
+      <li><a href="api.html#metalpipe.message.trigger.Trigger">Trigger (class in metalpipe.message.trigger)</a>
 </li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataSourceTypeSystem.type_mapping">type_mapping() (nanostream.utils.data_structures.DataSourceTypeSystem static method)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataSourceTypeSystem.type_mapping">type_mapping() (metalpipe.utils.data_structures.DataSourceTypeSystem static method)</a>
 
       <ul>
-        <li><a href="api.html#nanostream.utils.data_structures.MySQLTypeSystem.type_mapping">(nanostream.utils.data_structures.MySQLTypeSystem static method)</a>
+        <li><a href="api.html#metalpipe.utils.data_structures.MySQLTypeSystem.type_mapping">(metalpipe.utils.data_structures.MySQLTypeSystem static method)</a>
 </li>
       </ul></li>
-      <li><a href="api.html#nanostream.utils.data_structures.DataType.type_system">type_system (nanostream.utils.data_structures.DataType attribute)</a>
+      <li><a href="api.html#metalpipe.utils.data_structures.DataType.type_system">type_system (metalpipe.utils.data_structures.DataType attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1054,7 +1060,7 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.UNDERLINE">UNDERLINE (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.bcolors.UNDERLINE">UNDERLINE (metalpipe.node.bcolors attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1062,7 +1068,11 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api.html#nanostream.node.bcolors.WARNING">WARNING (nanostream.node.bcolors attribute)</a>
+      <li><a href="api.html#metalpipe.node.MetalNode.wait_for_pipeline_finish">wait_for_pipeline_finish() (metalpipe.node.MetalNode method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#metalpipe.node.bcolors.WARNING">WARNING (metalpipe.node.bcolors attribute)</a>
 </li>
   </ul></td>
 </tr></table>

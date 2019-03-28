@@ -27,6 +27,4 @@ class Trigger:
             or hashlib.md5(bytes(str(random.random()), "ascii")).hexdigest()
         )
         self.time_sent = time.time()  # In epochs
-        logging.debug(
-            "Sent trigger at {now}".format(now=str(datetime.datetime.now()))
-        )
+        logging.debug("Sent trigger at {now}".format(now=str(datetime.datetime.now())))

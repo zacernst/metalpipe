@@ -55,17 +55,13 @@ def string_to_redshift(timestamp):
     """
     TODO: Consider removing this function.
     """
-    if timestamp is None or (
-        isinstance(timestamp, (str,)) and timestamp == ""
-    ):
+    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ""):
         return timestamp
     return datetime.datetime.strptime(timestamp, "%b %d,%Y  %H:%M:%S")
 
 
 def string_to_datetime(timestamp):
-    if timestamp is None or (
-        isinstance(timestamp, (str,)) and timestamp == ""
-    ):
+    if timestamp is None or (isinstance(timestamp, (str,)) and timestamp == ""):
         return timestamp
     return datetime.datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
@@ -77,13 +73,14 @@ def milliseconds_epoch_to_datetime(milliseconds_epoch):
         milliseconds_epoch = int(milliseconds_epoch)
     except:
         logging.info(
-            "milliseconds exception: " + str(type(milliseconds_epoch))
+            "milliseconds exception: "
+            + str(type(milliseconds_epoch))
+            + " "
+            + str(milliseconds_epoch)
         )
         return milliseconds_epoch
     logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))
-    out = UNIX_EPOCH + datetime.timedelta(
-        seconds=(int(milliseconds_epoch) / 1000)
-    )
+    out = UNIX_EPOCH + datetime.timedelta(seconds=(int(milliseconds_epoch) / 1000))
     logging.debug("milliseconds_epoch_to_datetime output: " + str(out))
     return out
 
@@ -101,18 +98,12 @@ def to_bool(thing):
         return thing
     else:
         raise Exception(
-            "Do not know how to convert {thing} to bool".format(
-                thing=str(thing)
-            )
+            "Do not know how to convert {thing} to bool".format(thing=str(thing))
         )
 
 
 def get_value(
-    dictionary,
-    path,
-    delimiter=".",
-    use_default_value=False,
-    default_value=None,
+    dictionary, path, delimiter=".", use_default_value=False, default_value=None
 ):
 
     # dictionary = copy.deepcopy(dictionary)
@@ -183,10 +174,7 @@ def iterate_leaves(dictionary, keypath=None):
 
 
 def remap_dictionary(
-    source_dictionary,
-    target_dictionary,
-    use_default_value=False,
-    default_value=None,
+    source_dictionary, target_dictionary, use_default_value=False, default_value=None
 ):
     target_dictionary = copy.deepcopy(target_dictionary)
     for path, value in iterate_leaves(target_dictionary):
@@ -352,9 +340,7 @@ def aggregate_values(dictionary, target_path, values=False):
                 list(current_value.values()) if values else current_value
             )
         except AttributeError:
-            logging.debug(
-                "Attribute error in aggregate values. No list returned."
-            )
+            logging.debug("Attribute error in aggregate values. No list returned.")
 
     logging.debug("aggregated_values: " + str(aggregated_values))
     try:
@@ -390,9 +376,7 @@ def iterate(thing, path=None, seen=None, start_path=None):
                     yield item
         elif isinstance(thing, (list, tuple)):
             for index, item in enumerate(thing):
-                for thingie in iterate(
-                    item, path=path + [ListIndex(index)], seen=seen
-                ):
+                for thingie in iterate(item, path=path + [ListIndex(index)], seen=seen):
                     yield thingie
         else:
             yield thing
@@ -415,6 +399,4 @@ if __name__ == "__main__":
     import random
 
     logging.basicConfig(level=logging.debug)
-    replace_by_path(
-        d, ["vid"], function=lambda x: str(x) + str(random.random())
-    )
+    replace_by_path(d, ["vid"], function=lambda x: str(x) + str(random.random()))

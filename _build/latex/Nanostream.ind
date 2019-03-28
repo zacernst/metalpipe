@@ -2,436 +2,454 @@
 \let\bigletter\sphinxstyleindexlettergroup
 
   \bigletter A
-  \item add\_edge() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item AggregateValues (class in nanostream.node), \hyperpage{15}
-  \item all\_bases() (in module nanostream.utils.data\_structures), \hyperpage{31}
-  \item all\_connected() (nanostream.node.NanoNode method), \hyperpage{18}
+  \item add\_edge() (nanostream.node.NanoNode method), \hyperpage{24}
+  \item AggregateValues (class in nanostream.node), \hyperpage{21}
+  \item all\_bases() (in module nanostream.utils.data\_structures), \hyperpage{39}
+  \item all\_connected() (nanostream.node.NanoNode method), \hyperpage{24}
+  \item approximately\_full() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{42}
 
   \indexspace
   \bigletter B
-  \item BatchEnd (class in nanostream.message.batch), \hyperpage{33}
-  \item BatchMessages (class in nanostream.node), \hyperpage{15}
-  \item BatchStart (class in nanostream.message.batch), \hyperpage{33}
-  \item bcolors (class in nanostream.node), \hyperpage{20}
-  \item BOLD (nanostream.node.bcolors attribute), \hyperpage{20}
-  \item BOOL (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item broadcast() (nanostream.node.NanoNode method), \hyperpage{18}
+  \item BatchEnd (class in nanostream.message.batch), \hyperpage{42}
+  \item BatchMessages (class in nanostream.node), \hyperpage{21}
+  \item BatchStart (class in nanostream.message.batch), \hyperpage{42}
+  \item bcolors (class in nanostream.node), \hyperpage{27}
+  \item BOLD (nanostream.node.bcolors attribute), \hyperpage{27}
+  \item BOOL (class in nanostream.utils.data\_structures), \hyperpage{29}
+  \item broadcast() (nanostream.node.NanoNode method), \hyperpage{24}
 
   \indexspace
   \bigletter C
-  \item Canary (class in nanostream.message.canary), \hyperpage{33}
-  \item class\_factory() (in module nanostream.node), \hyperpage{20}
-  \item cleanup() (nanostream.node.BatchMessages method), \hyperpage{15}
-  \item cleanup() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item concat() (nanostream.utils.data\_structures.Row method), \hyperpage{31}
-  \item ConstantEmitter (class in nanostream.node), \hyperpage{15}
+  \item Canary (class in nanostream.message.canary), \hyperpage{42}
+  \item CivisSQLExecute (class in nanostream.civis\_nodes), \hyperpage{28}
+  \item CivisToCSV (class in nanostream.civis\_nodes), \hyperpage{28}
+  \item class\_factory() (in module nanostream.node), \hyperpage{27}
+  \item cleanup() (nanostream.node.BatchMessages method), \hyperpage{21}
+  \item cleanup() (nanostream.node.NanoNode method), \hyperpage{24}
+  \item concat() (nanostream.utils.data\_structures.Row method), \hyperpage{39}
+  \item ConstantEmitter (class in nanostream.node), \hyperpage{21}
   \item convert() (nanostream.utils.data\_structures.DataSourceTypeSystem static method), 
-		\hyperpage{21}
-  \item convert\_to\_type\_system() (in module nanostream.utils.data\_structures), \hyperpage{31}
-  \item CounterOfThings (class in nanostream.node), \hyperpage{15}
-  \item CSVReader (class in nanostream.node), \hyperpage{15}
-  \item CSVToDictionaryList (class in nanostream.node), \hyperpage{15}
+		\hyperpage{29}
+  \item convert\_to\_type\_system() (in module nanostream.utils.data\_structures), \hyperpage{40}
+  \item CounterOfThings (class in nanostream.node), \hyperpage{21}
+  \item CSVReader (class in nanostream.node), \hyperpage{21}
+  \item CSVToDictionaryList (class in nanostream.node), \hyperpage{21}
 
   \indexspace
   \bigletter D
-  \item DataSourceTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item DataType (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item DATETIME (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item draw\_pipeline() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item DynamicClassMediator (class in nanostream.node), \hyperpage{16}
+  \item DataSourceTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{29}
+  \item DataType (class in nanostream.utils.data\_structures), \hyperpage{29}
+  \item DATETIME (class in nanostream.utils.data\_structures), \hyperpage{29}
+  \item draw\_pipeline() (nanostream.node.NanoNode method), \hyperpage{24}
+  \item DynamicClassMediator (class in nanostream.node), \hyperpage{22}
 
   \indexspace
   \bigletter E
-  \item empty (nanostream.node\_queue.queue.NanoStreamQueue attribute), \hyperpage{33}
-  \item ENDC (nanostream.node.bcolors attribute), \hyperpage{20}
+  \item empty (nanostream.node\_queue.queue.NanoStreamQueue attribute), \hyperpage{42}
+  \item ENDC (nanostream.node.bcolors attribute), \hyperpage{27}
+  \item EnsureCivisRedshiftTableExists (class in nanostream.civis\_nodes), \hyperpage{28}
 
   \indexspace
   \bigletter F
-  \item FAIL (nanostream.node.bcolors attribute), \hyperpage{20}
-  \item Filter (class in nanostream.node), \hyperpage{16}
-  \item FLOAT (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item foo\_\_init\_\_() (nanostream.node.CounterOfThings method), \hyperpage{16}
-  \item from\_dict() (nanostream.utils.data\_structures.Row static method), \hyperpage{31}
+  \item FAIL (nanostream.node.bcolors attribute), \hyperpage{27}
+  \item Filter (class in nanostream.node), \hyperpage{22}
+  \item FindValueInRedshiftColumn (class in nanostream.civis\_nodes), \hyperpage{28}
+  \item FLOAT (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item foo\_\_init\_\_() (nanostream.node.CounterOfThings method), \hyperpage{22}
+  \item from\_dict() (nanostream.utils.data\_structures.Row static method), \hyperpage{39}
 
   \indexspace
   \bigletter G
-  \item generator() (nanostream.node.ConstantEmitter method), \hyperpage{15}
-  \item generator() (nanostream.node.CounterOfThings method), \hyperpage{16}
-  \item generator() (nanostream.node.GetEnvironmentVariables method), \hyperpage{16}
-  \item generator() (nanostream.node.LocalDirectoryWatchdog method), \hyperpage{16}
-  \item generator() (nanostream.node.SequenceEmitter method), \hyperpage{19}
-  \item generator() (nanostream.node.StreamMySQLTable method), \hyperpage{20}
-  \item get() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{34}
-  \item get\_environment\_variables() (in module nanostream.node), \hyperpage{20}
-  \item get\_node\_dict() (in module nanostream.node), \hyperpage{20}
-  \item get\_schema() (nanostream.node.StreamMySQLTable method), \hyperpage{20}
-  \item get\_sink() (nanostream.node.DynamicClassMediator method), \hyperpage{16}
-  \item get\_source() (nanostream.node.DynamicClassMediator method), \hyperpage{16}
-  \item get\_type\_system() (in module nanostream.utils.data\_structures), \hyperpage{31}
-  \item GetEnvironmentVariables (class in nanostream.node), \hyperpage{16}
-  \item global\_start() (nanostream.node.NanoNode method), \hyperpage{18}
+  \item generator() (nanostream.civis\_nodes.EnsureCivisRedshiftTableExists method), \hyperpage{28}
+  \item generator() (nanostream.civis\_nodes.FindValueInRedshiftColumn method), \hyperpage{28}
+  \item generator() (nanostream.node.ConstantEmitter method), \hyperpage{21}
+  \item generator() (nanostream.node.CounterOfThings method), \hyperpage{22}
+  \item generator() (nanostream.node.GetEnvironmentVariables method), \hyperpage{22}
+  \item generator() (nanostream.node.LocalDirectoryWatchdog method), \hyperpage{23}
+  \item generator() (nanostream.node.SequenceEmitter method), \hyperpage{26}
+  \item generator() (nanostream.node.StreamMySQLTable method), \hyperpage{27}
+  \item get() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{42}
+  \item get\_environment\_variables() (in module nanostream.node), \hyperpage{27}
+  \item get\_node\_dict() (in module nanostream.node), \hyperpage{28}
+  \item get\_schema() (nanostream.node.StreamMySQLTable method), \hyperpage{27}
+  \item get\_sink() (nanostream.node.DynamicClassMediator method), \hyperpage{22}
+  \item get\_source() (nanostream.node.DynamicClassMediator method), \hyperpage{22}
+  \item get\_type\_system() (in module nanostream.utils.data\_structures), \hyperpage{40}
+  \item GetEnvironmentVariables (class in nanostream.node), \hyperpage{22}
+  \item global\_start() (nanostream.node.NanoNode method), \hyperpage{24}
 
   \indexspace
   \bigletter H
-  \item HEADER (nanostream.node.bcolors attribute), \hyperpage{20}
-  \item hello\_world() (in module nanostream.message.trigger), \hyperpage{33}
-  \item hi() (nanostream.node.DynamicClassMediator method), \hyperpage{16}
-  \item HttpGetRequest (class in nanostream.node\_classes.network\_nodes), \hyperpage{32}
-  \item HttpGetRequestPaginator (class in nanostream.node\_classes.network\_nodes), \hyperpage{32}
+  \item HEADER (nanostream.node.bcolors attribute), \hyperpage{27}
+  \item hello\_world() (in module nanostream.message.trigger), \hyperpage{41}
+  \item hi() (nanostream.node.DynamicClassMediator method), \hyperpage{22}
+  \item HttpGetRequest (class in nanostream.node\_classes.network\_nodes), \hyperpage{40}
+  \item HttpGetRequestPaginator (class in nanostream.node\_classes.network\_nodes), \hyperpage{40}
 
   \indexspace
   \bigletter I
-  \item IncompatibleTypesException, \hyperpage{22}
-  \item input\_queue\_size (nanostream.node.NanoNode attribute), \hyperpage{18}
-  \item InsertData (class in nanostream.node), \hyperpage{16}
-  \item INTEGER (class in nanostream.utils.data\_structures), \hyperpage{21}
-  \item intermediate\_type (nanostream.utils.data\_structures.DataType attribute), \hyperpage{21}
+  \item IncompatibleTypesException, \hyperpage{30}
+  \item input\_queue\_size (nanostream.node.NanoNode attribute), \hyperpage{24}
+  \item InsertData (class in nanostream.node), \hyperpage{22}
+  \item INTEGER (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item intermediate\_type (nanostream.utils.data\_structures.DataType attribute), \hyperpage{29}
   \item intermediate\_type (nanostream.utils.data\_structures.MYSQL\_BOOL attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item intermediate\_type (nanostream.utils.data\_structures.MYSQL\_DATE attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item intermediate\_type (nanostream.utils.data\_structures.MYSQL\_ENUM attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item intermediate\_type (nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE attribute), 
-		\hyperpage{26}
+		\hyperpage{35}
   \item intermediate\_type (nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE attribute), 
-		\hyperpage{31}
-  \item IntermediateTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item is\_empty() (nanostream.utils.data\_structures.Row method), \hyperpage{31}
-  \item is\_sink (nanostream.node.NanoNode attribute), \hyperpage{18}
-  \item is\_source (nanostream.node.NanoNode attribute), \hyperpage{18}
+		\hyperpage{39}
+  \item IntermediateTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item is\_empty() (nanostream.utils.data\_structures.Row method), \hyperpage{39}
+  \item is\_sink (nanostream.node.NanoNode attribute), \hyperpage{24}
+  \item is\_source (nanostream.node.NanoNode attribute), \hyperpage{24}
 
   \indexspace
   \bigletter K
-  \item keys() (nanostream.utils.data\_structures.Row method), \hyperpage{31}
-  \item kill\_pipeline() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item kwarg\_remapper() (in module nanostream.node), \hyperpage{20}
+  \item keys() (nanostream.utils.data\_structures.Row method), \hyperpage{39}
+  \item kill\_pipeline() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item kwarg\_remapper() (in module nanostream.node), \hyperpage{28}
 
   \indexspace
   \bigletter L
-  \item LocalDirectoryWatchdog (class in nanostream.node), \hyperpage{16}
-  \item LocalFileReader (class in nanostream.node), \hyperpage{17}
-  \item log\_info() (nanostream.node.NanoNode method), \hyperpage{18}
+  \item LocalDirectoryWatchdog (class in nanostream.node), \hyperpage{22}
+  \item LocalFileReader (class in nanostream.node), \hyperpage{23}
+  \item log\_info() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item logjam (nanostream.node.NanoNode attribute), \hyperpage{25}
 
   \indexspace
   \bigletter M
-  \item make\_types() (in module nanostream.utils.data\_structures), \hyperpage{31}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER0 attribute), \hyperpage{22}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER1 attribute), \hyperpage{22}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER10 attribute), \hyperpage{23}
+  \item make\_types() (in module nanostream.utils.data\_structures), \hyperpage{40}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER0 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER1 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER10 attribute), \hyperpage{31}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER1024 attribute), 
-		\hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER11 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER12 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER128 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER13 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER14 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER15 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER16 attribute), \hyperpage{23}
+		\hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER11 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER12 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER128 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER13 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER14 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER15 attribute), \hyperpage{31}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER16 attribute), \hyperpage{32}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER16384 attribute), 
-		\hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER17 attribute), \hyperpage{23}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER18 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER19 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER2 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER20 attribute), \hyperpage{24}
+		\hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER17 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER18 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER19 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER2 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER20 attribute), \hyperpage{32}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER2048 attribute), 
-		\hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER21 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER22 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER23 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER24 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER25 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER256 attribute), \hyperpage{24}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER26 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER27 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER28 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER29 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER3 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER30 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER31 attribute), \hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER32 attribute), \hyperpage{25}
+		\hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER21 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER22 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER23 attribute), \hyperpage{32}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER24 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER25 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER256 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER26 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER27 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER28 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER29 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER3 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER30 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER31 attribute), \hyperpage{33}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER32 attribute), \hyperpage{33}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER32768 attribute), 
-		\hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER4 attribute), \hyperpage{25}
+		\hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER4 attribute), \hyperpage{34}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER4096 attribute), 
-		\hyperpage{25}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER5 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER512 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER6 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER64 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER7 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER8 attribute), \hyperpage{26}
+		\hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER5 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER512 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER6 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER64 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER7 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER8 attribute), \hyperpage{34}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER8192 attribute), 
-		\hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER9 attribute), \hyperpage{26}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR0 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR1 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR10 attribute), \hyperpage{27}
+		\hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_INTEGER9 attribute), \hyperpage{34}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR0 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR1 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR10 attribute), \hyperpage{35}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR1024 attribute), 
-		\hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR11 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR12 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR128 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR13 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR14 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR15 attribute), \hyperpage{27}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR16 attribute), \hyperpage{27}
+		\hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR11 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR12 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR128 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR13 attribute), \hyperpage{35}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR14 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR15 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR16 attribute), \hyperpage{36}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR16384 attribute), 
-		\hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR17 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR18 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR19 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR2 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR20 attribute), \hyperpage{28}
+		\hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR17 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR18 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR19 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR2 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR20 attribute), \hyperpage{36}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR2048 attribute), 
-		\hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR21 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR22 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR23 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR24 attribute), \hyperpage{28}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR25 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR256 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR26 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR27 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR28 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR29 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR3 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR30 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR31 attribute), \hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR32 attribute), \hyperpage{29}
+		\hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR21 attribute), \hyperpage{36}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR22 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR23 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR24 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR25 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR256 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR26 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR27 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR28 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR29 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR3 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR30 attribute), \hyperpage{37}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR31 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR32 attribute), \hyperpage{38}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR32768 attribute), 
-		\hyperpage{29}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR4 attribute), \hyperpage{30}
+		\hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR4 attribute), \hyperpage{38}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR4096 attribute), 
-		\hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR5 attribute), \hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR512 attribute), \hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR6 attribute), \hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR64 attribute), \hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR7 attribute), \hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR8 attribute), \hyperpage{30}
+		\hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR5 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR512 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR6 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR64 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR7 attribute), \hyperpage{38}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR8 attribute), \hyperpage{38}
   \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR8192 attribute), 
-		\hyperpage{30}
-  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR9 attribute), \hyperpage{30}
-  \item MYSQL\_BOOL (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_DATE (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_ENUM (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_INTEGER (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_INTEGER0 (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_INTEGER1 (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_INTEGER10 (class in nanostream.utils.data\_structures), \hyperpage{22}
-  \item MYSQL\_INTEGER1024 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER11 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER12 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER128 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER13 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER14 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER15 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER16 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER16384 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER17 (class in nanostream.utils.data\_structures), \hyperpage{23}
-  \item MYSQL\_INTEGER18 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER19 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER2 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER20 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER2048 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER21 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER22 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER23 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER24 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER25 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER256 (class in nanostream.utils.data\_structures), \hyperpage{24}
-  \item MYSQL\_INTEGER26 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER27 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER28 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER29 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER3 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER30 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER31 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER32 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER32768 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER4 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER4096 (class in nanostream.utils.data\_structures), \hyperpage{25}
-  \item MYSQL\_INTEGER5 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER512 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER6 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER64 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER7 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER8 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER8192 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER9 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_INTEGER\_BASE (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item mysql\_type() (in module nanostream.utils.data\_structures), \hyperpage{31}
-  \item MYSQL\_VARCHAR (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_VARCHAR0 (class in nanostream.utils.data\_structures), \hyperpage{26}
-  \item MYSQL\_VARCHAR1 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR10 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR1024 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR11 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR12 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR128 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR13 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR14 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR15 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR16 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR16384 (class in nanostream.utils.data\_structures), \hyperpage{27}
-  \item MYSQL\_VARCHAR17 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR18 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR19 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR2 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR20 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR2048 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR21 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR22 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR23 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR24 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR25 (class in nanostream.utils.data\_structures), \hyperpage{28}
-  \item MYSQL\_VARCHAR256 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR26 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR27 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR28 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR29 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR3 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR30 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR31 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR32 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR32768 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR4 (class in nanostream.utils.data\_structures), \hyperpage{29}
-  \item MYSQL\_VARCHAR4096 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR5 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR512 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR6 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR64 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR7 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR8 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR8192 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR9 (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MYSQL\_VARCHAR\_BASE (class in nanostream.utils.data\_structures), \hyperpage{30}
-  \item MySQLTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{31}
+		\hyperpage{39}
+  \item max\_length (nanostream.utils.data\_structures.MYSQL\_VARCHAR9 attribute), \hyperpage{39}
+  \item monitor\_futures() (nanostream.civis\_nodes.SendToCivis method), \hyperpage{29}
+  \item MYSQL\_BOOL (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item MYSQL\_DATE (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item MYSQL\_ENUM (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item MYSQL\_INTEGER (class in nanostream.utils.data\_structures), \hyperpage{30}
+  \item MYSQL\_INTEGER0 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER1 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER10 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER1024 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER11 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER12 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER128 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER13 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER14 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER15 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER16 (class in nanostream.utils.data\_structures), \hyperpage{31}
+  \item MYSQL\_INTEGER16384 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER17 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER18 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER19 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER2 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER20 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER2048 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER21 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER22 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER23 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER24 (class in nanostream.utils.data\_structures), \hyperpage{32}
+  \item MYSQL\_INTEGER25 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER256 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER26 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER27 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER28 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER29 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER3 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER30 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER31 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER32 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER32768 (class in nanostream.utils.data\_structures), \hyperpage{33}
+  \item MYSQL\_INTEGER4 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER4096 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER5 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER512 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER6 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER64 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER7 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER8 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER8192 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER9 (class in nanostream.utils.data\_structures), \hyperpage{34}
+  \item MYSQL\_INTEGER\_BASE (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item mysql\_type() (in module nanostream.utils.data\_structures), \hyperpage{40}
+  \item MYSQL\_VARCHAR (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR0 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR1 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR10 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR1024 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR11 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR12 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR128 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR13 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR14 (class in nanostream.utils.data\_structures), \hyperpage{35}
+  \item MYSQL\_VARCHAR15 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR16 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR16384 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR17 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR18 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR19 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR2 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR20 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR2048 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR21 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR22 (class in nanostream.utils.data\_structures), \hyperpage{36}
+  \item MYSQL\_VARCHAR23 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR24 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR25 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR256 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR26 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR27 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR28 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR29 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR3 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR30 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR31 (class in nanostream.utils.data\_structures), \hyperpage{37}
+  \item MYSQL\_VARCHAR32 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR32768 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR4 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR4096 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR5 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR512 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR6 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR64 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR7 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR8 (class in nanostream.utils.data\_structures), \hyperpage{38}
+  \item MYSQL\_VARCHAR8192 (class in nanostream.utils.data\_structures), \hyperpage{39}
+  \item MYSQL\_VARCHAR9 (class in nanostream.utils.data\_structures), \hyperpage{39}
+  \item MYSQL\_VARCHAR\_BASE (class in nanostream.utils.data\_structures), \hyperpage{39}
+  \item MySQLTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{39}
 
   \indexspace
   \bigletter N
-  \item NanoNode (class in nanostream.node), \hyperpage{17}
-  \item nanostream.message.batch (module), \hyperpage{33}
-  \item nanostream.message.canary (module), \hyperpage{33}
-  \item nanostream.message.message (module), \hyperpage{33}
-  \item nanostream.message.poison\_pill (module), \hyperpage{33}
-  \item nanostream.message.trigger (module), \hyperpage{33}
-  \item nanostream.node (module), \hyperpage{15}
-  \item nanostream.node\_classes.network\_nodes (module), \hyperpage{31}
-  \item nanostream.node\_queue.queue (module), \hyperpage{33}
-  \item nanostream.utils.data\_structures (module), \hyperpage{21}
-  \item NanoStreamMessage (class in nanostream.message.message), \hyperpage{33}
-  \item NanoStreamQueue (class in nanostream.node\_queue.queue), \hyperpage{33}
-  \item no\_op() (in module nanostream.node), \hyperpage{21}
-  \item NothingToSeeHere (class in nanostream.node), \hyperpage{19}
+  \item NanoNode (class in nanostream.node), \hyperpage{23}
+  \item nanostream.civis\_nodes (module), \hyperpage{28}
+  \item nanostream.message.batch (module), \hyperpage{41}
+  \item nanostream.message.canary (module), \hyperpage{42}
+  \item nanostream.message.message (module), \hyperpage{41}
+  \item nanostream.message.poison\_pill (module), \hyperpage{41}
+  \item nanostream.message.trigger (module), \hyperpage{41}
+  \item nanostream.node (module), \hyperpage{21}
+  \item nanostream.node\_classes.network\_nodes (module), \hyperpage{40}
+  \item nanostream.node\_queue.queue (module), \hyperpage{42}
+  \item nanostream.utils.data\_structures (module), \hyperpage{29}
+  \item NanoStreamMessage (class in nanostream.message.message), \hyperpage{41}
+  \item NanoStreamQueue (class in nanostream.node\_queue.queue), \hyperpage{42}
+  \item no\_op() (in module nanostream.node), \hyperpage{28}
+  \item NothingToSeeHere (class in nanostream.node), \hyperpage{26}
 
   \indexspace
   \bigletter O
-  \item OKBLUE (nanostream.node.bcolors attribute), \hyperpage{20}
-  \item OKGREEN (nanostream.node.bcolors attribute), \hyperpage{20}
+  \item OKBLUE (nanostream.node.bcolors attribute), \hyperpage{27}
+  \item OKGREEN (nanostream.node.bcolors attribute), \hyperpage{27}
 
   \indexspace
   \bigletter P
-  \item PaginatedHttpGetRequest (class in nanostream.node\_classes.network\_nodes), \hyperpage{32}
-  \item Parameters (class in nanostream.node), \hyperpage{19}
-  \item PoisonPill (class in nanostream.message.poison\_pill), \hyperpage{33}
+  \item PaginatedHttpGetRequest (class in nanostream.node\_classes.network\_nodes), \hyperpage{40}
+  \item PoisonPill (class in nanostream.message.poison\_pill), \hyperpage{41}
   \item primitive\_to\_intermediate\_type() (in module nanostream.utils.data\_structures), 
-		\hyperpage{31}
-  \item PrimitiveTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{31}
-  \item PrinterOfThings (class in nanostream.node), \hyperpage{19}
-  \item process\_item() (nanostream.node.AggregateValues method), \hyperpage{15}
-  \item process\_item() (nanostream.node.BatchMessages method), \hyperpage{15}
-  \item process\_item() (nanostream.node.CSVReader method), \hyperpage{15}
-  \item process\_item() (nanostream.node.CSVToDictionaryList method), \hyperpage{15}
-  \item process\_item() (nanostream.node.Filter method), \hyperpage{16}
-  \item process\_item() (nanostream.node.GetEnvironmentVariables method), \hyperpage{16}
-  \item process\_item() (nanostream.node.InsertData method), \hyperpage{16}
-  \item process\_item() (nanostream.node.LocalFileReader method), \hyperpage{17}
-  \item process\_item() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item process\_item() (nanostream.node.PrinterOfThings method), \hyperpage{19}
-  \item process\_item() (nanostream.node.RandomSample method), \hyperpage{19}
-  \item process\_item() (nanostream.node.Remapper method), \hyperpage{19}
-  \item process\_item() (nanostream.node.SequenceEmitter method), \hyperpage{19}
-  \item process\_item() (nanostream.node.Serializer method), \hyperpage{19}
-  \item process\_item() (nanostream.node.SimpleTransforms method), \hyperpage{19}
-  \item process\_item() (nanostream.node.StreamingJoin method), \hyperpage{20}
-  \item process\_item() (nanostream.node.SubstituteRegex method), \hyperpage{20}
+		\hyperpage{40}
+  \item PrimitiveTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{39}
+  \item PrinterOfThings (class in nanostream.node), \hyperpage{26}
+  \item process\_item() (nanostream.civis\_nodes.CivisSQLExecute method), \hyperpage{28}
+  \item process\_item() (nanostream.civis\_nodes.CivisToCSV method), \hyperpage{28}
+  \item process\_item() (nanostream.civis\_nodes.EnsureCivisRedshiftTableExists method), 
+		\hyperpage{28}
+  \item process\_item() (nanostream.civis\_nodes.FindValueInRedshiftColumn method), \hyperpage{29}
+  \item process\_item() (nanostream.civis\_nodes.SendToCivis method), \hyperpage{29}
+  \item process\_item() (nanostream.node.AggregateValues method), \hyperpage{21}
+  \item process\_item() (nanostream.node.BatchMessages method), \hyperpage{21}
+  \item process\_item() (nanostream.node.CSVReader method), \hyperpage{21}
+  \item process\_item() (nanostream.node.CSVToDictionaryList method), \hyperpage{21}
+  \item process\_item() (nanostream.node.Filter method), \hyperpage{22}
+  \item process\_item() (nanostream.node.GetEnvironmentVariables method), \hyperpage{22}
+  \item process\_item() (nanostream.node.InsertData method), \hyperpage{22}
+  \item process\_item() (nanostream.node.LocalFileReader method), \hyperpage{23}
+  \item process\_item() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item process\_item() (nanostream.node.PrinterOfThings method), \hyperpage{26}
+  \item process\_item() (nanostream.node.RandomSample method), \hyperpage{26}
+  \item process\_item() (nanostream.node.Remapper method), \hyperpage{26}
+  \item process\_item() (nanostream.node.SequenceEmitter method), \hyperpage{26}
+  \item process\_item() (nanostream.node.Serializer method), \hyperpage{26}
+  \item process\_item() (nanostream.node.SimpleTransforms method), \hyperpage{26}
+  \item process\_item() (nanostream.node.StreamingJoin method), \hyperpage{27}
+  \item process\_item() (nanostream.node.SubstituteRegex method), \hyperpage{27}
   \item process\_item() (nanostream.node\_classes.network\_nodes.HttpGetRequest method), 
-		\hyperpage{32}
+		\hyperpage{40}
   \item process\_item() (nanostream.node\_classes.network\_nodes.HttpGetRequestPaginator method), 
-		\hyperpage{32}
-  \item processor() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item put() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{34}
-  \item python\_cast\_function (nanostream.utils.data\_structures.BOOL attribute), \hyperpage{21}
+		\hyperpage{40}
+  \item processor\_bak() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item put() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{42}
+  \item python\_cast\_function (nanostream.utils.data\_structures.BOOL attribute), \hyperpage{29}
   \item python\_cast\_function (nanostream.utils.data\_structures.DataType attribute), 
-		\hyperpage{21}
-  \item python\_cast\_function (nanostream.utils.data\_structures.FLOAT attribute), \hyperpage{21}
+		\hyperpage{29}
+  \item python\_cast\_function (nanostream.utils.data\_structures.FLOAT attribute), \hyperpage{30}
   \item python\_cast\_function (nanostream.utils.data\_structures.INTEGER attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_BOOL attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_ENUM attribute), 
-		\hyperpage{22}
+		\hyperpage{30}
   \item python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_INTEGER\_BASE attribute), 
-		\hyperpage{26}
+		\hyperpage{35}
   \item python\_cast\_function (nanostream.utils.data\_structures.MYSQL\_VARCHAR\_BASE attribute), 
-		\hyperpage{31}
-  \item python\_cast\_function (nanostream.utils.data\_structures.STRING attribute), \hyperpage{31}
+		\hyperpage{39}
+  \item python\_cast\_function (nanostream.utils.data\_structures.STRING attribute), \hyperpage{39}
   \item python\_cast\_function() (nanostream.utils.data\_structures.DATETIME method), 
-		\hyperpage{21}
+		\hyperpage{29}
   \item python\_cast\_function() (nanostream.utils.data\_structures.MYSQL\_DATE method), 
-		\hyperpage{22}
-  \item PythonTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{31}
+		\hyperpage{30}
+  \item PythonTypeSystem (class in nanostream.utils.data\_structures), \hyperpage{39}
 
   \indexspace
   \bigletter R
-  \item RandomSample (class in nanostream.node), \hyperpage{19}
-  \item Remapper (class in nanostream.node), \hyperpage{19}
+  \item RandomSample (class in nanostream.node), \hyperpage{26}
+  \item Remapper (class in nanostream.node), \hyperpage{26}
   \item responses() (nanostream.node\_classes.network\_nodes.PaginatedHttpGetRequest method), 
-		\hyperpage{32}
-  \item Row (class in nanostream.utils.data\_structures), \hyperpage{31}
+		\hyperpage{41}
+  \item Row (class in nanostream.utils.data\_structures), \hyperpage{39}
 
   \indexspace
   \bigletter S
-  \item SequenceEmitter (class in nanostream.node), \hyperpage{19}
-  \item Serializer (class in nanostream.node), \hyperpage{19}
-  \item setup() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item setup() (nanostream.node.StreamMySQLTable method), \hyperpage{20}
-  \item SimpleTransforms (class in nanostream.node), \hyperpage{19}
-  \item sink\_list() (nanostream.node.DynamicClassMediator method), \hyperpage{16}
-  \item source\_list() (nanostream.node.DynamicClassMediator method), \hyperpage{16}
-  \item start() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item stream() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item StreamingJoin (class in nanostream.node), \hyperpage{20}
-  \item StreamMySQLTable (class in nanostream.node), \hyperpage{19}
-  \item STRING (class in nanostream.utils.data\_structures), \hyperpage{31}
-  \item SubstituteRegex (class in nanostream.node), \hyperpage{20}
+  \item SendToCivis (class in nanostream.civis\_nodes), \hyperpage{29}
+  \item SequenceEmitter (class in nanostream.node), \hyperpage{26}
+  \item Serializer (class in nanostream.node), \hyperpage{26}
+  \item setup() (nanostream.civis\_nodes.SendToCivis method), \hyperpage{29}
+  \item setup() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item setup() (nanostream.node.StreamMySQLTable method), \hyperpage{27}
+  \item SimpleTransforms (class in nanostream.node), \hyperpage{26}
+  \item sink\_list() (nanostream.node.DynamicClassMediator method), \hyperpage{22}
+  \item size() (nanostream.node\_queue.queue.NanoStreamQueue method), \hyperpage{42}
+  \item source\_list() (nanostream.node.DynamicClassMediator method), \hyperpage{22}
+  \item start() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item stream() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item StreamingJoin (class in nanostream.node), \hyperpage{27}
+  \item StreamMySQLTable (class in nanostream.node), \hyperpage{27}
+  \item STRING (class in nanostream.utils.data\_structures), \hyperpage{39}
+  \item SubstituteRegex (class in nanostream.node), \hyperpage{27}
 
   \indexspace
   \bigletter T
-  \item template\_class() (in module nanostream.node), \hyperpage{21}
-  \item terminate\_pipeline() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item thread\_monitor() (nanostream.node.NanoNode method), \hyperpage{18}
-  \item time\_running (nanostream.node.NanoNode attribute), \hyperpage{19}
-  \item TimeWindowAccumulator (class in nanostream.node), \hyperpage{20}
+  \item template\_class() (in module nanostream.node), \hyperpage{28}
+  \item terminate\_pipeline() (nanostream.node.NanoNode method), \hyperpage{25}
+  \item thread\_monitor() (nanostream.node.NanoNode method), \hyperpage{26}
+  \item time\_running (nanostream.node.NanoNode attribute), \hyperpage{26}
+  \item TimeWindowAccumulator (class in nanostream.node), \hyperpage{27}
   \item to\_intermediate\_type() (nanostream.utils.data\_structures.DataType method), 
-		\hyperpage{21}
-  \item to\_python() (nanostream.utils.data\_structures.DataType method), \hyperpage{21}
-  \item Trigger (class in nanostream.message.trigger), \hyperpage{33}
+		\hyperpage{29}
+  \item to\_python() (nanostream.utils.data\_structures.DataType method), \hyperpage{30}
+  \item Trigger (class in nanostream.message.trigger), \hyperpage{41}
   \item type\_mapping() (nanostream.utils.data\_structures.DataSourceTypeSystem static method), 
-		\hyperpage{21}
+		\hyperpage{29}
   \item type\_mapping() (nanostream.utils.data\_structures.MySQLTypeSystem static method), 
-		\hyperpage{31}
-  \item type\_system (nanostream.utils.data\_structures.DataType attribute), \hyperpage{21}
+		\hyperpage{39}
+  \item type\_system (nanostream.utils.data\_structures.DataType attribute), \hyperpage{30}
 
   \indexspace
   \bigletter U
-  \item UNDERLINE (nanostream.node.bcolors attribute), \hyperpage{20}
+  \item UNDERLINE (nanostream.node.bcolors attribute), \hyperpage{27}
 
   \indexspace
   \bigletter W
-  \item WARNING (nanostream.node.bcolors attribute), \hyperpage{20}
+  \item WARNING (nanostream.node.bcolors attribute), \hyperpage{27}
 
 \end{sphinxtheindex}
