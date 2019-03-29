@@ -77,7 +77,10 @@ def milliseconds_epoch_to_datetime(milliseconds_epoch):
         milliseconds_epoch = int(milliseconds_epoch)
     except:
         logging.info(
-            "milliseconds exception: " + str(type(milliseconds_epoch))
+            "milliseconds exception: "
+            + str(type(milliseconds_epoch))
+            + " "
+            + str(milliseconds_epoch)
         )
         return milliseconds_epoch
     logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))

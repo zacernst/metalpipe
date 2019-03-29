@@ -37,6 +37,7 @@ from metalpipe.message.canary import Canary
 from metalpipe.utils.set_attributes import set_kwarg_attributes
 from metalpipe.utils.data_structures import Row, MySQLTypeSystem
 from metalpipe.utils import data_structures as ds
+
 # from metalpipe.metalpipe_recorder import RedisFixturizer
 from metalpipe.utils.helpers import (
     load_function,
@@ -215,6 +216,7 @@ class MetalNode:
         self.throttle = throttle
         self.get_runtime_attrs = get_runtime_attrs
         self.get_runtime_attrs_args = get_runtime_attrs_args or tuple()
+        self.cleanup_called = False
         self.get_runtime_attrs_kwargs = get_runtime_attrs_kwargs or {}
         self.runtime_attrs_destinations = runtime_attrs_destinations or {}
         self.key = key
@@ -234,7 +236,6 @@ class MetalNode:
         self.summary = summary
         self.prometheus_objects = None
         self.logjam_score = {"polled": 0.0, "logjam": 0.0}
-        self.finished_cleanup = False
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -354,10 +355,7 @@ class MetalNode:
         return message_content
 
     def wait_for_pipeline_finish(self):
-        while (
-            not hasattr(self, "pipeline_finished")
-            or not self.pipeline_finished
-        ):
+        while not self.pipeline_finished:
             time.sleep(SHORT_DELAY)
 
     def start(self):
@@ -423,7 +421,6 @@ class MetalNode:
                 if self.fixturizer:
                     self.fixturizer.record_source_node(self, output)
                 yield output, None
-            # self.finished_cleanup = True  # TODO: Check this is correct
         else:
             logging.debug(
                 "About to enter loop for reading input queue in {node}.".format(
@@ -490,25 +487,17 @@ class MetalNode:
                             self.finished = break_test_result
 
                 # Check input node(s) here to see if they're all ``.finished``
-                self.finished = all(
-                    node.finished_cleanup for node in self.input_node_list
-                ) and all(queue.empty for queue in self.input_queue_list)
-            logging.info(
+            self.log_info(
                 "checking whether cleanup is a generator. " + str(self.name)
             )
-            cleanup_output = self.cleanup()
+            cleanup_output = self._cleanup()
 
             if isinstance(cleanup_output, (types.GeneratorType,)):
-                logging.info("GeneratorType found. Calling cleanup.")
+                self.log_info("GeneratorType found. Calling cleanup.")
                 for i in cleanup_output:
                     yield i, one_item
             else:
                 pass
-            self.finished_cleanup = True
-            logging.debug(
-                "Setting finished_cleanup to True: "
-                + str(self.finished_cleanup)
-            )
 
     def cleanup(self):
         """
@@ -516,7 +505,13 @@ class MetalNode:
         necessary when the node is stopped, then the node's class should provide
         a ``cleanup`` method. By default, the method is just a logging statement.
         """
+        pass
+
+    def _cleanup(self):
         self.log_info("Cleanup called after shutdown.")
+        self.cleanup()
+        self.log_info("Cleanup executed.")
+        self.cleanup_called = True
 
     def log_info(self, message=""):
         logging.debug(
@@ -533,6 +528,7 @@ class MetalNode:
         Args:
            error (bool): Not yet implemented.
         """
+        self.log_info("terminate_pipeline called..." + str(self.name))
         for node in self.all_connected():
             if not node.finished:
                 node.stopped_at = datetime.datetime.now()
@@ -825,6 +821,12 @@ class MetalNode:
                 dot.edge(node.name, target_node.name)
         dot.render("pipeline_drawing.gv", view=True)
 
+    @property
+    def pipeline_finished(self):
+        finished = all(node.finished for node in self.all_connected())
+        self.log_info("finished. " + str(self.name))
+        return finished
+
     def thread_monitor(self, max_time=None):
         """
         This function loops over all of the threads in the pipeline, checking
@@ -833,9 +835,6 @@ class MetalNode:
         """
 
         counter = 0
-        self.pipeline_finished = all(
-            node.finished_cleanup for node in self.all_connected()
-        )
         error = False
         time_started = time.time()
 
@@ -899,16 +898,12 @@ class MetalNode:
                             node.time_running,
                         ]
                     )
-                logging.info("\n" + str(table))
+                self.log_info("\n" + str(table))
                 if error:
                     logging.error("Terminating due to error.")
                     self.terminate_pipeline(error=True)
                     self.pipeline_finished = True
                     break
-
-            self.pipeline_finished = error or all(
-                node.finished_cleanup for node in self.all_connected()
-            )
 
             # Check for blocked nodes
             for node in self.all_connected():
@@ -939,17 +934,17 @@ class MetalNode:
                     )
                 )
 
-        logging.info("Pipeline finished.")
-        logging.info("Sending terminate signal to nodes.")
-        logging.info("Messages that are being processed will complete.")
+        self.log_info("Pipeline finished.")
+        self.log_info("Sending terminate signal to nodes.")
+        self.log_info("Messages that are being processed will complete.")
 
         # HERE
 
         if error:
+            self.log_info("Abnormal exit")
             sys.exit(1)
-            logging.info("Abnormal exit")
         else:
-            logging.info("Normal exit.")
+            self.log_info("Normal exit.")
             sys.exit(0)
 
 
@@ -1711,7 +1706,7 @@ class BatchMessages(MetalNode):
         yield out
 
     def cleanup(self):
-        logging.info(self.name + " in cleanup, sending remainder of batch...")
+        self.log_info(self.name + " in cleanup, sending remainder of batch...")
         yield self.batch_list
 
 

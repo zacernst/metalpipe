@@ -57,7 +57,7 @@ pytest==3.8.1
 python-dateutil==2.7.3
 python-dotenv==0.6.0
 # pytz==2018.5
-PyYAML==3.13
+pyyaml<=3.99,>=3.0
 redis==3.2.1
 requests==2.19.1
 requests-toolbelt==0.8.0
@@ -85,3 +85,4 @@ ZConfig==3.4.0
 ZODB==5.5.1
 zodbpickle==1.0.3
 zope.interface==4.6.0
+black==19.3b0

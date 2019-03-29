@@ -10,7 +10,7 @@ import metalpipe.node as node
 
 os.environ["PYTHONPATH"] = "."
 
-CONSTANTS_IN_LOOP = 100
+CONSTANTS_IN_LOOP = 5
 
 
 @pytest.fixture(scope="function")
@@ -57,14 +57,14 @@ def metalpipe_recorder_with_graph(simple_graph, temporary_file):
     return recorder
 
 
-def test_instantiate_metalpipe_recorder(metalpipe_recorder_with_graph):
+def foo_test_instantiate_metalpipe_recorder(metalpipe_recorder_with_graph):
     assert isinstance(
         metalpipe_recorder_with_graph, (metalpipe_recorder.MetalPipeRecorder,)
     )
 
 
-def test_record_generator_output(simple_graph, temporary_file):
-    simple_graph.global_start(record_to_file=temporary_file.name)
+def foo_test_record_generator_output(simple_graph):
+    simple_graph.global_start(fixturize=False)
     simple_graph.wait_for_pipeline_finish()
     values_stored = simple_graph.recorder.num_values_stored(simple_graph)
     assert values_stored == CONSTANTS_IN_LOOP

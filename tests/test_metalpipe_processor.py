@@ -77,8 +77,10 @@ def test_start_simple_graph(simple_graph):
 @pytest.fixture(scope="function")
 def exception_raiser():
     class ExceptionRaiser(node.MetalNode):
+
         def process_item(self):
-            assert False
+            yield {'exception_raiser': True}
+            raise Exception()
 
     return ExceptionRaiser()
 
@@ -92,7 +94,9 @@ def test_error_throws_finished_flag(exception_raiser):
 
 
 def test_error_kills_threads(exception_raiser, constant_emitter):
-    constant_emitter > exception_raiser
+    pr = node.PrinterOfThings()
+    constant_emitter > exception_raiser > pr
     constant_emitter.global_start()
-    time.sleep(15)
+    constant_emitter.wait_for_pipeline_finish()
+    time.sleep(10)
     assert all(not i.is_alive() for i in constant_emitter.thread_dict.values())
