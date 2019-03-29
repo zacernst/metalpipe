@@ -14,9 +14,11 @@ pipelines with a minimum amount of custom code.
    :caption: Contents:
 
    Overview <overview>
+   Quickstart <quickstart>
+   Configuration <configuration>
+   Node and Data Lifecycle <implementation>
    Monitoring <monitoring>
    Treehorn <treehorn>
-   Node and Data Lifecycle <implementation>
    API documentation <api>
    License <license>
 

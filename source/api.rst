@@ -27,11 +27,6 @@ API Documentation
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: metalpipe.message.poison_pill
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: metalpipe.message.trigger
    :members:
    :undoc-members:
