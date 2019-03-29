@@ -57,17 +57,28 @@ class SendToCivis(MetalNode):
         self.via_staging_table = via_staging_table
         self.block = block
         self.remap = remap
+        self.api_client = civis.APIClient()
         self.recorded_tables = recorded_tables
 
         self.columns = columns
+
+        super(SendToCivis, self).__init__(**kwargs)
 
         if self.via_staging_table:
             self.staging_table = "_".join(
                 [
                     table,
                     "staging",
-                    hashlib.md5(bytes(str(random.random()), 'ascii')).hexdigest()[:HASH_SUFFIX_LENGTH],
+                    hashlib.md5(
+                        bytes(str(random.random()), "ascii")
+                    ).hexdigest()[:HASH_SUFFIX_LENGTH],
                 ]
+            )
+            logging.info(
+                "staging table for: "
+                + self.name
+                + " "
+                + str(self.staging_table)
             )
         else:
             self.staging_table = staging_table
@@ -75,7 +86,6 @@ class SendToCivis(MetalNode):
         if self.civis_api_key is None and len(self.civis_api_key) == 0:
             raise Exception("Could not get a Civis API key.")
 
-        super(SendToCivis, self).__init__(**kwargs)
         self.monitor_futures_thread = threading.Thread(
             target=SendToCivis.monitor_futures, args=(self,), daemon=True
         )
@@ -98,7 +108,9 @@ class SendToCivis(MetalNode):
                 """DROP TABLE IF EXISTS "{schema}"."{staging_table}";"""
             ).format(schema=self.schema, staging_table=self.staging_table)
             logging.debug("Dropping staging table if it exists.")
-            fut = civis.io.query_civis(sql_query, self.database)
+            fut = civis.io.query_civis(
+                sql_query, database=self.database, client=self.api_client
+            )
             _ = fut.result()
             sql_query = (
                 """CREATE TABLE "{schema}"."{staging_table}" (LIKE """
@@ -108,7 +120,9 @@ class SendToCivis(MetalNode):
                 staging_table=self.staging_table,
                 production_table=self.table,
             )
-            fut = civis.io.query_civis(sql_query, self.database)
+            fut = civis.io.query_civis(
+                sql_query, database=self.database, client=self.api_client
+            )
             _ = fut.result()
 
     def cleanup(self):
@@ -117,10 +131,11 @@ class SendToCivis(MetalNode):
         into the production table.
         TODO: options for merge, upsert, append, drop
         """
+        logging.info("In cleanup for civis node...")
         if self.via_staging_table:
             sql_query = (
-                """INSERT INTO "{schema}"."{production_table}" SELECT * FROM """
-                """"{schema}"."{staging_table}";"""
+                """ INSERT INTO "{schema}"."{production_table}" SELECT * FROM """
+                """ "{schema}"."{staging_table}";"""
             ).format(
                 schema=self.schema,
                 production_table=self.table,
@@ -128,8 +143,15 @@ class SendToCivis(MetalNode):
             )
             logging.info("In cleanup -- copying staging table into production")
             logging.info(sql_query)
-            fut = civis.io.query_civis(sql_query, self.database)
-            _ = fut.result()
+            fut = civis.io.query_civis(
+                sql_query,
+                database=self.database,
+                client=self.api_client,
+                hidden=False,
+            )
+            result = fut.result()
+            logging.info("cleanup result: " + str(result))
+            # import pdb; pdb.set_trace()
             sql_query = """DROP TABLE "{schema}"."{staging_table}";""".format(
                 schema=self.schema, staging_table=self.staging_table
             )
@@ -138,6 +160,13 @@ class SendToCivis(MetalNode):
                     staging_table=self.staging_table
                 )
             )
+            fut = civis.io.query_civis(
+                sql_query,
+                database=self.database,
+                client=self.api_client,
+                hidden=False,
+            )
+            result = fut.result()
         else:
             pass
 
@@ -172,7 +201,7 @@ class SendToCivis(MetalNode):
                 )
                 if future_obj._state != "RUNNING":
                     if future_obj.failed():
-                        logging.debug(
+                        logging.info(
                             "failure in SendToCivis: "
                             + str(future_obj.exception())
                         )
@@ -240,6 +269,7 @@ class SendToCivis(MetalNode):
                         self.full_table_name,
                         max_errors=self.max_errors,
                         headers=True,
+                        client=self.api_client,
                         existing_table_rows=self.existing_table_rows,
                     )
                     table_id = uuid.uuid4()
@@ -261,6 +291,7 @@ class EnsureCivisRedshiftTableExists(MetalNode):
         on_failure="exit",
         table=None,
         schema=None,
+        database=None,
         columns=None,
         block=True,
         **kwargs
@@ -296,7 +327,7 @@ class EnsureCivisRedshiftTableExists(MetalNode):
             )
         )
         logging.debug("Ensuring table exists -- " + create_statement)
-        fut = civis.io.query_civis(create_statement, "Greenpeace")
+        fut = civis.io.query_civis(create_statement, database=self.database)
         _ = fut.result()
 
         yield columns_spec
@@ -318,6 +349,7 @@ class FindValueInRedshiftColumn(MetalNode):
         self.table = table
         self.schema = schema
         self.database = database
+        self.api_client = civis.APIClient()
         self.column = column
         self.database = database
         self.choice = choice.upper()
@@ -339,7 +371,9 @@ class FindValueInRedshiftColumn(MetalNode):
             column=self.column,
             choice=self.choice.upper(),
         )
-        fut = civis.io.query_civis(create_statement, self.database)
+        fut = civis.io.query_civis(
+            create_statement, database=self.database, client=self.api_client
+        )
         result = fut.result()
         value = (
             result["result_rows"][0][0]
@@ -372,6 +406,7 @@ class CivisSQLExecute(MetalNode):
         self.query_dict = query_dict or {}
         self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
         self.dummy_run = dummy_run
+        self.api_client = civis.APIClient()
         self.database = database
         self.returned_columns = returned_columns
 
@@ -388,7 +423,9 @@ class CivisSQLExecute(MetalNode):
         sql_query = sql_query.format_map(SafeMap(**(self.message or {})))
         logging.debug(sql_query)
         if not self.dummy_run:
-            fut = civis.io.query_civis(sql_query, self.database)
+            fut = civis.io.query_civis(
+                sql_query, database=self.database, client=self.api_client
+            )
             result = fut.result()
         else:
             logging.debug("Not querying Redshift due to `dummy run`")
@@ -468,5 +505,6 @@ if __name__ == "__main__":
         "staging.email_raw",
         max_errors=0,
         headers=True,
+        client=self.api_client,
         existing_table_rows="append",
     )

@@ -79,9 +79,9 @@ def load_pipeline(config_file, module_paths=None):
     return node_dict
 
 
-def run_pipeline(config_file, module_paths=None):
+def run_pipeline(config_file, module_paths=None, max_time=None):
     node_dict = load_pipeline(config_file, module_paths=module_paths)
-    list(node_dict.values())[0].global_start()
+    list(node_dict.values())[0].global_start(max_time=max_time)
 
 
 def draw_pipeline(config_file, module_paths=None):
@@ -95,21 +95,49 @@ if __name__ == '__main__':
     parser.add_argument(
         '--filename',
         action='store',
-        help='Path to configuration file.')
+        help='Path to configuration file')
     parser.add_argument(
         '--module-paths',
         action='store',
-        help='Additional paths for loading modules.')
+        help='Additional paths for loading modules')
+    parser.add_argument(
+        '--override-args',
+        action='store',
+        default=None,
+        help='Values to override config and message values')
+    parser.add_argument(
+        '--max-time',
+        action='store',
+        default=None,
+        type=int,
+        help='Maximum number of seconds for pipeline to run')
+    parser.add_argument(
+        '--record-to-redis',
+        action='store',
+        default=None,
+        type=str,
+        help='Record messages to a file')
+    parser.add_argument(
+        '--redis-host',
+        action='store',
+        default=None,
+        help='Redis hostname')
+    # node_name:optionpath.optionpath:value,
     options = parser.parse_args()
+    if options.override_args is not None:
+        for option_tuple in options.override_args.split(','):
+            node_name, option_path, option_value = option_tuple.split(':')
+            option_path = option_path.split('.')
+            print(node_name, option_path, option_value)
 
     # Run a pipeline
     if options.command == 'run':
         if options.filename is None:
             raise Exception('Filename is required for run')
-        run_pipeline(options.filename, module_paths=options.module_paths)
-    # Dump the config file somewhere
+        run_pipeline(options.filename, module_paths=options.module_paths, max_time=options.max_time)
     elif options.command == 'draw':
         draw_pipeline(options.filename, module_paths=options.module_paths)
+    # Dump the config file somewhere
     elif options.command == 'dump':
         raise NotImplementedError('Dump is not yet implemented')
     else:

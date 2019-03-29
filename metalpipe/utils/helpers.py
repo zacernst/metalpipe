@@ -9,13 +9,24 @@ import copy
 import types
 import time
 import logging
+import importlib
 import datetime
 import pickle
 import hashlib
 import uuid
+import pickle
+import base64
 
 
 UNIX_EPOCH = datetime.datetime(month=1, year=1970, day=1)
+
+
+def package(thing):
+    return base64.b64encode(pickle.dumps(thing))
+
+
+def unpackage(thing):
+    return pickle.loads(base64.b64decode(thing))
 
 
 def list_to_dict(some_list, list_of_keys):
@@ -23,6 +34,15 @@ def list_to_dict(some_list, list_of_keys):
         raise Exception("Length of list elements and key list must be equal.")
     out = {list_of_keys[index]: item for index, item in enumerate(some_list)}
     return out
+
+
+def load_function(function_name):
+    components = function_name.split("__")
+    module = ".".join(components[:-1])
+    function_name = components[-1]
+    module = importlib.import_module(module)
+    function = getattr(module, function_name)
+    return function
 
 
 def timestamp_to_redshift(timestamp):
@@ -51,7 +71,14 @@ def string_to_datetime(timestamp):
 
 
 def milliseconds_epoch_to_datetime(milliseconds_epoch):
-    if isinstance(milliseconds_epoch, (datetime.datetime, str)):
+    if isinstance(milliseconds_epoch, (datetime.datetime,)):
+        return milliseconds_epoch
+    try:
+        milliseconds_epoch = int(milliseconds_epoch)
+    except:
+        logging.info(
+            "milliseconds exception: " + str(type(milliseconds_epoch))
+        )
         return milliseconds_epoch
     logging.debug("milliseconds_epoch_to_datetime: " + str(milliseconds_epoch))
     out = UNIX_EPOCH + datetime.timedelta(
@@ -181,7 +208,10 @@ def now_milliseconds():
 
 
 def two_weeks_ago():
-    return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
+    return (
+        datetime.datetime(year=2019, month=1, day=1) - UNIX_EPOCH
+    ).total_seconds() * 1000
+    # return str(int(time.time() * 1000 - (30 * (24 * 60 * 60 * 1000))))
 
 
 def now_redshift():
@@ -194,6 +224,10 @@ def now_datetime():
 
 def two_weeks_ago_datetime():
     return datetime.datetime.now() - datetime.timedelta(days=14)
+
+
+def january_1_2019():
+    return datetime.datetime(year=2016, month=1, day=1)
 
 
 def datetime_to_redshift(datetime_obj):
@@ -313,11 +347,21 @@ def aggregate_values(dictionary, target_path, values=False):
     aggregated_values = []
     for path in matching_tail_paths(target_path, dictionary):
         current_value = get_value(dictionary, path)
-        aggregated_values.append(
-            list(current_value.values()) if values else current_value
-        )
+        try:
+            aggregated_values.append(
+                list(current_value.values()) if values else current_value
+            )
+        except AttributeError:
+            logging.debug(
+                "Attribute error in aggregate values. No list returned."
+            )
+
     logging.debug("aggregated_values: " + str(aggregated_values))
-    return aggregated_values if not values else aggregated_values[0]
+    try:
+        out = aggregated_values if not values else aggregated_values[0]
+    except IndexError:
+        out = []
+    return out
 
 
 class UberDict(dict):
@@ -368,7 +412,6 @@ if __name__ == "__main__":
     while counter < 100:
         replace_by_path(d, ["vid"], target_value="hithere")
         counter += 1
-        print(counter)
     import random
 
     logging.basicConfig(level=logging.debug)
