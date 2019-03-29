@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/zacernst/metalpipe.svg?branch=master)](https://travis-ci.org/zacernst/nanostream)
+[![Build Status](https://travis-ci.org/zacernst/metalpipe.svg?branch=master)](https://travis-ci.org/zacernst/metalpipe)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![Readthedocs](https://readthedocs.org/projects/metalpipe/badge/)](https://metalpipe.readthedocs.io/en/latest/#)
 
