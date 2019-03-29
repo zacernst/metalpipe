@@ -62,6 +62,10 @@ class PaginatedHttpGetRequest:
         self.additional_data_test = additional_data_test
 
     def get_with_retry(self, url, error_on_none=True, **kwargs):
+        '''
+        Simple method for making requests from flaky endpoints.
+        '''
+
         error_counter = 0
         success = False
         hibernate = 1.0
@@ -260,13 +264,13 @@ class HttpGetRequestPaginator(MetalNode):
     are additional results, and making additional calls if necessary. A typical
     case is to have an HTTP request something like this:
 
-    ::
+    .. code-block:: none
 
         http://www.someapi.com/endpoint_name?resultpage=0
 
     with a response like:
 
-    ::
+    .. code-block:: none
 
         {"data": "something", "additional_pages": true, "next_page": 1}
 
@@ -275,7 +279,7 @@ class HttpGetRequestPaginator(MetalNode):
     the next request for retrieving the right page of results (``next_page``).
     So the next GET request would be:
 
-    ::
+    .. code-block:: none
 
         http://www.someapi.com/endpoint_name?resultpage=1
 
@@ -283,26 +287,54 @@ class HttpGetRequestPaginator(MetalNode):
 
     In order to use this node class, you'll need to provide arguments that
     tell the node where to look for the equivalent of ``additional_pages``
-    and ``next_page``. These parameters are called ```additional_data_key``
-    and ``pagination_key``, respectively. Like all keypaths in
-    ``MetalPipe``, these are specified as a list of strings, as in
-    ``["path", "to", "the", "key"]``.
+    and ``next_page``.
 
-    By default, the node will infer that there are additional page of results
-    if the value of ``additional_data_key`` is ``True``. In a typical REST
-    API, the value of ``additional_data_key`` is passed to the next response.
-    The ``HttpGetRequestPaginator`` node does this by storing the value of
-    ``additional_data_key`` in the message object under the
-    ``pagination_get_request_key``.
+    1. ``endpoint_template``: The parameteried URL for the API.
+    2. ``additional_data_key``: The keypath to the value in the API response
+       that determines whether there are additional pages to request.
+    3. ``pagination_key``: The keypath to the value in the API response that
+       contains the value that would be passed to the API to retrieve the next
+       set of values.
+    4. ``pagination_get_request_key``: The key in the ``endpoint_template``
+       that will contain the value of the ``pagination_key``.
 
-    Bringing all this together, the parameters for our simple example would
-    be:
+    For our simple example, the arguments would be
 
-    1. **hi** there
-    2. there
+    1. ``endpoint_template: http://www.someapi.com/endpoint_name?resultpage={result_page}``
+    2. ``additional_data_key: ["additional_pages"]``
+    3. ``pagination_key: ["next_page"]``
+    4. ``pagination_get_request_key: result_page``
 
+    In addition to those mandatory arguments, you can also optionally specify
+    an ``endpoint_dict``, which contains other values that will be substituted
+    into the ``endpoint_template``. For example, these APIs often have an option
+    that controls the number of results to provide in each response, like so:
 
+    .. code-block:: none
 
+        http://www.someapi.com/endpoint_name?results={num_results}?resultpage={result_page}
+
+    For cases like this, the value of ``endpoint_dict`` is a dictionary mapping
+    keys from the ``endpoint_template`` to their values. So if you wanted to
+    have ten results per page, you would specify:
+
+    .. code-block:: none
+
+        endpoint_dict = {"num_results": 10}
+
+    There can be any number of other parameters specified in the ``endpoint_dict``.
+
+    If there are other keys in the ``endpoint_template`` that are not provided
+    in the ``endpoint_dict``, then the node will try to find them in the current
+    message that's being processed. For example, it is common to have some kind
+    of security token that might be given in an environment variable. If the
+    value of that environment variable has been provided by some upstream node
+    and placed in the key ``token``, then it would be substituted into the
+    URL, provded that the ``endpoint_template`` had a place for it, such as:
+
+    .. code-block:: none
+
+        http://www.someapi.com/endpoint_name?auth_token={token}?resultpage={result_page}
 
     """
 

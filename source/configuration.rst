@@ -5,7 +5,7 @@ A configuration file starts with two top-level options, ``pipeline_name`` and ``
 
 Below those are two sections: ``nodes`` and ``paths``. Each ``nodes`` section contains one or more blocks that always have this form:
 
-::
+.. code-block:: none
 
     do_something:
       class: node class
@@ -40,7 +40,7 @@ Paths can be arbitrarily long.
 If you wanted to send the environment variables down two different execution
 paths, you add another list to the ``paths``, like so:
 
-::
+.. code-block:: none
 
     paths:
       - 
@@ -61,14 +61,14 @@ MetalPipe CLI. It accepts a command, followed by some options. As of now, the
 commands it accepts are ``run``, which executes the pipeline, and ``draw``,
 which generates a diagram of the pipeline. The relevant command(s) are:
 
-::
+.. code-block:: none
 
     python metalpipe_cli.py [run | draw] --filename my_sample_config.yaml
 
 
 The ``metalpipe`` command can generate a pdf file containing a drawing of the pipeline, showing the flow of data through the various nodes. Just speciy ``draw`` instead of ``run`` to generate the diagram. For our simple little pipeline, we get this:
 
-.. figure:: sample_config_drawing.pdf
+.. figure:: sample_config_drawing.png
   :width: 240
   :alt: Sample pipeline drawing
 

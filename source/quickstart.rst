@@ -38,7 +38,7 @@ The configuration file is written in YAML. It has three parts:
 This is a simple configuration file. If you want to, you can copy it into a
 file called ``sample_config.yaml``:
 
-::
+.. code-block:: none
 
     ---
     pipeline_name: Sample MetalPipe configuration
@@ -70,14 +70,14 @@ Run the pipeline
 
 If you've installed MetalPipe and copied this configuration into ``sample_config.yaml``, then you can execute the pipeline:
 
-::
+.. code-block:: none
 
     metalpipe run --filename sample_config.yaml
 
 
 The output should look like this (you might also see some log messages):
 
-::
+.. code-block:: none
     
     Environment variables: 
     {'API_USER_ID': None, 'API_KEY': None}

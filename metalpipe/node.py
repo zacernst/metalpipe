@@ -64,24 +64,6 @@ def no_op(*args, **kwargs):
     return None
 
 
-def get_environment_variables(*args):
-    """
-    Retrieves the environment variables listed in ``*args``.
-
-    Args:
-        args (list of str): List of environment variables.
-    Returns:
-        dict: Dictionary of environment variables to values. If the environment
-            variable is not defined, the value is ``None``.
-    """
-    environment_variables = args or []
-    environment = {
-        environment_variable: os.environ.get(environment_variable, None)
-        for environment_variable in environment_variables
-    }
-    return environment
-
-
 class bcolors:
     """
     This class holds the values for the various colors that are used in the
@@ -102,7 +84,6 @@ class NothingToSeeHere:
     """
     Vacuous class used as a no-op message type.
     """
-
     pass
 
 
@@ -130,35 +111,35 @@ class MetalNode:
     3. ``setup`` Sets the state of the ``MetalNode`` and/or creates any attributes
        that require information available only at runtime.
 
-    :ivar send_batch_markers: If ``True``, then a ``BatchStart`` marker will
-        be sent when a new input is received, and a ``BatchEnd`` will be sent
-        after the input has been processed. The intention is that a number of
-        items will be emitted for each input received. For example, we might
-        emit a table row-by-row for each input.
-    :ivar get_runtime_attrs: A function that returns a dictionary-like object.
-        The keys and values will be saved to this ``MetalNode`` object's
-        attributes. The function is executed one time, upon starting the node.
-    :ivar get_runtime_attrs_args: A tuple of arguments to be passed to the
-        ``get_runtime_attrs`` function upon starting the node.
-    :ivar get_runtime_attrs_kwargs: A dictionary of kwargs passed to the
-        ``get_runtime_attrs`` function.
-    :ivar runtime_attrs_destinations: If set, this is a dictionary mapping
-        the keys returned from the ``get_runtime_attrs`` function to the
-        names of the attributes to which the values will be saved.
-    :ivar throttle: For each input received, a delay of ``throttle`` seconds
-        will be added.
-    :ivar keep_alive: If ``True``, keep the node's thread alive after
-        everything has been processed.
-    :ivar name: The name of the node. Defaults to a randomly generated hash.
-        Note that this hash is not consistent from one run to the next.
-    :ivar input_mapping: When the node receives a dictionary-like object,
-        this dictionary will cause the keys of the dictionary to be remapped
-        to new keys.
-    :ivar retain_input: If ``True``, then combine the dictionary-like input
-        with the output. If keys clash, the output value will be kept.
-    :ivar input_message_keypath: Read the value in this keypath as the content
-        of the incoming message.
-
+    Args:
+        send_batch_markers: If ``True``, then a ``BatchStart`` marker will
+            be sent when a new input is received, and a ``BatchEnd`` will be sent
+            after the input has been processed. The intention is that a number of
+            items will be emitted for each input received. For example, we might
+            emit a table row-by-row for each input.
+        get_runtime_attrs: A function that returns a dictionary-like object.
+            The keys and values will be saved to this ``MetalNode`` object's
+            attributes. The function is executed one time, upon starting the node.
+        get_runtime_attrs_args: A tuple of arguments to be passed to the
+            ``get_runtime_attrs`` function upon starting the node.
+        get_runtime_attrs_kwargs: A dictionary of kwargs passed to the
+            ``get_runtime_attrs`` function.
+        runtime_attrs_destinations: If set, this is a dictionary mapping
+            the keys returned from the ``get_runtime_attrs`` function to the
+            names of the attributes to which the values will be saved.
+        throttle: For each input received, a delay of ``throttle`` seconds
+            will be added.
+        keep_alive: If ``True``, keep the node's thread alive after
+            everything has been processed.
+        name: The name of the node. Defaults to a randomly generated hash.
+            Note that this hash is not consistent from one run to the next.
+        input_mapping: When the node receives a dictionary-like object,
+            this dictionary will cause the keys of the dictionary to be remapped
+            to new keys.
+        retain_input: If ``True``, then combine the dictionary-like input
+            with the output. If keys clash, the output value will be kept.
+        input_message_keypath: Read the value in this keypath as the content
+            of the incoming message.
     """
 
     def __init__(
@@ -320,9 +301,7 @@ class MetalNode:
         the queue's ``source_node`` and ``target_node`` attributes.
 
         Args:
-           target (``MetalNode``): The node to which ``self`` will be connected.
-        Returns:
-           None
+            target (``MetalNode``): The node to which ``self`` will be connected.
         """
         max_queue_size = kwargs.get("max_queue_size", DEFAULT_MAX_QUEUE_SIZE)
         edge_queue = MetalPipeQueue(max_queue_size)
@@ -1113,6 +1092,30 @@ class SequenceEmitter(MetalNode):
 
 
 class GetEnvironmentVariables(MetalNode):
+    '''
+    This node reads environment variables and stores them in the message.
+
+    The required keyword argument for this node is ``environment_variables``,
+    which is a list of -- you guessed it! -- environment variables. By
+    default, they will be read and stored in the outgoing message under
+    keys with the same names as the environment variables. E.g. ``FOO_VAR``
+    will be stored in the message ``{"FOO_BAR": whatever}``.
+
+    Optionally, you can provide a dictionary to the ``mappings`` keyword
+    argument, which maps environment variable names to new names. E.g.
+    if ``mappings = {"FOO_VAR": "bar_var"}``, then the value of ``FOO_VAR``
+    will be stored in the message ``{"bar_var": whatever}``.
+
+    If the environment variable is not defined, then its value will be
+    set to ``None``.
+
+    Args:
+      mappings (dict): An optional dictionary mapping environment variable
+          names to new names.
+
+      environment_variables (list): A list of environment variable names.
+    '''
+
     def __init__(self, mappings=None, environment_variables=None, **kwargs):
         self.environment_mappings = mappings or {}
         self.environment_variables = environment_variables or []
