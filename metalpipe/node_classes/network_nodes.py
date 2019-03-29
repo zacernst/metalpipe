@@ -69,7 +69,9 @@ class PaginatedHttpGetRequest:
             try:
                 output = requests.get(url)
                 if output is None:
-                    self.log_info("Request to {url} returned None".format(url=url))
+                    self.log_info(
+                        "Request to {url} returned None".format(url=url)
+                    )
                 elif output.status_code >= 300:
                     self.log_info(
                         "Request to {url} returned {code} status code".format(
@@ -132,7 +134,9 @@ class PaginatedHttpGetRequest:
 
         # Check if successful
         if not successful:
-            self.log_info("Unsuccessful request to {url}".format(url=endpoint_url))
+            self.log_info(
+                "Unsuccessful request to {url}".format(url=endpoint_url)
+            )
             raise Exception("Unsuccessful GET request")
 
         # out = out.json()
@@ -150,7 +154,9 @@ class PaginatedHttpGetRequest:
                 logging.debug("No offset key. Assuming this is normal.")
                 break
             get_request_parameters = {self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(**get_request_parameters)
+            endpoint_url = self.endpoint_template.format(
+                **get_request_parameters
+            )
             logging.debug("paginator url: " + endpoint_url)
             try:
                 # response = session.get(endpoint_url)
@@ -163,7 +169,8 @@ class PaginatedHttpGetRequest:
                 out = response.json()
             except:
                 logging.warning(
-                    "Error parsing. Assuming this is the " "end of the responses."
+                    "Error parsing. Assuming this is the "
+                    "end of the responses."
                 )
                 break
             yield out
@@ -236,7 +243,10 @@ class HttpGetRequest(MetalNode):
         except json.JSONDecodeError:
             output = get_response.text
         logging.debug(
-            formatted_endpoint + " GET RESPONSE: " + str(output) + str(type(output))
+            formatted_endpoint
+            + " GET RESPONSE: "
+            + str(output)
+            + str(type(output))
         )
         yield output
 
