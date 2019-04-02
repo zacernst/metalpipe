@@ -5,7 +5,8 @@ Overview
 MetalPipe is a package of classes and functions that help you write consistent, efficient, configuration-driven ETL pipelines in Python. It is open-source and
 as simple as possible (but not simpler).
 
-This overview tells you why MetalPipe exists, and how it can help you escape from ETL hell.
+This overview tells you why MetalPipe exists, and how it can help you build
+robust, efficient ETL pipelines easily.
 
 Why is it?
 ----------
@@ -107,10 +108,8 @@ objects. By default, messages retain any keys and values that were created by up
 
 The goal is for MetalPipe to be "batteries included", with built-in
 ``MetalNode`` subclasses for every common ETL task. But because ETL pipelines
-generally have something weird going on somewhere, MetalNode makes it easy to
+generally have something weird going on somewhere, MetalPipe makes it easy to
 roll your own node classes.
-
-
 
 Nodes are defined in code by instantiating classes that inherit from
 ``MetalNode``. Upon instantiation, the constructor takes the same set of

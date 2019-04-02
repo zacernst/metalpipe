@@ -62,9 +62,9 @@ class PaginatedHttpGetRequest:
         self.additional_data_test = additional_data_test
 
     def get_with_retry(self, url, error_on_none=True, **kwargs):
-        '''
+        """
         Simple method for making requests from flaky endpoints.
-        '''
+        """
 
         error_counter = 0
         success = False
@@ -73,11 +73,11 @@ class PaginatedHttpGetRequest:
             try:
                 output = requests.get(url)
                 if output is None:
-                    self.log_info(
+                    logging.info(
                         "Request to {url} returned None".format(url=url)
                     )
                 elif output.status_code >= 300:
-                    self.log_info(
+                    logging.info(
                         "Request to {url} returned {code} status code".format(
                             url=url, code=str(output.status_code)
                         )
@@ -119,7 +119,7 @@ class PaginatedHttpGetRequest:
             self.pagination_get_request_key: self.default_offset_value
         }
         endpoint_url = self.endpoint_template.format(**get_request_parameters)
-        self.log_info("paginator url: " + endpoint_url)
+        logging.info("paginator url: " + endpoint_url)
         successful = False
         retry_counter = 0
         sleep_time = 1.0
@@ -128,7 +128,7 @@ class PaginatedHttpGetRequest:
                 out = requests.get(endpoint_url)
                 successful = True
             except:
-                self.log_info(
+                logging.info(
                     "sleeping randomly... retry: {retry}".format(
                         retry=str(retry_counter)
                     )
@@ -138,7 +138,7 @@ class PaginatedHttpGetRequest:
 
         # Check if successful
         if not successful:
-            self.log_info(
+            logging.info(
                 "Unsuccessful request to {url}".format(url=endpoint_url)
             )
             raise Exception("Unsuccessful GET request")

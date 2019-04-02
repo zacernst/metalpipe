@@ -84,6 +84,7 @@ class NothingToSeeHere:
     """
     Vacuous class used as a no-op message type.
     """
+
     pass
 
 
@@ -1092,7 +1093,7 @@ class SequenceEmitter(MetalNode):
 
 
 class GetEnvironmentVariables(MetalNode):
-    '''
+    """
     This node reads environment variables and stores them in the message.
 
     The required keyword argument for this node is ``environment_variables``,
@@ -1114,7 +1115,7 @@ class GetEnvironmentVariables(MetalNode):
           names to new names.
 
       environment_variables (list): A list of environment variable names.
-    '''
+    """
 
     def __init__(self, mappings=None, environment_variables=None, **kwargs):
         self.environment_mappings = mappings or {}
