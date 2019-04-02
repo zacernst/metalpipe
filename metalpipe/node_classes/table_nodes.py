@@ -26,11 +26,7 @@ class VarChar(IntermediateDataType):
     pass
 
 
-PYTHON_PRIMITIVE_DATA_TYPES = [
-    int,
-    float,
-    str,
-    bytes,]
+PYTHON_PRIMITIVE_DATA_TYPES = [int, float, str, bytes]
 
 
 def get_type_information(thing):
@@ -46,7 +42,6 @@ def get_type_information(thing):
 
 
 class RowStatCollector(MetalNode):
-
     def __init__(self, **kwargs):
         self.bloom_filter_dict = collections.defaultdict(BloomFilter)
         self.uniqueness_dict = collections.defaultdict(bool)
@@ -58,14 +53,18 @@ class RowStatCollector(MetalNode):
     def process_item(self):
         if isinstance(self.__message__, (dict,)):
             rows = [self.__message__]
-        elif isinstance(self.__message__, (list, tuple, set,)):
+        elif isinstance(self.__message__, (list, tuple, set)):
             rows = self.__message__
         else:
-            raise Exception('This should not happen.')
+            raise Exception("This should not happen.")
         for row in rows:
             if self.first_row:
                 for column, _ in row.items():
-                    self.uniqueness_dict[column] = True  # Default unique to True
+                    self.uniqueness_dict[
+                        column
+                    ] = True  # Default unique to True
+                    self.null_dict[column] = False  # NULL to False
+                self.first_row = False
             for column, value in row.items():
                 # Use bloom filter to check for unique values
                 if value in self.bloom_filter_dict[column]:
@@ -76,9 +75,21 @@ class RowStatCollector(MetalNode):
 
                 # Record whether a NULL occurs in the column
                 if value is None:
-                    self.null_dict[column] = False
+                    self.null_dict[column] = True
         yield NothingToSeeHere()
 
     def cleanup():
+        yield num_unique_values_dict
         pass
 
+
+if __name__ == '__main__':
+    SAMPLE_DATA_FILE = '~/github/metalpipe/sample_data/customers.csv'
+    from metalpipe.node import (
+        CSVReader, LocalFileReader, ConstantEmitter, PrinterOfThings)
+    file_name_emitter = ConstantEmitter(name='filename', thing='customers.csv', max_loops=1, output_key='file_name')
+    file_reader = LocalFileReader(name='file_reader', directory='./sample_data', key='file_name', output_key='contents')
+    csv_reader = CSVReader(name='csv_reader', key='contents', output_key='row')
+    printer = PrinterOfThings(pretty=True, name='printer')
+    file_name_emitter > file_reader > csv_reader > printer
+    file_name_emitter.global_start()

@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="metalpipe",
-    version="0.1.11",
+    version="0.1.12",
     author="Zachary Ernst",
     author_email="zac.ernst@gmail.com",
     description="Modules for ETL Pipelines",

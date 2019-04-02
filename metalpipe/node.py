@@ -401,6 +401,7 @@ class MetalNode:
                 if self.fixturizer:
                     self.fixturizer.record_source_node(self, output)
                 yield output, None
+            self.finished = True
         else:
             logging.debug(
                 "About to enter loop for reading input queue in {node}.".format(
@@ -456,7 +457,7 @@ class MetalNode:
                         ### Do the self.break_test() if it's been defined
                         ### Execute the function and break
                         ### if it returns True
-                        if self.break_test is not None:
+                        if self.break_test is not None and not self.finished:
                             break_test_result = self.break_test(
                                 output_message=output,
                                 input_message=self.__message__,
@@ -494,7 +495,7 @@ class MetalNode:
         self.cleanup_called = True
 
     def log_info(self, message=""):
-        logging.debug(
+        logging.info(
             "{node_name}: {message}".format(
                 node_name=self.name, message=message
             )
@@ -913,6 +914,14 @@ class MetalNode:
                         logjam=logjam, name=node.name
                     )
                 )
+
+            for node in self.all_connected():
+                if node.is_source or node.finished:
+                    continue
+                print('>>>>>', node.name)
+                for input_node in node.input_node_list:
+                    print('>>>', input_node.name, input_node.finished)
+                node.finished = all(input_node.finished for input_node in node.input_node_list)
 
         self.log_info("Pipeline finished.")
         self.log_info("Sending terminate signal to nodes.")
@@ -1441,15 +1450,12 @@ class LocalFileReader(MetalNode):
         super(LocalFileReader, self).__init__(**kwargs)
 
     def process_item(self):
-        filename = "/".join([self.directory, self.message])
+        filename = "/".join([self.directory, self.__message__])
         with open(filename, self.read_mode) as file_obj:
             if self.serialize:
-                if self.send_batch_markers:
-                    yield BatchStart()
                 for line in file_obj:
                     output = line
                     yield output
-                yield BatchEnd()
             else:
                 output = file_obj.read()
                 yield output
@@ -1457,20 +1463,14 @@ class LocalFileReader(MetalNode):
 
 class CSVReader(MetalNode):
     @set_kwarg_attributes()
-    def __init__(self, send_batch_markers=True, to_row_obj=True, **kwargs):
+    def __init__(self, **kwargs):
         super(CSVReader, self).__init__(**kwargs)
 
     def process_item(self):
-        file_obj = io.StringIO(self.message)
+        file_obj = io.StringIO(self.__message__)
         reader = csv.DictReader(file_obj)
-        if self.send_batch_markers:
-            yield BatchStart()
         for row in reader:
-            if self.to_row_obj:
-                row = Row.from_dict(row)
             yield row
-        if self.send_batch_markers:
-            yield BatchEnd()
 
 
 class LocalDirectoryWatchdog(MetalNode):
