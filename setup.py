@@ -79,7 +79,7 @@ setuptools.setup(
       'python-dotenv==0.6.0',
       'pytz==2018.5',
       'pyyaml>=3.0',
-      'requests==2.19.1',
+      'requests==2.20',
       'requests-toolbelt==0.8.0',
       's3fs==0.1.5',
       's3transfer==0.1.13',
