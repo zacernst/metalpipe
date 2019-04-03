@@ -27,6 +27,7 @@ class MetalPipeQueue:
         self.name = name or uuid.uuid4().hex
         self.source_node = None
         self.target_node = None
+        self.open = True
         self.queue_times = []  # Time messages spend in queue
 
     def size(self):
@@ -62,9 +63,12 @@ class MetalPipeQueue:
         logging.debug("Retrieved message: " + str(message))
         return message
 
-    def put(
-        self, message, *args, queue_event=None, previous_message=None, **kwargs
-    ):
+    def drain(self):
+        self.open = False
+        while not self.empty:
+            self.get()
+
+    def put(self, message, *args, queue_event=None, previous_message=None, **kwargs):
         """
         Places a message on the output queues. If the message is ``None``,
         then the queue is skipped.
@@ -72,6 +76,8 @@ class MetalPipeQueue:
         Messages are ``MetalPipeMessage`` objects; the payload of the
         message is message.message_content.
         """
+        if not self.open:
+            return
         if isinstance(message, (node.NothingToSeeHere,)):
             queue_event.set()
             return
@@ -100,4 +106,4 @@ class MetalPipeQueue:
         message_obj = MetalPipeMessage(message)
         message_obj.time_queued = time.time()
         self.queue.put(message_obj)
-        queue_event.set()
+        # queue_event.set()

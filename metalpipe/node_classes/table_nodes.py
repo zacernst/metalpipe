@@ -113,3 +113,4 @@ if __name__ == "__main__":
     file_name_emitter > file_reader > csv_reader > row_stats > printer
     # file_name_emitter > file_reader > csv_reader > printer
     file_name_emitter.global_start()
+    # file_name_emitter.terminate_pipeline()

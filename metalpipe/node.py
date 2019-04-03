@@ -411,9 +411,14 @@ class MetalNode:
                     node=str(self)
                 )
             )
-            while not self.finished:
+            while not self.finished:  #  and not self.terminate:
                 for input_queue in self.input_queue_list:
                     one_item = input_queue.get()
+                    ####
+                    if self.terminate:
+                        print('terminated!')
+                        # self.finished = True
+                        break
                     if one_item is None:
                         continue
 
@@ -479,11 +484,37 @@ class MetalNode:
 
     @property
     def finished(self):
-        return (all(
-            input_node.cleanup_called for input_node in self.input_node_list
-        ) and (self.is_source or self.input_queues_empty)) or self.terminate
+        '''
+        A node is considered "finished" if:
+
+        1. All of its immediate parents are "finished" (including if the node
+           is a generator and has no parents);
+        2. All of its input queues are empty;
+        3. It is not processing any messages;
+        4. Its ``cleanup`` method (if any) has been called.
+
+        Alternatively, a node is forced to be in a "finished" state if the
+        pipeline is being terminated. This causes each node's ``terminate``
+        attribute to be set to ``True``.
+        '''
+
+        upstream_nodes_finished = all(
+                input_node.cleanup_called
+                for input_node in self.input_node_list
+            )
+        input_queues_empty = self.is_source or self.input_queues_empty()
+        if 0 and self.terminate:
+            import pdb; pdb.set_trace()
+        return (upstream_nodes_finished and input_queues_empty) or self.terminate
 
     def input_queues_empty(self):
+        '''
+        Tests whether there are any messages on any of the node's input
+        queues.
+
+        Returns:
+            bool: ``True`` if input queues are all empty.
+        '''
         return all(queue.empty for queue in self.input_queue_list)
 
     def cleanup(self):
@@ -492,14 +523,18 @@ class MetalNode:
         necessary when the node is stopped, then the node's class should provide
         a ``cleanup`` method. By default, the method is just a logging statement.
         """
-        print("in null cleanup", self.name)
+        self.log_info("in null cleanup")
         yield NothingToSeeHere()
 
     def _cleanup(self):
         self.log_info("Cleanup called after shutdown.")
         for i in self.cleanup():
             yield i
-        time.sleep(0.1)
+        # blocks until all of this node's outgoing messages have been
+        # picked up by downstream nodes (if any)
+        for q in self.output_queue_list:
+            while not q.empty:
+                pass
         self.cleanup_called = True
 
     def log_info(self, message=""):
@@ -519,9 +554,13 @@ class MetalNode:
         """
         self.log_info("terminate_pipeline called..." + str(self.name))
         for node in self.all_connected():
-            if not node.finished:
-                node.stopped_at = datetime.datetime.now()
-                node.terminate = True
+            node.terminate = True
+            for q in node.output_queue_list:
+                q.drain()
+            #if not node.finished:
+            #    node.stopped_at = datetime.datetime.now()
+            #    print('setting node.terminate')
+            #    node.terminate = True
 
     def process_item(self, *args, **kwargs):
         """
@@ -620,7 +659,6 @@ class MetalNode:
                 )
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
-                    self.queue_event.clear()
                     output_queue.put(
                         output,
                         block=True,
@@ -629,7 +667,6 @@ class MetalNode:
                         previous_message=previous_message,
                     )
                     # if 1 or not isinstance(output, (NothingToSeeHere,)) and output is not None:
-                    self.queue_event.wait()
         except Exception as error:
             self.status = "error"
             self.stopped_at = datetime.datetime.now()
@@ -896,7 +933,7 @@ class MetalNode:
                 if error:
                     logging.error("Terminating due to error.")
                     self.terminate_pipeline(error=True)
-                    self.pipeline_finished = True
+                    # self.pipeline_finished = True
                     break
 
             # Check for blocked nodes
