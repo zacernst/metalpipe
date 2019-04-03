@@ -62,7 +62,9 @@ class MetalPipeQueue:
         logging.debug("Retrieved message: " + str(message))
         return message
 
-    def put(self, message, *args, previous_message=None, **kwargs):
+    def put(
+        self, message, *args, queue_event=None, previous_message=None, **kwargs
+    ):
         """
         Places a message on the output queues. If the message is ``None``,
         then the queue is skipped.
@@ -71,6 +73,7 @@ class MetalPipeQueue:
         message is message.message_content.
         """
         if isinstance(message, (node.NothingToSeeHere,)):
+            queue_event.set()
             return
         elif previous_message is not None:
             previous_message = previous_message.message_content
@@ -97,3 +100,4 @@ class MetalPipeQueue:
         message_obj = MetalPipeMessage(message)
         message_obj.time_queued = time.time()
         self.queue.put(message_obj)
+        queue_event.set()

@@ -177,10 +177,12 @@ class MetalNode:
         self.input_queue_list = []
         self.output_queue_list = []
         self.input_node_list = []
+        self.queue_event = threading.Event()
         self.input_message_keypath = input_message_keypath or []
         self.output_node_list = []
         self.max_messages_received = max_messages_received
         self.global_dict = None  # We'll add a dictionary upon startup
+        self.terminate = False
         self.thread_dict = {}
         self.kill_thread = False
         self.prefer_existing_value = prefer_existing_value
@@ -207,7 +209,6 @@ class MetalNode:
         self.instantiated_at = datetime.datetime.now()
         self.started_at = None
         self.stopped_at = None
-        self.finished = False
         self.error_counter = 0
         self.status = "stopped"  # running, error, success
         self.max_errors = max_errors
@@ -401,7 +402,9 @@ class MetalNode:
                 if self.fixturizer:
                     self.fixturizer.record_source_node(self, output)
                 yield output, None
-            self.finished = True
+            for output in self._cleanup():
+                yield output, None
+
         else:
             logging.debug(
                 "About to enter loop for reading input queue in {node}.".format(
@@ -471,14 +474,17 @@ class MetalNode:
             self.log_info(
                 "checking whether cleanup is a generator. " + str(self.name)
             )
-            cleanup_output = self._cleanup()
+            for i in self._cleanup():
+                yield i, None
 
-            if isinstance(cleanup_output, (types.GeneratorType,)):
-                self.log_info("GeneratorType found. Calling cleanup.")
-                for i in cleanup_output:
-                    yield i, one_item
-            else:
-                pass
+    @property
+    def finished(self):
+        return (all(
+            input_node.cleanup_called for input_node in self.input_node_list
+        ) and (self.is_source or self.input_queues_empty)) or self.terminate
+
+    def input_queues_empty(self):
+        return all(queue.empty for queue in self.input_queue_list)
 
     def cleanup(self):
         """
@@ -486,12 +492,14 @@ class MetalNode:
         necessary when the node is stopped, then the node's class should provide
         a ``cleanup`` method. By default, the method is just a logging statement.
         """
-        pass
+        print("in null cleanup", self.name)
+        yield NothingToSeeHere()
 
     def _cleanup(self):
         self.log_info("Cleanup called after shutdown.")
-        self.cleanup()
-        self.log_info("Cleanup executed.")
+        for i in self.cleanup():
+            yield i
+        time.sleep(0.1)
         self.cleanup_called = True
 
     def log_info(self, message=""):
@@ -513,7 +521,7 @@ class MetalNode:
         for node in self.all_connected():
             if not node.finished:
                 node.stopped_at = datetime.datetime.now()
-                node.finished = True
+                node.terminate = True
 
     def process_item(self, *args, **kwargs):
         """
@@ -612,12 +620,16 @@ class MetalNode:
                 )
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
+                    self.queue_event.clear()
                     output_queue.put(
                         output,
                         block=True,
                         timeout=None,
+                        queue_event=self.queue_event,
                         previous_message=previous_message,
                     )
+                    # if 1 or not isinstance(output, (NothingToSeeHere,)) and output is not None:
+                    self.queue_event.wait()
         except Exception as error:
             self.status = "error"
             self.stopped_at = datetime.datetime.now()
@@ -755,6 +767,7 @@ class MetalNode:
             node.fixturize = fixturize
             node.global_dict = global_dict  # Establishing shared globals
             logging.debug("global_start:" + str(self))
+            # Create thread event here?
             thread = threading.Thread(
                 target=MetalNode.stream, args=(node,), daemon=False
             )
@@ -804,7 +817,7 @@ class MetalNode:
 
     @property
     def pipeline_finished(self):
-        finished = all(node.finished for node in self.all_connected())
+        finished = all(node.cleanup_called for node in self.all_connected())
         self.log_info("finished. " + str(self.name))
         return finished
 
@@ -914,14 +927,6 @@ class MetalNode:
                         logjam=logjam, name=node.name
                     )
                 )
-
-            for node in self.all_connected():
-                if node.is_source or node.finished:
-                    continue
-                print('>>>>>', node.name)
-                for input_node in node.input_node_list:
-                    print('>>>', input_node.name, input_node.finished)
-                node.finished = all(input_node.finished for input_node in node.input_node_list)
 
         self.log_info("Pipeline finished.")
         self.log_info("Sending terminate signal to nodes.")

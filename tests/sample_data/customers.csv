@@ -1,0 +1,5 @@
+uuid,name,state,widgets,weird
+a1,Alice,WI,5,true
+a2,Bob,WI,4,false
+a3,Carol,TX,1,false
+a4,Dave,IL,10,true

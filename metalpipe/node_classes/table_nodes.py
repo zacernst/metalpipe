@@ -51,12 +51,14 @@ class RowStatCollector(MetalNode):
         super(RowStatCollector, self).__init__(**kwargs)
 
     def process_item(self):
+        self.log_info("rowstat: " + str(self.__message__))
         if isinstance(self.__message__, (dict,)):
             rows = [self.__message__]
         elif isinstance(self.__message__, (list, tuple, set)):
             rows = self.__message__
         else:
             raise Exception("This should not happen.")
+        self.log_info("Stats has a row...")
         for row in rows:
             if self.first_row:
                 for column, _ in row.items():
@@ -71,25 +73,43 @@ class RowStatCollector(MetalNode):
                     self.uniqueness_dict[column] = False
                 else:
                     self.num_unique_values_dict[column] += 1
-                    self.uniqueness_dict[column].add(value)
+                    self.bloom_filter_dict[column].add(value)
 
                 # Record whether a NULL occurs in the column
                 if value is None:
                     self.null_dict[column] = True
         yield NothingToSeeHere()
 
-    def cleanup():
-        yield num_unique_values_dict
-        pass
+    def cleanup(self):
+        yield self.num_unique_values_dict
 
 
-if __name__ == '__main__':
-    SAMPLE_DATA_FILE = '~/github/metalpipe/sample_data/customers.csv'
+if __name__ == "__main__":
+    SAMPLE_DATA_FILE = "~/github/metalpipe/sample_data/customers.csv"
     from metalpipe.node import (
-        CSVReader, LocalFileReader, ConstantEmitter, PrinterOfThings)
-    file_name_emitter = ConstantEmitter(name='filename', thing='customers.csv', max_loops=1, output_key='file_name')
-    file_reader = LocalFileReader(name='file_reader', directory='./sample_data', key='file_name', output_key='contents')
-    csv_reader = CSVReader(name='csv_reader', key='contents', output_key='row')
-    printer = PrinterOfThings(pretty=True, name='printer')
-    file_name_emitter > file_reader > csv_reader > printer
+        CSVReader,
+        LocalFileReader,
+        ConstantEmitter,
+        PrinterOfThings,
+    )
+
+    file_name_emitter = ConstantEmitter(
+        name="filename",
+        thing="customers.csv",
+        max_loops=1,
+        output_key="file_name",
+    )
+    file_reader = LocalFileReader(
+        name="file_reader",
+        directory="./sample_data",
+        key="file_name",
+        output_key="contents",
+    )
+    csv_reader = CSVReader(name="csv_reader", key="contents", output_key="row")
+    printer = PrinterOfThings(
+        pretty=True, disable=False, prepend=">>>>>", name="printer"
+    )
+    row_stats = RowStatCollector(key="row", name="stats", output_key="stats")
+    file_name_emitter > file_reader > csv_reader > row_stats > printer
+    # file_name_emitter > file_reader > csv_reader > printer
     file_name_emitter.global_start()
