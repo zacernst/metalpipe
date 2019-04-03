@@ -416,7 +416,7 @@ class MetalNode:
                     one_item = input_queue.get()
                     ####
                     if self.terminate:
-                        print('terminated!')
+                        print("terminated!")
                         # self.finished = True
                         break
                     if one_item is None:
@@ -484,7 +484,7 @@ class MetalNode:
 
     @property
     def finished(self):
-        '''
+        """
         A node is considered "finished" if:
 
         1. All of its immediate parents are "finished" (including if the node
@@ -496,25 +496,28 @@ class MetalNode:
         Alternatively, a node is forced to be in a "finished" state if the
         pipeline is being terminated. This causes each node's ``terminate``
         attribute to be set to ``True``.
-        '''
+        """
 
         upstream_nodes_finished = all(
-                input_node.cleanup_called
-                for input_node in self.input_node_list
-            )
+            input_node.cleanup_called for input_node in self.input_node_list
+        )
         input_queues_empty = self.is_source or self.input_queues_empty()
         if 0 and self.terminate:
-            import pdb; pdb.set_trace()
-        return (upstream_nodes_finished and input_queues_empty) or self.terminate
+            import pdb
+
+            pdb.set_trace()
+        return (
+            upstream_nodes_finished and input_queues_empty
+        ) or self.terminate
 
     def input_queues_empty(self):
-        '''
+        """
         Tests whether there are any messages on any of the node's input
         queues.
 
         Returns:
             bool: ``True`` if input queues are all empty.
-        '''
+        """
         return all(queue.empty for queue in self.input_queue_list)
 
     def cleanup(self):
@@ -557,7 +560,7 @@ class MetalNode:
             node.terminate = True
             for q in node.output_queue_list:
                 q.drain()
-            #if not node.finished:
+            # if not node.finished:
             #    node.stopped_at = datetime.datetime.now()
             #    print('setting node.terminate')
             #    node.terminate = True

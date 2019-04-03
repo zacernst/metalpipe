@@ -68,7 +68,9 @@ class MetalPipeQueue:
         while not self.empty:
             self.get()
 
-    def put(self, message, *args, queue_event=None, previous_message=None, **kwargs):
+    def put(
+        self, message, *args, queue_event=None, previous_message=None, **kwargs
+    ):
         """
         Places a message on the output queues. If the message is ``None``,
         then the queue is skipped.
