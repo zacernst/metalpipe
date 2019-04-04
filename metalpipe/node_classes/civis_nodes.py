@@ -171,6 +171,7 @@ class SendToCivis(MetalNode):
             result = fut.result()
         else:
             pass
+        yield NothingToSeeHere()
 
     def monitor_futures(self):
         class DummyResult:

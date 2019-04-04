@@ -71,6 +71,7 @@ class PaginatedHttpGetRequest:
         hibernate = 1.0
         while error_counter < self.retries and not success:
             try:
+                logging.info('Paginator request to {url}'.format(url=url))
                 output = requests.get(url)
                 if output is None:
                     logging.info(
@@ -151,33 +152,32 @@ class PaginatedHttpGetRequest:
         while self.additional_data_key in out and additional_data_test(
             out[self.additional_data_key]
         ):
+            logging.info('starting pagination loop' + str(get_request_parameters))
             try:
                 offset = out[self.pagination_key]
                 offset_set.add(offset)
             except KeyError:
-                logging.debug("No offset key. Assuming this is normal.")
+                logging.info("No offset key. Assuming this is normal.")
                 break
             get_request_parameters = {self.pagination_get_request_key: offset}
             endpoint_url = self.endpoint_template.format(
                 **get_request_parameters
             )
-            logging.debug("paginator url: " + endpoint_url)
-            try:
-                # response = session.get(endpoint_url)
+            logging.info("paginator url (inside): " + endpoint_url)
+            # response = session.get(endpoint_url)
 
-                if GET_ONLY:
-                    response = self.get_with_retry(endpoint_url)
-                else:
-                    response = session.get(endpoint_url)
+            if GET_ONLY:
+                response = self.get_with_retry(endpoint_url)
+            else:
+                response = session.get(endpoint_url)
 
-                out = response.json()
-            except:
-                logging.warning(
-                    "Error parsing. Assuming this is the "
-                    "end of the responses."
-                )
-                break
+            out = response.json()
+            logging.info('Paginator expects more pages: ' + str(additional_data_test(out[self.additional_data_key])) + ' ' + endpoint_url)
+            logging.info('                              ' + str(out[self.additional_data_key]) + ' ' + endpoint_url)
+            logging.info('                              ' + str(out[self.pagination_key]) + ' ' + endpoint_url)
+            logging.info('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ' + str(self.additional_data_key in out and additional_data_test(out[self.additional_data_key])))
             yield out
+        logging.info('end paginator')
 
 
 class HttpGetRequest(MetalNode):
