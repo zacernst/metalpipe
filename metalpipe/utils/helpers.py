@@ -229,7 +229,7 @@ def two_weeks_ago_datetime():
     return datetime.datetime.now() - datetime.timedelta(days=14)
 
 
-def january_1_2019():
+def january_1_2016():
     return datetime.datetime(year=2016, month=1, day=1)
 
 

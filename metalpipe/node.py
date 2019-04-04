@@ -466,7 +466,7 @@ class MetalNode:
                         ### Execute the function and break
                         ### if it returns True
                         if self.break_test is not None and not self.finished:
-                            self.log_info('running break_test.')
+                            self.log_info("running break_test.")
                             break_test_result = self.break_test(
                                 output_message=output,
                                 input_message=self.__message__,
@@ -508,7 +508,9 @@ class MetalNode:
 
             pdb.set_trace()
         return (
-            upstream_nodes_finished and input_queues_empty and self.cleanup_called
+            upstream_nodes_finished
+            and input_queues_empty
+            and self.cleanup_called
         ) or self.terminate
 
     def input_queues_empty(self):
