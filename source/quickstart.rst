@@ -93,3 +93,14 @@ The output should look like this (you might also see some log messages):
 
 
 The MetalPipe pipeline has found the values of two environment variables (``API_KEY`` and ``API_USER_ID``) and printed them to the terminal. If those environmet variables have not been set, their values will be ``None``. But if you were to set any of them, their values would be printed.
+
+Testing and development
+-----------------------
+
+In order to run the various unit tests, you'll need to have access to some fixturized REST API data. We
+use ``json-server`` for this purpose. You'll need to install it:
+
+.. code-block:: none
+
+    npm install -g json-server 
+    `
