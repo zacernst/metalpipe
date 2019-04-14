@@ -22,6 +22,15 @@ To test your installation, try typing
 If MetalPipe is installed correctly, you should see a help message.
 
 
+On a Debian-like Linux system, you may have to do:
+
+::
+
+   sudo apt-get install python3-dev default-libmysqlclinet-dev gcc 
+
+or whatever is the equivalent for your distribution.
+
+
 Write a configuration file
 --------------------------
 
