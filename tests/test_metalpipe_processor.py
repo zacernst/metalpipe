@@ -6,6 +6,7 @@ import pytest
 import metalpipe.node as node
 import metalpipe.node_queue.queue as queue
 import metalpipe.node_classes.network_nodes as network_nodes
+import metalpipe.node_classes.table_nodes as table_nodes
 
 
 os.environ["PYTHONPATH"] = "."
@@ -16,8 +17,15 @@ TRAVIS = os.environ.get('TRAVIS', False)
 def test_test_sanity():
     assert 1 == 1
 
+
+@pytest.fixture(scope='function')
+def mock_node():
+    obj = node.MockNode()
+    return obj
+
+
 @pytest.mark.skipif(TRAVIS, reason="will not run on TravisCI")
-def test_http_get_request():
+def test_http_get_request(mock_node):
     emitter = node.ConstantEmitter(
         thing={'user_number': '1'},
         output_keypath="output",
@@ -27,7 +35,6 @@ def test_http_get_request():
         endpoint_dict={},
         protocol='http',
         json=True)
-    mock_node = node.MockNode()
     emitter > get_request_node > mock_node
     emitter.global_start()
     emitter.wait_for_pipeline_finish()
@@ -122,7 +129,6 @@ def test_error_kills_threads(exception_raiser, constant_emitter):
     constant_emitter > exception_raiser > pr
     constant_emitter.global_start()
     constant_emitter.wait_for_pipeline_finish()
-    time.sleep(10)
     assert all(not i.is_alive() for i in constant_emitter.thread_dict.values())
 
 
@@ -142,3 +148,11 @@ def test_local_file_reader(local_file_reader):
     local_file_reader.global_start()
     local_file_reader.wait_for_pipeline_finish()
     assert mock_node.message_holder is not None
+
+
+def test_csv_reader(local_file_reader, mock_node):
+    csv_reader = node.CSVReader(name='csv_reader', key='contents', output_key='row')
+    local_file_reader > csv_reader > mock_node
+    local_file_reader.global_start()
+    local_file_reader.wait_for_pipeline_finish()
+    assert True

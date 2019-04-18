@@ -1046,10 +1046,14 @@ class MockNode(MetalNode):
 
     def __init__(self, **kwargs):
         self.message_holder = None
+        self.message_counter = 0
+        self.message_list = []
         super(MockNode, self).__init__(**kwargs)
 
     def process_item(self):
         self.message_holder = self.__message__
+        self.message_list.append(self.__message__)
+        self.message_counter += 1
 
 
 class InsertData(MetalNode):

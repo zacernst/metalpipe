@@ -46,7 +46,7 @@ setuptools.setup(
       'gunicorn==19.9.0',
       'idna==2.7',
       'imagesize==1.1.0',
-      'Jinja2==2.10',
+      'Jinja2==2.10.1',
       'jmespath==0.9.3',
       'joblib==0.11',
       'jsonref==0.1',
