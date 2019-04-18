@@ -983,6 +983,19 @@ class FunctionOfMessage(MetalNode):
         yield self.function(self.__message__)
 
 
+class MockNode(MetalNode):
+    '''
+    This is only intended for doing unit tests, etc.
+    '''
+
+    def __init__(self, **kwargs):
+        self.message_holder = None
+        super(MockNode, self).__init__(**kwargs)
+
+    def process_item(self):
+        self.message_holder = self.__message__
+
+
 class InsertData(MetalNode):
     def __init__(
         self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs

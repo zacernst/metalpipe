@@ -5,12 +5,30 @@ import time
 import pytest
 import metalpipe.node as node
 import metalpipe.node_queue.queue as queue
+import metalpipe.node_classes.network_nodes as network_nodes
 
 os.environ["PYTHONPATH"] = "."
 
 
 def test_test_sanity():
     assert 1 == 1
+
+
+def test_http_get_request():
+    emitter = node.ConstantEmitter(thing={'user_number': '1'}, output_keypath="output", max_loops=1)
+    get_request_node = network_nodes.HttpGetRequest(
+        endpoint_template='http://localhost:3000/users/1',
+        endpoint_dict={},
+        protocol='http',
+        json=True)
+    mock_node = node.MockNode()
+    emitter > get_request_node > mock_node
+    emitter.global_start()
+    emitter.wait_for_pipeline_finish()
+    assert mock_node.message_holder is not None
+    assert isinstance(mock_node.message_holder, (dict,))
+    assert 'id' in mock_node.message_holder
+    assert mock_node.message_holder['id'] == 1
 
 
 def test_instantiate_node():
