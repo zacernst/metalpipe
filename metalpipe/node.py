@@ -365,13 +365,16 @@ class MetalNode:
         """
 
         self.started_at = datetime.datetime.now()
-        logging.debug("Starting node: {node}".format(node=self.__class__.__name__))
+        logging.debug(
+            "Starting node: {node}".format(node=self.__class__.__name__)
+        )
         # ``get_runtime_attrs`` returns a dict-like object whose keys and
         # values are stored as attributes of the ``MetalNode`` object.
         if self.get_runtime_attrs is not None:
             pre_flight_results = (
                 self.get_runtime_attrs(
-                    *self.get_runtime_attrs_args, **self.get_runtime_attrs_kwargs
+                    *self.get_runtime_attrs_args,
+                    **self.get_runtime_attrs_kwargs
                 )
                 or {}
             )
@@ -411,7 +414,8 @@ class MetalNode:
             # insert conditions for having no more messages to read...
 
             upstream_nodes_finished = all(
-                input_node.cleanup_called for input_node in self.input_node_list
+                input_node.cleanup_called
+                for input_node in self.input_node_list
             )
             input_queues_empty = self.is_source or self.input_queues_empty()
             while not (upstream_nodes_finished and input_queues_empty):
@@ -431,7 +435,8 @@ class MetalNode:
                     self.messages_received_counter += 1
                     if (
                         self.max_messages_received is not None
-                        and self.messages_received_counter > self.max_messages_received
+                        and self.messages_received_counter
+                        > self.max_messages_received
                     ):
                         self.finished = True
                         break
@@ -458,7 +463,9 @@ class MetalNode:
                     for output in self._process_item():
                         # Put redis recording here
                         if self.fixturizer:
-                            self.fixturizer.record_worker_node(self, one_item, output)
+                            self.fixturizer.record_worker_node(
+                                self, one_item, output
+                            )
                         yield output, one_item  # yield previous message
 
                         ### Do the self.break_test() if it's been defined
@@ -467,17 +474,25 @@ class MetalNode:
                         if self.break_test is not None and not self.finished:
                             self.log_info("running break_test.")
                             break_test_result = self.break_test(
-                                output_message=output, input_message=self.__message__
+                                output_message=output,
+                                input_message=self.__message__,
                             )
-                            self.log_info("NODE BREAK TEST: " + str(break_test_result))
+                            self.log_info(
+                                "NODE BREAK TEST: " + str(break_test_result)
+                            )
                             # self.finished = break_test_result
 
                 # Check input node(s) here to see if they're all ``.finished``
                 upstream_nodes_finished = all(
-                    input_node.cleanup_called for input_node in self.input_node_list
+                    input_node.cleanup_called
+                    for input_node in self.input_node_list
                 )
-                input_queues_empty = self.is_source or self.input_queues_empty()
-            self.log_info("checking whether cleanup is a generator. " + str(self.name))
+                input_queues_empty = (
+                    self.is_source or self.input_queues_empty()
+                )
+            self.log_info(
+                "checking whether cleanup is a generator. " + str(self.name)
+            )
             for i in self._cleanup():
                 yield i, None
 
@@ -502,7 +517,9 @@ class MetalNode:
         )
         input_queues_empty = self.is_source or self.input_queues_empty()
         return (
-            upstream_nodes_finished and input_queues_empty and self.cleanup_called
+            upstream_nodes_finished
+            and input_queues_empty
+            and self.cleanup_called
         ) or self.terminate
 
     def input_queues_empty(self):
@@ -536,7 +553,9 @@ class MetalNode:
 
     def log_info(self, message=""):
         logging.info(
-            "{node_name}: {message}".format(node_name=self.name, message=message)
+            "{node_name}: {message}".format(
+                node_name=self.name, message=message
+            )
         )
 
     def terminate_pipeline(self, error=False):
@@ -562,6 +581,14 @@ class MetalNode:
         Default no-op for nodes.
         """
         pass
+
+    def generator(self):
+        """
+        If there is no ``generator`` method, then call the node's ``process_item``
+        method instead, assuming that there is code to accommodate this case.
+        """
+        for i in self.process_item():
+            yield i
 
     @property
     def __message__(self):
@@ -594,7 +621,9 @@ class MetalNode:
         # Swap out the message if ``key`` is specified
         # If we're using prometheus, then increment a counter
         if self.prometheus_objects is not None:
-            self.prometheus_objects["incoming_message_summary"].observe(random.random())
+            self.prometheus_objects["incoming_message_summary"].observe(
+                random.random()
+            )
         message_arrival_time = time.time()
 
         try:
@@ -603,7 +632,9 @@ class MetalNode:
                     not isinstance(out, (dict, NothingToSeeHere))
                     and self.output_key is None
                 ):
-                    logging.debug("Exception raised due to no key" + str(self.name))
+                    logging.debug(
+                        "Exception raised due to no key" + str(self.name)
+                    )
                     raise Exception(
                         "Either message must be a dictionary or `output_key` "
                         "must be specified. {name}".format(self.name)
@@ -645,7 +676,9 @@ class MetalNode:
         self.status = "running"
         try:
             for output, previous_message in self.start():
-                logging.debug("In MetalNode.stream.stream() --> " + str(output))
+                logging.debug(
+                    "In MetalNode.stream.stream() --> " + str(output)
+                )
                 for output_queue in self.output_queue_list:
                     self.messages_sent_counter += 1
                     output_queue.put(
@@ -741,7 +774,11 @@ class MetalNode:
             return self.logjam_score["logjam"] / self.logjam_score["polled"]
 
     def global_start(
-        self, prometheus=False, pipeline_name=None, max_time=None, fixturize=False
+        self,
+        prometheus=False,
+        pipeline_name=None,
+        max_time=None,
+        fixturize=False,
     ):
         """
         Starts every node connected to ``self``. Mainly, it:
@@ -813,7 +850,12 @@ class MetalNode:
         to this node.
         """
 
-        return sum([input_queue.queue.qsize() for input_queue in self.input_queue_list])
+        return sum(
+            [
+                input_queue.queue.qsize()
+                for input_queue in self.input_queue_list
+            ]
+        )
 
     def kill_pipeline(self):
         for node in self.all_connected():
@@ -868,9 +910,19 @@ class MetalNode:
 
             if counter % STATS_COUNTER_MODULO == 0:
                 table = prettytable.PrettyTable(
-                    ["Node", "Class", "Received", "Sent", "Queued", "Status", "Time"]
+                    [
+                        "Node",
+                        "Class",
+                        "Received",
+                        "Sent",
+                        "Queued",
+                        "Status",
+                        "Time",
+                    ]
                 )
-                for node in sorted(list(self.all_connected()), key=lambda x: x.name):
+                for node in sorted(
+                    list(self.all_connected()), key=lambda x: x.name
+                ):
                     if node.status == "running":
                         status_color = bcolors.WARNING
                     elif node.status == "stopped":
@@ -924,11 +976,15 @@ class MetalNode:
                     and not any(output_queue_full)
                 )
                 node.logjam_score["polled"] += 1
-                logging.debug("LOGJAM SCORE: {logjam}".format(logjam=str(node.logjam)))
+                logging.debug(
+                    "LOGJAM SCORE: {logjam}".format(logjam=str(node.logjam))
+                )
                 if logjam:
                     node.logjam_score["logjam"] += 1
                 logging.debug(
-                    "LOGJAM {logjam} {name}".format(logjam=logjam, name=node.name)
+                    "LOGJAM {logjam} {name}".format(
+                        logjam=logjam, name=node.name
+                    )
                 )
 
         self.log_info("Pipeline finished.")
@@ -983,6 +1039,19 @@ class FunctionOfMessage(MetalNode):
         yield self.function(self.__message__)
 
 
+class MockNode(MetalNode):
+    """
+    This is only intended for doing unit tests, etc.
+    """
+
+    def __init__(self, **kwargs):
+        self.message_holder = None
+        super(MockNode, self).__init__(**kwargs)
+
+    def process_item(self):
+        self.message_holder = self.__message__
+
+
 class InsertData(MetalNode):
     def __init__(
         self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs
@@ -998,7 +1067,10 @@ class InsertData(MetalNode):
             if (
                 (key not in self.__message__)
                 or self.overwrite
-                or (self.__message__.get(key) == None and self.overwrite_if_null)
+                or (
+                    self.__message__.get(key) == None
+                    and self.overwrite_if_null
+                )
             ):
                 self.__message__[key] = value
         yield self.__message__
@@ -1018,14 +1090,18 @@ class RandomSample(MetalNode):
 
 
 class SubstituteRegex(MetalNode):
-    def __init__(self, match_regex=None, substitute_string=None, *args, **kwargs):
+    def __init__(
+        self, match_regex=None, substitute_string=None, *args, **kwargs
+    ):
         self.match_regex = match_regex
         self.substitute_string = substitute_string
         self.regex_obj = re.compile(self.match_regex)
         super(SubstituteRegex, self).__init__(*args, **kwargs)
 
     def process_item(self):
-        out = self.regex_obj.sub(self.substitute_string, self.message[self.key])
+        out = self.regex_obj.sub(
+            self.substitute_string, self.message[self.key]
+        )
         yield out
 
 
@@ -1066,7 +1142,11 @@ class SequenceEmitter(MetalNode):
         counter = 0
         while counter < self.max_sequences:
             for item in self.sequence:
-                if isinstance(item, (dict,)) and "value" in item and "type" in item:
+                if (
+                    isinstance(item, (dict,))
+                    and "value" in item
+                    and "type" in item
+                ):
                     item = type_dict[item["type"].lower()](item["value"])
                 item = {self.output_key: item}
                 yield item
@@ -1087,7 +1167,11 @@ class SequenceEmitter(MetalNode):
         counter = 0
         while counter < self.max_sequences:
             for item in self.sequence:
-                if isinstance(item, (dict,)) and "value" in item and "type" in item:
+                if (
+                    isinstance(item, (dict,))
+                    and "value" in item
+                    and "type" in item
+                ):
                     item = type_dict[item["type"].lower()](item["value"])
                 item = {self.output_key: item}
                 yield item
@@ -1202,7 +1286,9 @@ class SimpleTransforms(MetalNode):
                 starting_path=starting_path,
                 function_kwargs=function_kwargs,
             )
-            logging.debug("after SimpleTransform: " + self.name + str(self.message))
+            logging.debug(
+                "after SimpleTransform: " + self.name + str(self.message)
+            )
         yield self.message
 
 
@@ -1238,7 +1324,9 @@ class AggregateValues(MetalNode):
         super(AggregateValues, self).__init__(**kwargs)
 
     def process_item(self):
-        values = aggregate_values(self.__message__, self.tail_path, values=self.values)
+        values = aggregate_values(
+            self.__message__, self.tail_path, values=self.values
+        )
         logging.debug("aggregate_values " + self.name + " " + str(values))
         yield values
 
@@ -1258,7 +1346,9 @@ class Filter(MetalNode):
 
     """
 
-    def __init__(self, test=None, test_keypath=None, value=True, *args, **kwargs):
+    def __init__(
+        self, test=None, test_keypath=None, value=True, *args, **kwargs
+    ):
         self.test = test
         self.value = value
         self.test_keypath = test_keypath or []
@@ -1271,7 +1361,9 @@ class Filter(MetalNode):
     @staticmethod
     def _value_is_not_none(message, key):
         logging.debug(
-            "value_is_not_none: {message} {key}".format(message=str(message), key=key)
+            "value_is_not_none: {message} {key}".format(
+                message=str(message), key=key
+            )
         )
         return get_value(message, key) is not None
 
@@ -1282,7 +1374,9 @@ class Filter(MetalNode):
     def process_item(self):
         if self.test in ["key_exists", "value_is_not_none", "value_is_true"]:
             result = (
-                getattr(self, "_" + self.test)(self.__message__, self.test_keypath)
+                getattr(self, "_" + self.test)(
+                    self.__message__, self.test_keypath
+                )
                 == self.value
             )
         else:
@@ -1321,7 +1415,10 @@ class StreamMySQLTable(MetalNode):
 
     def setup(self):
         self.db = MySQLdb.connect(
-            passwd=self.password, db=self.database, user=self.user, port=self.port
+            passwd=self.password,
+            db=self.database,
+            user=self.user,
+            port=self.port,
         )
         self.cursor = MySQLdb.cursors.DictCursor(self.db)
 
@@ -1351,7 +1448,9 @@ class StreamMySQLTable(MetalNode):
     def generator(self):
         if self.send_batch_markers:
             yield BatchStart(schema=self.table_schema)
-        self.cursor.execute("""SELECT * FROM {table};""".format(table=self.table))
+        self.cursor.execute(
+            """SELECT * FROM {table};""".format(table=self.table)
+        )
         result = self.cursor.fetchone()
         while result is not None:
             if self.to_row_obj:
@@ -1364,7 +1463,9 @@ class StreamMySQLTable(MetalNode):
 
 class PrinterOfThings(MetalNode):
     @set_kwarg_attributes()
-    def __init__(self, disable=False, pretty=False, prepend="printer: ", **kwargs):
+    def __init__(
+        self, disable=False, pretty=False, prepend="printer: ", **kwargs
+    ):
         self.disable = disable
         self.pretty = pretty
         super(PrinterOfThings, self).__init__(**kwargs)
@@ -1421,12 +1522,15 @@ class LocalFileReader(MetalNode):
         send_batch_markers=True,
         serialize=False,
         read_mode="r",
+        filename=None,
         **kwargs
     ):
         super(LocalFileReader, self).__init__(**kwargs)
 
     def process_item(self):
-        filename = "/".join([self.directory, self.__message__])
+        filename = "/".join(
+            [self.directory, self.filename or self.__message__]
+        )
         with open(filename, self.read_mode) as file_obj:
             if self.serialize:
                 for line in file_obj:
@@ -1472,7 +1576,9 @@ class LocalDirectoryWatchdog(MetalNode):
                         or last_modified_time > time_in_interval
                     ):
                         time_in_interval = last_modified_time
-                        logging.debug("time_in_interval: " + str(time_in_interval))
+                        logging.debug(
+                            "time_in_interval: " + str(time_in_interval)
+                        )
             if time_in_interval is not None:
                 self.latest_arrival = time_in_interval
 
@@ -1541,7 +1647,9 @@ class DynamicClassMediator(MetalNode):
     def get_sink(self):
         sinks = self.sink_list()
         if len(sinks) > 1:
-            raise Exception("`DynamicClassMediator` may have no more than one sink.")
+            raise Exception(
+                "`DynamicClassMediator` may have no more than one sink."
+            )
         elif len(sinks) == 0:
             return None
         return sinks[0]
@@ -1549,7 +1657,9 @@ class DynamicClassMediator(MetalNode):
     def get_source(self):
         sources = self.source_list()
         if len(sources) > 1:
-            raise Exception("`DynamicClassMediator` may have no more than one source.")
+            raise Exception(
+                "`DynamicClassMediator` may have no more than one source."
+            )
         elif len(sources) == 0:
             return None
         return sources[0]
@@ -1613,7 +1723,9 @@ def template_class(
 ):
 
     kwargs_remapping = kwargs_remapping or {}
-    frozen_init = functools.partial(parent_class.__init__, **frozen_arguments_mapping)
+    frozen_init = functools.partial(
+        parent_class.__init__, **frozen_arguments_mapping
+    )
     if isinstance(parent_class, (str,)):
         parent_class = globals()[parent_class]
     cls = type(class_name, (parent_class,), {})
@@ -1631,7 +1743,10 @@ def class_factory(raw_config):
     for node_name, node_config in new_class.node_dict.items():
         _class = node_config["class"]
         cls = template_class(
-            node_name, _class, node_config["remapping"], node_config["frozen_arguments"]
+            node_name,
+            _class,
+            node_config["remapping"],
+            node_config["frozen_arguments"],
         )
         setattr(cls, "raw_config", raw_config)
         node_config["cls_obj"] = cls
@@ -1646,7 +1761,9 @@ class Remapper(MetalNode):
         super(Remapper, self).__init__(**kwargs)
 
     def process_item(self):
-        logging.debug("Remapper {node}:".format(node=self.name) + str(self.__message__))
+        logging.debug(
+            "Remapper {node}:".format(node=self.name) + str(self.__message__)
+        )
         out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
 
