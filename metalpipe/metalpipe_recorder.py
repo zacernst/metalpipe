@@ -12,7 +12,9 @@ class RedisFixturizer:
         self.redis = redis.Redis(host=host, port=port, db=db)
 
     def get_num_source_messages(self, node):
-        node_key = "__num_values_stored_{node_name}__".format(node_name=node.name)
+        node_key = "__num_values_stored_{node_name}__".format(
+            node_name=node.name
+        )
         try:
             num_messages = self.redis.get(node_key)
         except:
@@ -28,7 +30,9 @@ class RedisFixturizer:
             node_name=node.name, message_number=str(message_number)
         )
         self.redis.set(key, package(value))
-        node_key = "__num_values_stored_{node_name}__".format(node_name=node.name)
+        node_key = "__num_values_stored_{node_name}__".format(
+            node_name=node.name
+        )
         self.redis.set(node_key, message_number)
 
     def record_worker_node(self, node, input_value, output_value):
@@ -52,7 +56,11 @@ if __name__ == "__main__":
     from metalpipe.node_classes.civis_nodes import *
 
     node_1 = ConstantEmitter(
-        name="node_1", delay=0.01, max_loops=200, thing={"hi": "there"}, fixturize=True
+        name="node_1",
+        delay=0.01,
+        max_loops=200,
+        thing={"hi": "there"},
+        fixturize=True,
     )
     node_2 = PrinterOfThings(fixturize=True, name="node_2")
     node_3 = PrinterOfThings(fixturize=True, name="node_3")
