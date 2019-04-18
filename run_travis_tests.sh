@@ -1,1 +1,1 @@
-PYTHONPATH=. pytest -v ./tests
+PYTHONPATH=. TRAVIS=1 pytest -v ./tests
