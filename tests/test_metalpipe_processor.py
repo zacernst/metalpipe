@@ -7,15 +7,19 @@ import metalpipe.node as node
 import metalpipe.node_queue.queue as queue
 import metalpipe.node_classes.network_nodes as network_nodes
 
-os.environ["PYTHONPATH"] = "."
 
+os.environ["PYTHONPATH"] = "."
+SAMPLE_DATA_DIR = './tests/sample_data/'
 
 def test_test_sanity():
     assert 1 == 1
 
 
 def test_http_get_request():
-    emitter = node.ConstantEmitter(thing={'user_number': '1'}, output_keypath="output", max_loops=1)
+    emitter = node.ConstantEmitter(
+        thing={'user_number': '1'},
+        output_keypath="output",
+        max_loops=1)
     get_request_node = network_nodes.HttpGetRequest(
         endpoint_template='http://localhost:3000/users/1',
         endpoint_dict={},
@@ -118,3 +122,21 @@ def test_error_kills_threads(exception_raiser, constant_emitter):
     constant_emitter.wait_for_pipeline_finish()
     time.sleep(10)
     assert all(not i.is_alive() for i in constant_emitter.thread_dict.values())
+
+
+@pytest.fixture(scope="function")
+def local_file_reader():
+    file_reader = node.LocalFileReader(
+        directory=SAMPLE_DATA_DIR,
+        filename='customers.csv',
+        output_key="contents"
+    )
+    return file_reader
+
+
+def test_local_file_reader(local_file_reader):
+    mock_node = node.MockNode()
+    local_file_reader > mock_node
+    local_file_reader.global_start()
+    local_file_reader.wait_for_pipeline_finish()
+    assert mock_node.message_holder is not None

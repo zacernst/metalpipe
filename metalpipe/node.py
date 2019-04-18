@@ -563,6 +563,14 @@ class MetalNode:
         """
         pass
 
+    def generator(self):
+        '''
+        If there is no ``generator`` method, then call the node's ``process_item``
+        method instead, assuming that there is code to accommodate this case.
+        '''
+        for i in self.process_item():
+            yield i
+
     @property
     def __message__(self):
         """
@@ -984,9 +992,9 @@ class FunctionOfMessage(MetalNode):
 
 
 class MockNode(MetalNode):
-    '''
+    """
     This is only intended for doing unit tests, etc.
-    '''
+    """
 
     def __init__(self, **kwargs):
         self.message_holder = None
@@ -1434,12 +1442,13 @@ class LocalFileReader(MetalNode):
         send_batch_markers=True,
         serialize=False,
         read_mode="r",
+        filename=None,
         **kwargs
     ):
         super(LocalFileReader, self).__init__(**kwargs)
 
     def process_item(self):
-        filename = "/".join([self.directory, self.__message__])
+        filename = "/".join([self.directory, self.filename or self.__message__])
         with open(filename, self.read_mode) as file_obj:
             if self.serialize:
                 for line in file_obj:
@@ -1448,6 +1457,8 @@ class LocalFileReader(MetalNode):
             else:
                 output = file_obj.read()
                 yield output
+
+
 
 
 class CSVReader(MetalNode):
