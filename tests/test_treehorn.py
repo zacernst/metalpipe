@@ -203,3 +203,38 @@ def test_has_key_in_disjunction_negation_finds_node(sample_traced_object):
         {"c1": "d1", "some_list": [10, 20, 40], "e": "whatever"}
     )
     assert len(result) == 1
+
+
+@pytest.fixture(scope="function")
+def email_condition():
+    has_email_key = treehorn.GoDown(condition=treehorn.HasKey('email'))
+    return has_email_key
+
+
+@pytest.fixture(scope="function")
+def city_condition():
+    has_city_key = treehorn.GoDown(condition=treehorn.HasKey('city'))
+    has_city_key + 'city'
+    return has_city_key
+
+
+@pytest.fixture(scope='function')
+def sample_relation():
+    test_relation = treehorn.Relation('TEST_RELATION')
+    return test_relation
+
+
+def test_add_label_to_traversal(email_condition):
+    email_condition + 'email'
+    assert hasattr(email_condition, 'label')
+    assert isinstance(email_condition.label, (treehorn.Label,))
+
+
+def test_instantiate_relation(email_condition, sample_relation):
+    assert isinstance(sample_relation, (treehorn.Relation,))
+
+
+def test_link_traverals(email_condition, city_condition):
+    email_condition > city_condition
+    assert email_condition._next_traversal is city_condition
+    assert city_condition._previous_traversal is email_condition
