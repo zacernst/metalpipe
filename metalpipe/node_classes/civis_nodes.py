@@ -69,13 +69,16 @@ class SendToCivis(MetalNode):
                 [
                     table,
                     "staging",
-                    hashlib.md5(bytes(str(random.random()), "ascii")).hexdigest()[
-                        :HASH_SUFFIX_LENGTH
-                    ],
+                    hashlib.md5(
+                        bytes(str(random.random()), "ascii")
+                    ).hexdigest()[:HASH_SUFFIX_LENGTH],
                 ]
             )
             self.log_info(
-                "staging table for: " + self.name + " " + str(self.staging_table)
+                "staging table for: "
+                + self.name
+                + " "
+                + str(self.staging_table)
             )
         else:
             self.staging_table = staging_table
@@ -138,10 +141,15 @@ class SendToCivis(MetalNode):
                 production_table=self.table,
                 staging_table=self.staging_table,
             )
-            self.log_info("In cleanup -- copying staging table into production")
+            self.log_info(
+                "In cleanup -- copying staging table into production"
+            )
             self.log_info(sql_query)
             fut = civis.io.query_civis(
-                sql_query, database=self.database, client=self.api_client, hidden=False
+                sql_query,
+                database=self.database,
+                client=self.api_client,
+                hidden=False,
             )
             result = fut.result()
             self.log_info("cleanup result: " + str(result))
@@ -155,7 +163,10 @@ class SendToCivis(MetalNode):
                 )
             )
             fut = civis.io.query_civis(
-                sql_query, database=self.database, client=self.api_client, hidden=False
+                sql_query,
+                database=self.database,
+                client=self.api_client,
+                hidden=False,
             )
             result = fut.result()
         else:
@@ -194,9 +205,12 @@ class SendToCivis(MetalNode):
                 if future_obj._state != "RUNNING":
                     if future_obj.failed():
                         self.log_info(
-                            "failure in SendToCivis: " + str(future_obj.exception())
+                            "failure in SendToCivis: "
+                            + str(future_obj.exception())
                         )
-                        self.status = "error"  # Needs to be caught by Node class
+                        self.status = (
+                            "error"
+                        )  # Needs to be caught by Node class
                         run = False
             table_lock.release()
             time.sleep(MONITOR_FUTURES_SLEEP)
@@ -303,7 +317,8 @@ class EnsureCivisRedshiftTableExists(MetalNode):
         columns_spec = ", ".join(
             [
                 '"{column_name}" {column_type} NULL'.format(
-                    column_name=column["column_name"], column_type=column["column_type"]
+                    column_name=column["column_name"],
+                    column_type=column["column_type"],
                 )
                 for column in self.columns
             ]
@@ -343,7 +358,9 @@ class FindValueInRedshiftColumn(MetalNode):
         self.choice = choice.upper()
 
         if self.choice not in ["MAX", "MIN"]:
-            raise Exception("The `choice` parameter must be one of [MAX, MIN].")
+            raise Exception(
+                "The `choice` parameter must be one of [MAX, MIN]."
+            )
         super(FindValueInRedshiftColumn, self).__init__(**kwargs)
 
     def process_item(self):
@@ -363,7 +380,8 @@ class FindValueInRedshiftColumn(MetalNode):
         result = fut.result()
         value = (
             result["result_rows"][0][0]
-            if len(result["result_rows"]) > 0 and len(result["result_rows"][0]) > 0
+            if len(result["result_rows"]) > 0
+            and len(result["result_rows"][0]) > 0
             else None
         )
         logging.debug("FindValueInRedshiftColumn: " + str(value))

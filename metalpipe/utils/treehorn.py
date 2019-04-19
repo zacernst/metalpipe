@@ -81,12 +81,17 @@ class GoSomewhere(TreeHorn, dict):
 
         def _generator(_traversal, _tree):
             _inner_generator = (
-                _tree.descendants if _traversal.direction == "down" else _tree.ancestors
+                _tree.descendants
+                if _traversal.direction == "down"
+                else _tree.ancestors
             )
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
-                if _traversal.condition(inner_node) == _traversal.condition.truth_value:
+                if (
+                    _traversal.condition(inner_node)
+                    == _traversal.condition.truth_value
+                ):
                     if _traversal._next_traversal is None:
                         _traversal._current_result = inner_node
                         yield inner_node
@@ -268,7 +273,9 @@ class IsDictionary(MeetsCondition):
 
 
 class TracedObject:
-    def __init__(self, path=None, parent=None, parent_key=None, parent_list_index=None):
+    def __init__(
+        self, path=None, parent=None, parent_key=None, parent_list_index=None
+    ):
         self.path = path or []
         self.parent = parent
         self.parent_key = parent_key
@@ -342,7 +349,12 @@ class ListIndex:
 
 class TracedList(TracedObject, list):
     def __init__(
-        self, *args, path=None, parent=None, parent_key=None, parent_list_index=None
+        self,
+        *args,
+        path=None,
+        parent=None,
+        parent_key=None,
+        parent_list_index=None
     ):
 
         super(TracedList, self).__init__(
@@ -370,17 +382,27 @@ class PathEndsIn(MeetsCondition):
     def __init__(self, path=None, **kwargs):
         self.path = path or []
         _test_function = lambda x: x.path[-1 * len(self.path) :] == self.path
-        super(PathEndsIn, self).__init__(test_function=_test_function, **kwargs)
+        super(PathEndsIn, self).__init__(
+            test_function=_test_function, **kwargs
+        )
 
 
-def splitter(thing, path=None, parent=None, parent_key=None, parent_list_index=None):
+def splitter(
+    thing, path=None, parent=None, parent_key=None, parent_list_index=None
+):
 
     if isinstance(thing, (dict,)):
-        return TracedDictionary(thing, path=path, parent=parent, parent_key=parent_key)
+        return TracedDictionary(
+            thing, path=path, parent=parent, parent_key=parent_key
+        )
     elif isinstance(thing, (list, tuple)):
-        return TracedList(*thing, path=path, parent=parent, parent_key=parent_key)
+        return TracedList(
+            *thing, path=path, parent=parent, parent_key=parent_key
+        )
     else:
-        return TracedPrimitive(thing, path=path, parent=parent, parent_key=parent_key)
+        return TracedPrimitive(
+            thing, path=path, parent=parent, parent_key=parent_key
+        )
 
 
 class TracedPrimitive(TracedObject):
@@ -394,7 +416,12 @@ class TracedPrimitive(TracedObject):
 
 class TracedDictionary(TracedObject, dict):
     def __init__(
-        self, thing, path=None, parent=None, parent_key=None, parent_list_index=None
+        self,
+        thing,
+        path=None,
+        parent=None,
+        parent_key=None,
+        parent_list_index=None,
     ):
 
         self.thing = thing
@@ -402,7 +429,9 @@ class TracedDictionary(TracedObject, dict):
             path=path, parent=parent, parent_key=parent_key
         )
         for key, value in thing.items():
-            child = splitter(value, parent=self, parent_key=key, path=self.path + [key])
+            child = splitter(
+                value, parent=self, parent_key=key, path=self.path + [key]
+            )
             self[key] = child
             self.children.append(child)
 
@@ -424,7 +453,9 @@ class Relation:
         traversal_head(tree)
         traversals = traversal_head.all_traversals()
         with_labels = [
-            traversal for traversal in traversals if traversal.label is not None
+            traversal
+            for traversal in traversals
+            if traversal.label is not None
         ]
         traversal_head(tree)
         for _ in traversal_head._generator:
@@ -455,7 +486,9 @@ if __name__ == "__main__":
         print(i)
 
     from_city = Relation("FROM_CITY")
-    from_city == ((has_email_key + "email")["email"] > (has_city_key + "city")["city"])
+    from_city == (
+        (has_email_key + "email")["email"] > (has_city_key + "city")["city"]
+    )
     for email_city in FROM_CITY(tree):
         pass
         print(email_city)
