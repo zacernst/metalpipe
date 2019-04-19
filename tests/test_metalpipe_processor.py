@@ -155,4 +155,6 @@ def test_csv_reader(local_file_reader, mock_node):
     local_file_reader > csv_reader > mock_node
     local_file_reader.global_start()
     local_file_reader.wait_for_pipeline_finish()
+    time.sleep(10)
+    assert len(mock_node.message_list) == 4
     assert True

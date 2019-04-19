@@ -1054,6 +1054,7 @@ class MockNode(MetalNode):
         self.message_holder = self.__message__
         self.message_list.append(self.__message__)
         self.message_counter += 1
+        yield NothingToSeeHere()
 
 
 class InsertData(MetalNode):
