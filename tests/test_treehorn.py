@@ -1,11 +1,14 @@
 import os
 import logging
+import json
 import time
 import pytest
 import metalpipe.utils.treehorn as treehorn
 
 
 os.environ["PYTHONPATH"] = "."
+SAMPLE_DATA_DIR = 'tests/sample_data/'
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -31,6 +34,13 @@ def test_assert_generates_false_too_many():
 def test_assert_generates_false_not_enough():
     with pytest.raises(expected_exception=Exception):
         assert_generates(range(3), [1, 2])
+
+@pytest.fixture(scope='function')
+def sample_json_dict():
+    with open(SAMPLE_DATA_DIR + 'sample_treehorn_1.json') as f:
+        d = json.load(f)
+    return d
+
 
 
 @pytest.fixture(scope="function")
@@ -238,3 +248,6 @@ def test_link_traverals(email_condition, city_condition):
     email_condition > city_condition
     assert email_condition._next_traversal is city_condition
     assert city_condition._previous_traversal is email_condition
+
+def test_iterate_relation(sample_json_dict):
+    assert True
