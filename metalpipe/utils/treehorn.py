@@ -287,7 +287,10 @@ class TracedObject:
         return self.root.descendants()
 
     def __eq__(self, other):
-        return self.to_python() == other.to_python()
+        '''
+        Test for equality by running ``to_python`` on ``self`` and/or ``other`` first, if necessary.
+        '''
+        return (self.to_python() if hasattr(self, 'to_python') else self) == (other.to_python() if hasattr(other, 'to_python') else other)
 
     def to_python(self):
         """
@@ -472,7 +475,7 @@ class Relation:
 
 
 if __name__ == "__main__":
-    SAMPLE_FILE = "/home/zac/projects/metalpipe/sample_output.json"
+    SAMPLE_FILE = "/home/vagrant/github/metalpipe/tests/sample_data/sample_treehorn_1.json"
 
     with open(SAMPLE_FILE, "r") as infile:
         tree = json.load(infile)
@@ -489,6 +492,7 @@ if __name__ == "__main__":
     from_city == (
         (has_email_key + "email")["email"] > (has_city_key + "city")["city"]
     )
-    for email_city in FROM_CITY(tree):
+    for email_city in from_city(tree):
         pass
         print(email_city)
+        import pdb; pdb.set_trace()

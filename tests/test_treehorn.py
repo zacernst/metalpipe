@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import unittest
 import time
 import pytest
 import metalpipe.utils.treehorn as treehorn
@@ -249,5 +250,28 @@ def test_link_traverals(email_condition, city_condition):
     assert email_condition._next_traversal is city_condition
     assert city_condition._previous_traversal is email_condition
 
-def test_iterate_relation(sample_json_dict):
-    assert True
+
+@pytest.fixture(scope='function')
+def full_relation():
+    has_email = treehorn.GoDown(condition=treehorn.HasKey('email'))
+    has_city = treehorn.GoDown(condition=treehorn.HasKey('city'))
+    has_email + 'email'
+    has_city + 'city'
+    sample_relation = treehorn.Relation('sample')
+    sample_relation == (has_email + 'email')['email'] > (has_city + 'city')['city']
+    return sample_relation
+
+
+def test_iterate_relation(full_relation, sample_json_dict):
+    out = [
+        {'email': 'Sincere@april.biz', 'city': 'Gwenborough'},
+        {'email': 'Shanna@melissa.tv', 'city': 'Wisokyburgh'},
+        {'email': 'Nathan@yesenia.net', 'city': 'McKenziehaven'},
+        {'email': 'Julianne.OConner@kory.org', 'city': 'South Elvis'},
+        {'email': 'Lucio_Hettinger@annie.ca', 'city': 'Roscoeview'},
+        {'email': 'Karley_Dach@jasper.info', 'city': 'South Christy'}
+        ]
+    out = treehorn.splitter(out)
+    sample_json_dict = treehorn.splitter(sample_json_dict)
+    actual = list(full_relation(sample_json_dict))
+    assert actual == out
