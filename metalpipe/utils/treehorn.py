@@ -287,10 +287,12 @@ class TracedObject:
         return self.root.descendants()
 
     def __eq__(self, other):
-        '''
+        """
         Test for equality by running ``to_python`` on ``self`` and/or ``other`` first, if necessary.
-        '''
-        return (self.to_python() if hasattr(self, 'to_python') else self) == (other.to_python() if hasattr(other, 'to_python') else other)
+        """
+        return (self.to_python() if hasattr(self, "to_python") else self) == (
+            other.to_python() if hasattr(other, "to_python") else other
+        )
 
     def to_python(self):
         """
@@ -495,4 +497,6 @@ if __name__ == "__main__":
     for email_city in from_city(tree):
         pass
         print(email_city)
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
