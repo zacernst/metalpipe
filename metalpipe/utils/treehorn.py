@@ -148,7 +148,7 @@ class GoDown(GoSomewhere):
 class GoUp(GoSomewhere):
     def __init__(self, **kwargs):
         self.direction = "up"
-        super(GoDown, self).__init__(**kwargs)
+        super(GoUp, self).__init__(**kwargs)
 
 
 class MeetsCondition(TreeHorn):
@@ -222,6 +222,15 @@ class HasAncestor(HasDescendantOrAncestor):
 
     def __call__(self, thing):
         return any(self.condition(node) for node in thing.descendants())
+
+
+class IsRoot(MeetsCondition):
+    def __init__(self, **kwargs):
+
+        def _condition(thing):
+            return thing.is_root
+
+        super(IsRoot, self).__init__(condition=_condition, **kwargs)
 
 
 class HasKey(MeetsCondition):
