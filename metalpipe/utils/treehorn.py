@@ -226,7 +226,6 @@ class HasAncestor(HasDescendantOrAncestor):
 
 class IsRoot(MeetsCondition):
     def __init__(self, **kwargs):
-
         def _condition(thing):
             return thing.is_root
 
