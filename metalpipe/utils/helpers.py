@@ -367,12 +367,32 @@ def aggregate_values(dictionary, target_path, values=False):
     return out
 
 
-class UberDict(dict):
-    def rget(self, value):
-        for i in meets_condition(self, lambda x: isinstance(x, (dict,))):
-            for _key, _value in i.items():
-                if _value == value:
-                    yield _key
+class MultiDict(dict):
+    """
+    A convenience class. Behaves just like a dictionary, except that you can
+    specify more than one key and it'll return a dictionary with the values
+    of each of those keys, as in:
+
+    ..
+
+       d = MultiDict()
+       d['foo'] = 'bar'
+       d['bar'] = 'baz'
+       d['foo', 'bar'] = {'foo': 'bar', 'bar': 'baz'}
+
+    We'll use this for making the ``Relation`` syntax a little clearer.
+    """
+
+    def __getitem__(self, *other):
+        other = other[0]
+        print(other)
+        print(len(other))
+
+        if isinstance(other, (tuple, list)):
+            out = {key: super(FooDict, self).__getitem__(key) for key in other}
+        else:
+            out = super(FooDict, self).__getitem__(other)
+        return out
 
 
 def iterate(thing, path=None, seen=None, start_path=None):

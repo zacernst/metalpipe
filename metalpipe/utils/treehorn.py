@@ -148,7 +148,7 @@ class GoDown(GoSomewhere):
 class GoUp(GoSomewhere):
     def __init__(self, **kwargs):
         self.direction = "up"
-        super(GoDown, self).__init__(**kwargs)
+        super(GoUp, self).__init__(**kwargs)
 
 
 class MeetsCondition(TreeHorn):
@@ -224,6 +224,15 @@ class HasAncestor(HasDescendantOrAncestor):
         return any(self.condition(node) for node in thing.descendants())
 
 
+class IsRoot(MeetsCondition):
+    def __init__(self, **kwargs):
+
+        def _condition(thing):
+            return thing.is_root
+
+        super(IsRoot, self).__init__(condition=_condition, **kwargs)
+
+
 class HasKey(MeetsCondition):
     def __init__(self, key=None, **kwargs):
         self.key = key
@@ -287,10 +296,12 @@ class TracedObject:
         return self.root.descendants()
 
     def __eq__(self, other):
-        '''
+        """
         Test for equality by running ``to_python`` on ``self`` and/or ``other`` first, if necessary.
-        '''
-        return (self.to_python() if hasattr(self, 'to_python') else self) == (other.to_python() if hasattr(other, 'to_python') else other)
+        """
+        return (self.to_python() if hasattr(self, "to_python") else self) == (
+            other.to_python() if hasattr(other, "to_python") else other
+        )
 
     def to_python(self):
         """
@@ -495,4 +506,6 @@ if __name__ == "__main__":
     for email_city in from_city(tree):
         pass
         print(email_city)
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
