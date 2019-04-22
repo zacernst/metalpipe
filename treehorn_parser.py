@@ -4,6 +4,7 @@ tokens = (
     'SELECT',
     'TOP',
     'COMMA',
+    'FROM',
     'LABEL',
     'LPAREN',
     'RPAREN',
@@ -26,6 +27,7 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_AND = r'AND'
 t_OR = r'OR'
+t_FROM = r'FROM'
 t_NOT = r'NOT'
 t_START = r'START'
 t_AT = r'AT'
