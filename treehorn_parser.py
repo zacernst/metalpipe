@@ -4,10 +4,13 @@ tokens = (
     'SELECT',
     'TOP',
     'COMMA',
+    'HAS',
     'FROM',
+    'KEY',
     'LABEL',
     'LPAREN',
     'RPAREN',
+    'DOT',
     'AND',
     'AS',
     'OR',
@@ -29,6 +32,9 @@ t_AND = r'AND'
 t_OR = r'OR'
 t_FROM = r'FROM'
 t_NOT = r'NOT'
+t_DOT = r'\.'
+t_HAS = r'HAS'
+t_KEY = r'KEY'
 t_START = r'START'
 t_AT = r'AT'
 t_GO = r'GO'
@@ -46,7 +52,7 @@ t_ignore = ' \t\n'
 lexer = lex.lex()
 
 if __name__ == '__main__':
-    data = 'SELECT TOP'
+    data = 'SELECT TOP . TOP'
     lexer.input(data)
 
     tok = lexer.token()

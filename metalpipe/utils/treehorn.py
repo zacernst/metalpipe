@@ -15,6 +15,7 @@ def cast_generators(some_dict):
                 some_dict[key] = list(value)
 
 
+
 class TreeHorn:
     pass
 
@@ -71,6 +72,8 @@ class GoSomewhere(TreeHorn, dict):
             current = current._next_traversal
         return chain
 
+
+
     def __call__(self, thing):
         # Find start of traversal
 
@@ -85,6 +88,14 @@ class GoSomewhere(TreeHorn, dict):
                 if _traversal.direction == "down"
                 else _tree.ancestors
             )
+            if _traversal.direction == 'down':
+                _inner_generator = _tree.descendants
+            elif _traversal.direction == 'up':
+                _inner_generator = _tree.ancestors
+            elif _traversal.direction == 'here':
+                _inner_generator = _tree.this
+            else:
+                raise Exception('This should definitely not happen.')
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
@@ -109,11 +120,13 @@ class GoSomewhere(TreeHorn, dict):
             yield i
 
     def next_traversal(self, go_somewhere):
-        self._next_traversal = go_somewhere
-        go_somewhere._previous_traversal = self
+        tail_traversal = self
+        while tail_traversal._next_traversal is not None:
+            tail_traversal = tail_traversal._next_traversal
+        tail_traversal._next_traversal = go_somewhere
+        go_somewhere._previous_traversal = tail_traversal
 
     def __getattr__(self, thing):
-
         raise Exception("not implemented..." + thing)
 
     def apply_label(self, label):
@@ -137,6 +150,20 @@ class GoSomewhere(TreeHorn, dict):
             return self.get(key)
         elif isinstance(key_or_keys, (list, tuple)):
             return [self.get(key) for key in key_or_keys]
+        elif isinstance(key_or_keys, (KeyPath,)):
+            obj = self
+            for key in key_or_keys.keypath:
+                obj = obj.get(key)
+            return obj
+
+    def __repr__(self):
+        out = '{class_name}[{condition}]: {label}'.format(class_name=self.__class__.__name__, condition=str(self.condition.__class__.__name__), label=str(self.label))
+        return out
+
+class KeyPath:
+
+    def __init__(self, keypath=None):
+        self.keypath = keypath or []
 
 
 class GoDown(GoSomewhere):
@@ -149,6 +176,12 @@ class GoUp(GoSomewhere):
     def __init__(self, **kwargs):
         self.direction = "up"
         super(GoUp, self).__init__(**kwargs)
+
+
+class StayHere(GoSomewhere):
+    def __init__(self, **kwargs):
+        self.direction = 'here'
+        super(StayHere, self).__init__(condition=Yes(), **kwargs)
 
 
 class MeetsCondition(TreeHorn):
@@ -242,6 +275,15 @@ class HasKey(MeetsCondition):
         super(HasKey, self).__init__(test_function=_condition, **kwargs)
 
 
+class Yes(MeetsCondition):
+    def __init__(self, **kwargs):
+
+        def _condition(thing):
+            return True
+
+        super(Yes, self).__init__(test_function=_condition, **kwargs)
+
+
 class And(MeetsCondition):
     def __init__(self, conjunct_1, conjunct_2, **kwargs):
         self.conjunct_1 = conjunct_1
@@ -329,6 +371,9 @@ class TracedObject:
             yield self.parent
             for i in self.parent.ancestors(include_self=False):
                 yield i
+
+    def this(self):
+        yield self
 
     def descendants(self, include_self=False):
         if include_self:
@@ -448,6 +493,15 @@ class TracedDictionary(TracedObject, dict):
             self[key] = child
             self.children.append(child)
 
+    def get(self, key):
+        if isinstance(key, (KeyPath,)):
+            obj = self
+            for one_key in key.keypath:
+                obj = obj[one_key]
+            return obj
+        else:
+            return self[key]
+
 
 class Relation:
     def __init__(self, name):
@@ -481,6 +535,8 @@ class Relation:
                         node_with_label._retrieve_key
                     )
                 )
+                if node_with_label._retrieve_key is not None:
+                    pass
             yield d
 
 
@@ -494,17 +550,15 @@ if __name__ == "__main__":
 
     has_email_key = GoDown(condition=HasKey("email"))
     has_city_key = GoDown(condition=HasKey("city"))
+    stick = StayHere()
 
-    for i in has_email_key.matches(tree):
-        print(i)
+    #for i in has_email_key.matches(tree):
+    #    print(i)
 
     from_city = Relation("FROM_CITY")
     from_city == (
-        (has_email_key + "email")["email"] > (has_city_key + "city")["city"]
+        (has_email_key + "zip")[KeyPath(["address", "zipcode"])] > (stick + 'stick')['email'] > (has_city_key + "city")["city"]
     )
     for email_city in from_city(tree):
         pass
         print(email_city)
-        import pdb
-
-        pdb.set_trace()
