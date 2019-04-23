@@ -64,8 +64,7 @@ class GoSomewhere(TreeHorn, dict):
         elif key is not None and value is not None:
             self._retrieval_dict[key] = value
         else:
-            raise Exception('Need either a key/value or a dictionary.')
-
+            raise Exception("Need either a key/value or a dictionary.")
 
     @property
     def head(self):
@@ -125,7 +124,6 @@ class GoSomewhere(TreeHorn, dict):
                     yield i
                     result_list = {}
 
-
     def matches(self, thing):
         self(thing)
         for i in self._generator:
@@ -163,7 +161,7 @@ class GoSomewhere(TreeHorn, dict):
         elif isinstance(key_or_keys, (list, tuple)):
             return [self.get(key) for key in key_or_keys]
         else:
-            raise Exception('This should not be happening, either.')
+            raise Exception("This should not be happening, either.")
 
     def __repr__(self):
         out = "{class_name}[{condition}]: {label}".format(
@@ -185,7 +183,9 @@ class KeyPath:
         self.keypath = self.keypath[1:]
 
     def __repr__(self):
-        out = '{label} : {keypath}'.format(label=str(self.label), keypath=str(self.keypath))
+        out = "{label} : {keypath}".format(
+            label=str(self.label), keypath=str(self.keypath)
+        )
         return out
 
 
@@ -298,7 +298,7 @@ class HasKey(MeetsCondition):
         super(HasKey, self).__init__(test_function=_condition, **kwargs)
 
     def __repr__(self):
-        out = 'HasKey({key})'.format(key=str(key))
+        out = "HasKey({key})".format(key=str(key))
         return out
 
 
@@ -525,8 +525,10 @@ class TracedDictionary(TracedObject, dict):
             try:
                 obj = obj[one_key]
             except:
-                print('fail')
-                import pdb; pdb.set_trace()
+                print("fail")
+                import pdb
+
+                pdb.set_trace()
         return obj
 
 
@@ -548,8 +550,10 @@ class Relation:
         # traversal_head(tree)
         traversals = traversal_head.all_traversals()
         traversal_dict = {
-            traversal.label: traversal for traversal in traversal_head.all_traversals() if traversal.label is not None
-                }
+            traversal.label: traversal
+            for traversal in traversal_head.all_traversals()
+            if traversal.label is not None
+        }
         for i in traversal_head(tree):
             out = {}
             for traversal_name, traversal in traversal_dict.items():
@@ -558,7 +562,9 @@ class Relation:
             yield out
 
     def __repr__(self):
-        out = 'Relation: {name}\nTraversal: {traversal}'.format(name=self.name, traversal=str(self.traversal))
+        out = "Relation: {name}\nTraversal: {traversal}".format(
+            name=self.name, traversal=str(self.traversal)
+        )
         return out
 
 
@@ -574,11 +580,14 @@ if __name__ == "__main__":
     has_city_key = GoDown(condition=HasKey("city"))
     stick = StayHere()
 
-    has_email_key + 'profile'
-    has_city_key + 'city'
-    email_retrieval_dict = {'email_address': ['email'], 'name': ['username']}
-    address_retrieval_dict = {'latitude': ['geo', 'lat'], 'longitude': ['geo', 'lng']}
-    #address_retrieval_dict = {'city': ['zipcode']}
+    has_email_key + "profile"
+    has_city_key + "city"
+    email_retrieval_dict = {"email_address": ["email"], "name": ["username"]}
+    address_retrieval_dict = {
+        "latitude": ["geo", "lat"],
+        "longitude": ["geo", "lng"],
+    }
+    # address_retrieval_dict = {'city': ['zipcode']}
     has_email_key.update_retrieval_dict(r_dict=email_retrieval_dict)
     has_city_key.update_retrieval_dict(r_dict=address_retrieval_dict)
 
@@ -588,5 +597,5 @@ if __name__ == "__main__":
     from_city == has_email_key > has_city_key
     # sys.exit(0)
     for email_city in from_city(tree):
-        print('-------')
+        print("-------")
         pprint.pprint(email_city)
