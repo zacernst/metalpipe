@@ -21,8 +21,6 @@ def p_root(p):
             | label_list
             | traversal
             | select_clause'''
-    for keypath_obj in p[1].select_head.label_list:
-        keypath_obj.split_label()
     p[0] = p[1]
     # The split_label method has set the self.label and self.keypath
 
@@ -72,7 +70,7 @@ def p_traversal_chain(p):
         p[0] = p[1]
     elif len(p) == 3:
         p[0] = p[1]
-        p[0] > p[2]
+        p[0].tail > p[2]
     else:
         raise Exception('What?')
 
@@ -97,12 +95,17 @@ def p_condition(p):
     else:
         raise Exception('This should not happen.')
 
+def p_keypath_as(p):
+    ''' keypath_as : keypath AS LABEL '''
+    p[0] = p[1]
+    p[0].label = p[3]
 
 def p_keypath(p):
     ''' keypath : LABEL
-                | keypath DOT LABEL'''
+                | keypath DOT LABEL
+    '''
     if len(p) == 2:
-        p[0] = treehorn.KeyPath([p[1]])
+        p[0] = treehorn.KeyPath(traversal_label=p[1])
     elif len(p) == 4:
         p[0] = p[1]
         p[0].keypath.append(p[3])
@@ -111,15 +114,16 @@ def p_keypath(p):
 
 
 def p_label_list(p):
-    ''' label_list : keypath
-                   | label_list COMMA keypath
+    ''' label_list : keypath_as
+                   | label_list COMMA keypath_as
     '''
     if len(p) == 2:
-        p[0] = [p[1]]
-        print(p[0])
+        p[0] = {p[1].label: {'keypath': p[1].keypath, 'traversal_label': p[1].traversal_label}}
+    elif len(p) == 4:
+        p[0] = p[1]
+        p[0][p[3].label] = {'keypath': p[3].keypath, 'traversal_label': p[3].traversal_label}
     else:
-        p[0] = p[1] + [p[3]]
-    # raise Exception('This should not happen.')
+        raise Exception('What?')
 
 
 class SelectHead:
@@ -172,35 +176,13 @@ if __name__ == '__main__':
     import pprint
     obj = json.load(open('./tests/sample_data/sample_treehorn_1.json'))
     query = Query(
-            'SELECT emaildict.email FROM obj START AT TOP GO DOWN UNTIL HAS KEY email AS emaildict '
-            'GO DOWN UNTIL HAS KEY city AS city')
+            'SELECT emaildict.email AS emailaddress, emaildict.username AS name, address.city AS cityname FROM obj START AT TOP GO DOWN UNTIL HAS KEY email AS emaildict '
+            'GO DOWN UNTIL HAS KEY city AS address')
     relation = treehorn.Relation('foo')
+    traversals = query.query_obj.traversal_chain.head.all_traversals()
+    traversal_dict = {traversal.label: traversal for traversal in traversals if traversal.label is not None}
+    for traversal_name, query_dict in query.query_obj.select_head.label_list.items():
+        traversal_dict[query_dict['traversal_label']].update_retrieval_dict(key=traversal_name, value=query_dict['keypath'])
     relation.traversal = query.query_obj.traversal_chain
-    # Loop over traversals; find ones that have a label in the select head
-
-    # Loop over labels in select head; find traversal(s) for each?
-    for label in query.query_obj.select_head.label_list:
-        print(label)
-        traversal_with_label = [
-            traversal for traversal in relation.traversal.all_traversals() if traversal.label == label
-                ]
-        if len(traversal_with_label) == 0:
-            raise Exception('No Traversal found for label {label}'.format(label=str(label)))
-        elif len(traversal_with_label) > 1:
-            raise Exception('More than one Traveral found for label {label}'.format(label=str(label)))
-        else:
-            traversal_with_label = traversal_with_label[0]
-        print(traversal_with_label)
-        import pdb; pdb.set_trace()
-
-    for traversal in relation.traversal.all_traversals():
-        print(traversal)
-        print(traversal.label)
-        if traversal.label is not None:
-            # Find if label in select head
-            print(query.query_obj.select_head.label_list[0].label)
-
-
-    ## keypath contains the label as the first element; it shouldn't.
-    # query.query_obj.select_head.label_list[0].__dict__
-    pprint.pprint(list(relation(obj)))
+    for i in relation(obj):
+        print(i)
