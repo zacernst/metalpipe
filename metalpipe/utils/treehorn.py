@@ -15,7 +15,6 @@ def cast_generators(some_dict):
                 some_dict[key] = list(value)
 
 
-
 class TreeHorn:
     pass
 
@@ -72,8 +71,6 @@ class GoSomewhere(TreeHorn, dict):
             current = current._next_traversal
         return chain
 
-
-
     def __call__(self, thing):
         # Find start of traversal
 
@@ -88,14 +85,14 @@ class GoSomewhere(TreeHorn, dict):
                 if _traversal.direction == "down"
                 else _tree.ancestors
             )
-            if _traversal.direction == 'down':
+            if _traversal.direction == "down":
                 _inner_generator = _tree.descendants
-            elif _traversal.direction == 'up':
+            elif _traversal.direction == "up":
                 _inner_generator = _tree.ancestors
-            elif _traversal.direction == 'here':
+            elif _traversal.direction == "here":
                 _inner_generator = _tree.this
             else:
-                raise Exception('This should definitely not happen.')
+                raise Exception("This should definitely not happen.")
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
@@ -157,13 +154,22 @@ class GoSomewhere(TreeHorn, dict):
             return obj
 
     def __repr__(self):
-        out = '{class_name}[{condition}]: {label}'.format(class_name=self.__class__.__name__, condition=str(self.condition.__class__.__name__), label=str(self.label))
+        out = "{class_name}[{condition}]: {label}".format(
+            class_name=self.__class__.__name__,
+            condition=str(self.condition.__class__.__name__),
+            label=str(self.label),
+        )
         return out
 
-class KeyPath:
 
+class KeyPath:
     def __init__(self, keypath=None):
         self.keypath = keypath or []
+        self.label = None
+
+    def split_label(self):
+        self.label = self.keypath[0]
+        self.keypath = self.keypath[1:]
 
 
 class GoDown(GoSomewhere):
@@ -180,7 +186,7 @@ class GoUp(GoSomewhere):
 
 class StayHere(GoSomewhere):
     def __init__(self, **kwargs):
-        self.direction = 'here'
+        self.direction = "here"
         super(StayHere, self).__init__(condition=Yes(), **kwargs)
 
 
@@ -277,7 +283,6 @@ class HasKey(MeetsCondition):
 
 class Yes(MeetsCondition):
     def __init__(self, **kwargs):
-
         def _condition(thing):
             return True
 
@@ -552,12 +557,14 @@ if __name__ == "__main__":
     has_city_key = GoDown(condition=HasKey("city"))
     stick = StayHere()
 
-    #for i in has_email_key.matches(tree):
+    # for i in has_email_key.matches(tree):
     #    print(i)
 
     from_city = Relation("FROM_CITY")
     from_city == (
-        (has_email_key + "zip")[KeyPath(["address", "zipcode"])] > (stick + 'stick')['email'] > (has_city_key + "city")["city"]
+        (has_email_key + "zip")[KeyPath(["address", "zipcode"])]
+        > (stick + "stick")["email"]
+        > (has_city_key + "city")["city"]
     )
     for email_city in from_city(tree):
         pass

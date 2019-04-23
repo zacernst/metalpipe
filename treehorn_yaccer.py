@@ -21,11 +21,10 @@ def p_root(p):
             | label_list
             | traversal
             | select_clause'''
+    for keypath_obj in p[1].select_head.label_list:
+        keypath_obj.split_label()
     p[0] = p[1]
-    # Here we need to go through the select clause's head, find all the keypaths that
-    # are being selected. Take the first element of each, find the traversal with that label,
-    # and add the other elements as the KeyPath for that traversal.
-    import pdb; pdb.set_trace()
+    # The split_label method has set the self.label and self.keypath
 
 
 def p_traversal(p):
@@ -177,6 +176,30 @@ if __name__ == '__main__':
             'GO DOWN UNTIL HAS KEY city AS city')
     relation = treehorn.Relation('foo')
     relation.traversal = query.query_obj.traversal_chain
+    # Loop over traversals; find ones that have a label in the select head
+
+    # Loop over labels in select head; find traversal(s) for each?
+    for label in query.query_obj.select_head.label_list:
+        print(label)
+        traversal_with_label = [
+            traversal for traversal in relation.traversal.all_traversals() if traversal.label == label
+                ]
+        if len(traversal_with_label) == 0:
+            raise Exception('No Traversal found for label {label}'.format(label=str(label)))
+        elif len(traversal_with_label) > 1:
+            raise Exception('More than one Traveral found for label {label}'.format(label=str(label)))
+        else:
+            traversal_with_label = traversal_with_label[0]
+        print(traversal_with_label)
+        import pdb; pdb.set_trace()
+
+    for traversal in relation.traversal.all_traversals():
+        print(traversal)
+        print(traversal.label)
+        if traversal.label is not None:
+            # Find if label in select head
+            print(query.query_obj.select_head.label_list[0].label)
+
 
     ## keypath contains the label as the first element; it shouldn't.
     # query.query_obj.select_head.label_list[0].__dict__
