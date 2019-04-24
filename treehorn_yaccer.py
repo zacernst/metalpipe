@@ -188,12 +188,3 @@ if __name__ == '__main__':
             'GO DOWN UNTIL HAS KEY city AS address')
     for i in query.relation(obj):
         print(i)
-    def non():
-        relation = treehorn.Relation('foo')
-        traversals = query.query_obj.traversal_chain.head.all_traversals()
-        traversal_dict = {traversal.label: traversal for traversal in traversals if traversal.label is not None}
-        for traversal_name, query_dict in query.query_obj.select_head.label_list.items():
-            traversal_dict[query_dict['traversal_label']].update_retrieval_dict(key=traversal_name, value=query_dict['keypath'])
-        relation.traversal = query.query_obj.traversal_chain
-        for i in relation(obj):
-            print(i)
