@@ -120,7 +120,9 @@ class GoSomewhere(TreeHorn, dict):
             if self._next_traversal is None:
                 yield result_list
             else:
-                for i in self._next_traversal(copy.deepcopy(node), result_list=result_list):
+                for i in self._next_traversal(
+                    copy.deepcopy(node), result_list=result_list
+                ):
                     yield i
 
     def matches(self, thing):

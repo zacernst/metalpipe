@@ -11,9 +11,22 @@ tokens = (
     'LPAREN',
     'RPAREN',
     'DOT',
+    'QUERY',
+    'UNIQUE',
+    'PROPERTY',
+    'OF',
+    'NAMED',
+    'BY',
+    'IS',
+    'IN',
+    'A',
+    'ENTITY',
+    'RELATED',
     'AND',
     'AS',
+    'COREFER',
     'OR',
+    'TO',
     'NOT',
     'START',
     'AT',
@@ -23,6 +36,20 @@ tokens = (
     'UNTIL',
         )
 
+
+t_QUERY = r'QUERY'
+t_UNIQUE = r'UNIQUE'
+t_PROPERTY = r'PROPERTY'
+t_OF = r'OF'
+t_NAMED = r'NAMED'
+t_BY = r'BY'
+t_IS = r'IS'
+t_TO = r'TO'
+t_COREFER = r'COREFER'
+t_RELATED = r'RELATED'
+t_IN = r'IN'
+t_A = r'A'
+t_ENTITY = r'ENTITY'
 t_SELECT = r'SELECT'
 t_TOP = r'TOP'
 t_COMMA = r','
