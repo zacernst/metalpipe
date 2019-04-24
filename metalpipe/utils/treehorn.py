@@ -43,9 +43,9 @@ class Label:
 
 
 class GoSomewhere(TreeHorn, dict):
-    def __init__(self, condition=None, **kwargs):
+    def __init__(self, condition=None, label=None, **kwargs):
         self.condition = condition
-        self.label = None
+        self.label = label
         self._current_result = None
         self._previous_traversal = None
         self._generator = None
@@ -120,9 +120,8 @@ class GoSomewhere(TreeHorn, dict):
             if self._next_traversal is None:
                 yield result_list
             else:
-                for i in self._next_traversal(node, result_list=result_list):
+                for i in self._next_traversal(copy.deepcopy(node), result_list=result_list):
                     yield i
-                    result_list = {}
 
     def matches(self, thing):
         self(thing)
@@ -526,9 +525,6 @@ class TracedDictionary(TracedObject, dict):
                 obj = obj[one_key]
             except:
                 print("fail")
-                import pdb
-
-                pdb.set_trace()
         return obj
 
 

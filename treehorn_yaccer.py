@@ -10,6 +10,7 @@ You could type, for example:
 
 '''
 
+import uuid
 import ply.yacc as yacc
 
 from treehorn_parser import tokens
@@ -161,9 +162,16 @@ def p_select_clause(p):
 
 
 class Query:
-    def __init__(self, query_text):
+    def __init__(self, query_text, name=None):
         self.query_text = query_text
+        self.name = name or uuid.uuid4().hex
         self.query_obj = parser.parse(query_text)
+        self.relation = treehorn.Relation('foo')
+        traversals = self.query_obj.traversal_chain.head.all_traversals()
+        traversal_dict = {traversal.label: traversal for traversal in traversals if traversal.label is not None}
+        for traversal_name, query_dict in self.query_obj.select_head.label_list.items():
+            traversal_dict[query_dict['traversal_label']].update_retrieval_dict(key=traversal_name, value=query_dict['keypath'])
+        self.relation.traversal = self.query_obj.traversal_chain
 
     def __repr__(self):
         return str(self.query_obj)
@@ -178,11 +186,14 @@ if __name__ == '__main__':
     query = Query(
             'SELECT emaildict.email AS emailaddress, emaildict.username AS name, address.city AS cityname FROM obj START AT TOP GO DOWN UNTIL HAS KEY email AS emaildict '
             'GO DOWN UNTIL HAS KEY city AS address')
-    relation = treehorn.Relation('foo')
-    traversals = query.query_obj.traversal_chain.head.all_traversals()
-    traversal_dict = {traversal.label: traversal for traversal in traversals if traversal.label is not None}
-    for traversal_name, query_dict in query.query_obj.select_head.label_list.items():
-        traversal_dict[query_dict['traversal_label']].update_retrieval_dict(key=traversal_name, value=query_dict['keypath'])
-    relation.traversal = query.query_obj.traversal_chain
-    for i in relation(obj):
+    for i in query.relation(obj):
         print(i)
+    def non():
+        relation = treehorn.Relation('foo')
+        traversals = query.query_obj.traversal_chain.head.all_traversals()
+        traversal_dict = {traversal.label: traversal for traversal in traversals if traversal.label is not None}
+        for traversal_name, query_dict in query.query_obj.select_head.label_list.items():
+            traversal_dict[query_dict['traversal_label']].update_retrieval_dict(key=traversal_name, value=query_dict['keypath'])
+        relation.traversal = query.query_obj.traversal_chain
+        for i in relation(obj):
+            print(i)
