@@ -42,7 +42,7 @@ class Label:
         return int(hashlib.md5(bytes(self.label, "utf8")).hexdigest(), 16)
 
 
-class GoSomewhere(TreeHorn, dict):
+class Traversal(TreeHorn, dict):
     def __init__(self, condition=None, label=None, **kwargs):
         self.condition = condition
         self.label = label
@@ -52,7 +52,7 @@ class GoSomewhere(TreeHorn, dict):
         self._retrieve_key = []
         self._next_traversal = None
         self._retrieval_dict = {}
-        super(GoSomewhere, self).__init__(**kwargs)
+        super(Traversal, self).__init__(**kwargs)
 
     def __getitem__(self, key):
         self._retrieve_keys.append(key)
@@ -174,35 +174,32 @@ class GoSomewhere(TreeHorn, dict):
 
 
 class KeyPath:
-    def __init__(self, label=None, keypath=None, traversal_label=None):
+    def __init__(self, keypath=None, traversal_label=None):
         self.keypath = keypath or []
-        self.label = label
         self.traversal_label = traversal_label
 
     def split_label(self):
         self.label = self.keypath[0]
         self.keypath = self.keypath[1:]
 
-    def __repr__(self):
-        out = "{label} : {keypath}".format(
-            label=str(self.label), keypath=str(self.keypath)
-        )
-        return out
+    def __call__(self, thing):
+        pass
 
 
-class GoDown(GoSomewhere):
+
+class GoDown(Traversal):
     def __init__(self, **kwargs):
         self.direction = "down"
         super(GoDown, self).__init__(**kwargs)
 
 
-class GoUp(GoSomewhere):
+class GoUp(Traversal):
     def __init__(self, **kwargs):
         self.direction = "up"
         super(GoUp, self).__init__(**kwargs)
 
 
-class StayHere(GoSomewhere):
+class StayHere(Traversal):
     def __init__(self, **kwargs):
         self.direction = "here"
         super(StayHere, self).__init__(condition=Yes(), **kwargs)
@@ -521,6 +518,8 @@ class TracedDictionary(TracedObject, dict):
             self.children.append(child)
 
     def get(self, keypath):
+        if isinstance(keypath, (str,)):
+            keypath = [keypath]
         obj = self
         for one_key in keypath:
             try:

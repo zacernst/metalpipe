@@ -5,7 +5,6 @@ tokens = (
     'TOP',
     'COMMA',
     'HAS',
-    'FROM',
     'KEY',
     'LABEL',
     'LPAREN',
@@ -28,7 +27,12 @@ tokens = (
     'OR',
     'TO',
     'NOT',
+    'PYTHON',
+    'FUNCTION',
+    'IMPORTED',
+    'FROM',
     'START',
+    'AN',
     'AT',
     'GO',
     'UP',
@@ -48,7 +52,12 @@ t_TO = r'TO'
 t_COREFER = r'COREFER'
 t_RELATED = r'RELATED'
 t_IN = r'IN'
+t_PYTHON = r'PYTHON'
+t_FUNCTION = r'FUNCTION'
+t_IMPORTED = r'IMPORTED'
+t_FROM = r'FROM'
 t_A = r'A'
+t_AN = r'AN'
 t_ENTITY = r'ENTITY'
 t_SELECT = r'SELECT'
 t_TOP = r'TOP'
@@ -57,7 +66,6 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_AND = r'AND'
 t_OR = r'OR'
-t_FROM = r'FROM'
 t_NOT = r'NOT'
 t_DOT = r'\.'
 t_HAS = r'HAS'
@@ -75,8 +83,10 @@ def t_LABEL(t):
     r'([a-z]+)'
     return t
 
+
 t_ignore = ' \t\n'
 lexer = lex.lex()
+
 
 if __name__ == '__main__':
     data = 'SELECT TOP . TOP'
