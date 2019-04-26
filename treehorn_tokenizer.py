@@ -8,6 +8,7 @@ tokens = (
     'KEY',
     'LABEL',
     'LPAREN',
+    'SEMICOLON',
     'RPAREN',
     'DOT',
     'QUERY',
@@ -49,6 +50,7 @@ t_NAMED = r'NAMED'
 t_BY = r'BY'
 t_IS = r'IS'
 t_TO = r'TO'
+t_SEMICOLON = r';'
 t_COREFER = r'COREFER'
 t_RELATED = r'RELATED'
 t_IN = r'IN'
@@ -89,7 +91,7 @@ lexer = lex.lex()
 
 
 if __name__ == '__main__':
-    data = 'SELECT TOP . TOP'
+    data = 'SELECT TOP . TOP;'
     lexer.input(data)
 
     tok = lexer.token()

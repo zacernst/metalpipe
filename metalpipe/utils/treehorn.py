@@ -186,7 +186,6 @@ class KeyPath:
         pass
 
 
-
 class GoDown(Traversal):
     def __init__(self, **kwargs):
         self.direction = "down"
