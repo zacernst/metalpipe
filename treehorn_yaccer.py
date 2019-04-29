@@ -10,6 +10,8 @@ You could type, for example:
 
 """
 
+from pyDatalog import pyDatalog
+
 import uuid
 import sys
 import importlib
@@ -239,7 +241,7 @@ class Query:
         # self.relation.traversal = self.query_obj.traversal_chain
 
     def __repr__(self):
-        return str(self.query_obj)
+        return '\n'.join([str(query_obj) for query_obj in self.query_obj_list])
 
 
 def p_query_reference(p):
@@ -502,8 +504,6 @@ if __name__ == "__main__":
 
     obj = json.load(open("./tests/sample_data/sample_treehorn_1.json"))
 
-
-
     identity = PythonFunction(name="identity")
 
     def hi(*args):
@@ -511,31 +511,50 @@ if __name__ == "__main__":
 
     identity.function = hi
 
-    query = Query(
-        "QUERY myquery IS "
-        "SELECT identity(identity(emaildict.email)) AS emailaddress, "
-        "identity(emaildict.username) AS name, identity(address.city) AS cityname "
-        "FROM obj START AT TOP GO DOWN UNTIL HAS KEY email AS emaildict "
-        "GO DOWN UNTIL HAS KEY city AS address;"
-    )
 
     function_dict = {"identity": identity}
 
+    # Order to evaluate query statements:
+    # 1. Function assertions
+    # 2. Entity unique property assertions
+    # 3. Entity non-unique property assertions
+    # 4. Relationship assertions
+    # 5. Traversals
 
+    with open('./query_text.mtl', 'r') as f:
+        q = f.read()
 
+    query = Query(q)
 
-    #for one_traversal_result in query.relation.traversal(obj):
-    for one_traversal_result in query.query_obj_list[0].traversal_chain(obj):
+    for query_obj in query.query_obj_list:
+        if not isinstance(query_obj, (SelectClause,)):
+            continue
 
-        print('----')
-        print(one_traversal_result)
-        for task in query.query_obj_list:
-            if not isinstance(task, (SelectClause,)):
-                continue
-            for selection in task.select_head.selection_list.selection_list:
+        for one_traversal_result in query_obj.traversal_chain(obj):
+            print('----')
+            for selection in query_obj.select_head.selection_list.selection_list:
                 answer = evaluate_selection_function(selection, one_traversal_result)
                 print("answer: ", selection.label, answer)
 
+    TERMS = [
+        'PROPERTY',
+        'ENTITY',
+        'RELATIONSHIP',
+        'FUNCTION',
+        'QUERY',
+        'PROPERTY_OF',
+        'UNIQUE_PROPERTY_OF',
+        'COLUMN',
+        'DATA_SOURCE',
+        'TABLE',
+        'COLUMN_IN_TABLE',
+        ]
+
+    VARIABLES = ['X'] + [
+        'X' + str(i) for i in range(20)
+            ]
+
+    pyDatalog.create_terms(','.join(TERMS + VARIABLES))
 
     class Session:
         def __init__(self, function_dict=None):
