@@ -15,25 +15,25 @@ from pyDatalog import pyDatalog
 import uuid
 import sys
 import importlib
+import itertools
 import ply.yacc as yacc
 
 from treehorn_tokenizer import tokens
 from metalpipe.utils import treehorn as treehorn
 
 
-
 def p_multi_statement(p):
-    '''
+    """
     multi_statement : statement SEMICOLON
                     | multi_statement statement SEMICOLON
-    '''
+    """
     if len(p) == 3:
         p[0] = [p[1]]
     elif len(p) == 4:
         p[0] = p[1]
         p[1].append(p[2])
     else:
-        raise Excepttion('This ought not happen.')
+        raise Excepttion("This ought not happen.")
 
 
 # We'll keep these possible root definitions for testing purposes.
@@ -53,9 +53,6 @@ def p_root(p):
 
     p[0] = p[1]
     # The split_label method has set the self.label and self.keypath
-
-
-
 
 
 def p_traversal(p):
@@ -185,7 +182,7 @@ def p_select_head(p):
     p[0] = SelectHead(selection_list=p[2], obj_name=p[4])
 
 
-class SelectClause:
+class SelectClause(pyDatalog.Mixin):
     def __init__(self, select_head, traversal_chain):
         self.select_head = select_head
         self.traversal_chain = traversal_chain
@@ -241,7 +238,7 @@ class Query:
         # self.relation.traversal = self.query_obj.traversal_chain
 
     def __repr__(self):
-        return '\n'.join([str(query_obj) for query_obj in self.query_obj_list])
+        return "\n".join([str(query_obj) for query_obj in self.query_obj_list])
 
 
 def p_query_reference(p):
@@ -282,7 +279,20 @@ def p_property_assertion(p):
     )
 
 
-class PropertyAssertion:
+class init_datalog_obj:
+    def __init__(self, foo='bar'):
+        self.foo = foo
+
+    def __call__(self, f):
+        def inner_function(_self, *args, **kwargs):
+            if hasattr(_self, 'name'):
+                +HAS_NAME(_self, _self.name)
+            f(_self, *args, **kwargs)
+
+        return inner_function
+
+
+class PropertyAssertion(pyDatalog.Mixin):
     def __init__(
         self,
         property_name=None,
@@ -298,6 +308,7 @@ class PropertyAssertion:
         self.entity_type = entity_type
         self.unique = unique
         self.entity_selection_name = entity_selection_name
+        super(PropertyAssertion, self).__init__()
 
 
 def p_coreference_assertion(p):
@@ -383,11 +394,13 @@ def p_function_definition(p):
         raise Exception("This should never ever happen under any circumstances.")
 
 
-class UserDefinedFunction:
+class UserDefinedFunction(pyDatalog.Mixin):
+    @init_datalog_obj()
     def __init__(self, name=None, pathname=None):
         self.name = name
         self.pathname = pathname or []
         self.function = None
+        super(UserDefinedFunction, self).__init__()
 
         # self.load_function()
 
@@ -461,9 +474,20 @@ class SelectionList:
 def p_selection_list(p):
     """
     selection_list : function_application AS LABEL
+                   | keypath AS LABEL
                    | selection_list COMMA function_application AS LABEL
     """
-    if len(p) == 4:
+    if len(p) == 4 and isinstance(p[1], (treehorn.KeyPath,)):
+        p[0] = SelectionList(
+            selection_list=[
+                FunctionApplication(
+                    function_name="identity",
+                    function_arguments=FunctionArguments(arg_list=[p[1]]),
+                    label=p[3],
+                )
+            ]
+        )
+    elif len(p) == 4:
         function_application = p[1]
         function_application.label = p[3]
         p[0] = SelectionList(selection_list=[function_application])
@@ -481,7 +505,6 @@ parser = yacc.yacc()
 
 def evaluate_selection_function(selection_task, one_traversal_result):
     if isinstance(selection_task, (treehorn.KeyPath,)):
-        # print(selection_task.keypath, selection_task.traversal_label)
         full_path = [selection_task.traversal_label] + selection_task.keypath
         obj = one_traversal_result
         for step in full_path:
@@ -498,9 +521,43 @@ def evaluate_selection_function(selection_task, one_traversal_result):
     return out
 
 
+class Entity(pyDatalog.Mixin):
+    pass
+
+
+class DataSource(pyDatalog.Mixin):
+
+    def __init__(self, name=None):
+        self.name = name or uuid.uuid4().hex
+        super(DataSource, self).__init__()
+
+
 if __name__ == "__main__":
     import json
     import pprint
+
+    TERMS = [
+        "PROPERTY",
+        "ENTITY",
+        "RELATIONSHIP",
+        "SELECT_CLAUSE",
+        "FUNCTION",
+        "QUERY",
+        "PROPERTY_OF",
+        "HAS_NAME",
+        "UNIQUE",
+        "COLUMN",
+        "DATA_SOURCE",
+        "TABLE",
+        "COLUMN_IN_TABLE",
+    ]
+
+    VARIABLE_NAMES = ['X', 'Y', 'Z', 'W', 'V', 'U']
+    VARIABLE_INDEXES = [str(i) for i in range(10)]
+    VARIABLES = VARIABLE_NAMES + [
+        ''.join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)]
+
+    pyDatalog.create_terms(",".join(TERMS + VARIABLES))
 
     obj = json.load(open("./tests/sample_data/sample_treehorn_1.json"))
 
@@ -512,8 +569,6 @@ if __name__ == "__main__":
     identity.function = hi
 
 
-    function_dict = {"identity": identity}
-
     # Order to evaluate query statements:
     # 1. Function assertions
     # 2. Entity unique property assertions
@@ -521,81 +576,33 @@ if __name__ == "__main__":
     # 4. Relationship assertions
     # 5. Traversals
 
-    with open('./query_text.mtl', 'r') as f:
+    with open("./query_text.mtl", "r") as f:
         q = f.read()
 
-    query = Query(q)
+    # query = Query(q)
 
-    for query_obj in query.query_obj_list:
-        if not isinstance(query_obj, (SelectClause,)):
-            continue
+    function_dict = {"identity": identity}
+    unique_property_dict = {}
+    parsed_query = parser.parse(q)
+    for query_obj in parsed_query:
+        if isinstance(query_obj, (PythonFunction,)):
+            +FUNCTION(query_obj)
+            +HAS_NAME(query_obj, query_obj.name)
+            query_obj.load_function()
+        elif isinstance(query_obj, (PropertyAssertion,)):
+            +PROPERTY(query_obj)
+            +HAS_NAME(query_obj, query_obj.property_name)
+            if query_obj.unique:
+                +UNIQUE(query_obj)
+        elif isinstance(query_obj, (SelectClause,)):
+            +SELECT_CLAUSE(query_obj)
+        else:
+            pass
 
-        for one_traversal_result in query_obj.traversal_chain(obj):
-            print('----')
-            for selection in query_obj.select_head.selection_list.selection_list:
+    for select_clause in SELECT_CLAUSE(X):
+        select_clause = select_clause[0]
+        for one_traversal_result in select_clause.traversal_chain(obj):
+            print("----")
+            for selection in select_clause.select_head.selection_list.selection_list:
                 answer = evaluate_selection_function(selection, one_traversal_result)
                 print("answer: ", selection.label, answer)
-
-    TERMS = [
-        'PROPERTY',
-        'ENTITY',
-        'RELATIONSHIP',
-        'FUNCTION',
-        'QUERY',
-        'PROPERTY_OF',
-        'UNIQUE_PROPERTY_OF',
-        'COLUMN',
-        'DATA_SOURCE',
-        'TABLE',
-        'COLUMN_IN_TABLE',
-        ]
-
-    VARIABLES = ['X'] + [
-        'X' + str(i) for i in range(20)
-            ]
-
-    pyDatalog.create_terms(','.join(TERMS + VARIABLES))
-
-    class Session:
-        def __init__(self, function_dict=None):
-            self.function_dict = function_dict or {}
-
-        def parse(self, tql):
-            result = parser.parse(tql)
-
-
-    def bak():
-        email_address_assertion = (
-            """IN QUERY query emailaddress IS A UNIQUE PROPERTY email OF ENTITY person"""
-        )
-        result_1 = parser.parse(email_address_assertion)
-        coreference_assertion = """IN QUERY query name AND emailaddress COREFER"""
-        result_2 = parser.parse(coreference_assertion)
-        udf_assertion = (
-            """foo IS A PYTHON FUNCTION IMPORTED FROM metalpipe.utils.helpers.iterate"""
-        )
-        result_3 = parser.parse(udf_assertion)
-        function_arguments = """myfunction(foo, anotherfunction(bar, baz))"""
-        result_4 = parser.parse(function_arguments)
-
-        """LABEL IS A PYTHON FUNCTION IMPORTED FROM pathname"""
-
-        """IN QUERY query cityname IS A UNIQUE PROPERTY OF ENTITY City"""
-        """IN QUERY query Person NAMED BY emailaddress IS RELATED TO City NAMED BY cityname AS LivesIn"""
-        """IN QUERY query cityname IS A PROPERTY OF ENTITY person NAMED BY emailaddress"""
-
-        selection_list_assertion = """SELECT foo(bar) AS baz FROM whatever"""
-        function_application_1 = """foo(bar)"""
-        result_1 = parser.parse(function_application_1)
-        function_application_2 = """foo(bar.baz)"""
-        result_2 = parser.parse(function_application_2)
-        function_arguments_1 = """foo(bar) AS whatever"""
-        result_3 = parser.parse(function_arguments_1)
-        function_arguments_2 = """foo(bar.baz) AS whatever"""
-        result_4 = parser.parse(function_arguments_2)
-        selection_1 = """foo(bar.baz) AS whatever, goo(goober) AS whateverelse"""
-        result_5 = parser.parse(selection_1)
-        selection_2 = """foo(bar.baz, qux.buzz) AS whatever, goo(goober) AS whateverelse"""
-        result_6 = parser.parse(selection_2)
-        selection_head = """SELECT foo(bar.baz, qux.buzz) AS whatever, goo(goober) AS whateverelse FROM thing"""
-        result_7 = parser.parse(selection_head)
