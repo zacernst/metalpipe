@@ -280,12 +280,12 @@ def p_property_assertion(p):
 
 
 class init_datalog_obj:
-    def __init__(self, foo='bar'):
+    def __init__(self, foo="bar"):
         self.foo = foo
 
     def __call__(self, f):
         def inner_function(_self, *args, **kwargs):
-            if hasattr(_self, 'name'):
+            if hasattr(_self, "name"):
                 +HAS_NAME(_self, _self.name)
             f(_self, *args, **kwargs)
 
@@ -526,7 +526,6 @@ class Entity(pyDatalog.Mixin):
 
 
 class DataSource(pyDatalog.Mixin):
-
     def __init__(self, name=None):
         self.name = name or uuid.uuid4().hex
         super(DataSource, self).__init__()
@@ -552,10 +551,11 @@ if __name__ == "__main__":
         "COLUMN_IN_TABLE",
     ]
 
-    VARIABLE_NAMES = ['X', 'Y', 'Z', 'W', 'V', 'U']
+    VARIABLE_NAMES = ["X", "Y", "Z", "W", "V", "U"]
     VARIABLE_INDEXES = [str(i) for i in range(10)]
     VARIABLES = VARIABLE_NAMES + [
-        ''.join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)]
+        "".join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
+    ]
 
     pyDatalog.create_terms(",".join(TERMS + VARIABLES))
 
@@ -567,7 +567,6 @@ if __name__ == "__main__":
         return str(args[0]).upper()
 
     identity.function = hi
-
 
     # Order to evaluate query statements:
     # 1. Function assertions
