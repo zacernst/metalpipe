@@ -160,7 +160,7 @@ def p_selection_list(p):
         raise Exception("What?")
 
 
-class SelectHead:
+class SelectHead(pyDatalog.Mixin):
     """
     Represents the head of a SELECT clause (e.g. SELECT LABEL, LABEL FROM thing)
     """
@@ -168,10 +168,12 @@ class SelectHead:
     def __init__(self, selection_list=None, obj_name=None):
         self.selection_list = selection_list
         self.obj_name = obj_name
+        super(SelectHead, self).__init__()
 
     def __repr__(self):
         out = "Selecting: {selection_list} from {obj_name}".format(
-            selection_list=str(self.selection_list), obj_name=str(self.obj_name)
+            selection_list=str(self.selection_list),
+            obj_name=str(self.obj_name),
         )
         return out
 
@@ -238,7 +240,9 @@ class Query:
         # self.relation.traversal = self.query_obj.traversal_chain
 
     def __repr__(self):
-        return "\n".join([str(query_obj) for query_obj in self.query_obj_list])
+        return "\n".join(
+            [str(query_obj) for query_obj in self.query_obj_list]
+        )
 
 
 def p_query_reference(p):
@@ -326,7 +330,9 @@ def p_coreference_assertion(p):
 
 
 class CoreferenceAssertion:
-    def __init__(self, property_name_1=None, property_name_2=None, query_name=None):
+    def __init__(
+        self, property_name_1=None, property_name_2=None, query_name=None
+    ):
         self.property_name_1 = property_name_1
         self.property_name_2 = property_name_2
         self.query_name = query_name
@@ -391,7 +397,9 @@ def p_function_definition(p):
         # We're importing a Python function
         p[0] = PythonFunction(name=p[1], pathname=p[8])
     else:
-        raise Exception("This should never ever happen under any circumstances.")
+        raise Exception(
+            "This should never ever happen under any circumstances."
+        )
 
 
 class UserDefinedFunction(pyDatalog.Mixin):
@@ -445,7 +453,9 @@ def p_function_arguments(p):
 
 
 class FunctionApplication:
-    def __init__(self, label=None, function_name=None, function_arguments=None):
+    def __init__(
+        self, label=None, function_name=None, function_arguments=None
+    ):
         self.function_name = function_name
         self.function_arguments = function_arguments
         self.label = label
@@ -531,6 +541,23 @@ class DataSource(pyDatalog.Mixin):
         super(DataSource, self).__init__()
 
 
+class UniquePropertyInsertion:
+    def __init__(
+        self, entity_type=None, property_type=None, property_value=None
+    ):
+        self.entity_type = entity_type
+        self.property_type = property_type
+        self.property_value = property_value
+
+    def to_cypher(self):
+        insertion_string = """MERGE (x:{entity_type} {{{property_type}: {property_value}}});""".format(
+            entity_type=self.entity_type,
+            property_type=self.property_type,
+            property_value=self.property_value,
+        )
+        return insertion_string
+
+
 if __name__ == "__main__":
     import json
     import pprint
@@ -541,20 +568,30 @@ if __name__ == "__main__":
         "RELATIONSHIP",
         "SELECT_CLAUSE",
         "FUNCTION",
+        "DATA_SOURCE_IN_SELECT_CLAUSE",
         "QUERY",
+        "NON_UNIQUE_PROPERTY_OF",
+        "PROPERTY_REFERENCES_ENTITY_BY",
+        "ENTITY_IN_DATA_SOURCE",
+        "QUERY_HAS_SELECTION_NAME",
+        "ENTITY_IN_SELECT_CLAUSE",
+        "REFERENCES_QUERY_NAME",
         "PROPERTY_OF",
         "HAS_NAME",
         "UNIQUE",
         "COLUMN",
         "DATA_SOURCE",
+        "UNIQUE_PROPERTY_OF",
         "TABLE",
+        "PROPERTY_IN_SELECT_CLAUSE",
         "COLUMN_IN_TABLE",
     ]
 
     VARIABLE_NAMES = ["X", "Y", "Z", "W", "V", "U"]
     VARIABLE_INDEXES = [str(i) for i in range(10)]
     VARIABLES = VARIABLE_NAMES + [
-        "".join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
+        "".join(i)
+        for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
     ]
 
     pyDatalog.create_terms(",".join(TERMS + VARIABLES))
@@ -593,15 +630,85 @@ if __name__ == "__main__":
             +HAS_NAME(query_obj, query_obj.property_name)
             if query_obj.unique:
                 +UNIQUE(query_obj)
+            +ENTITY(query_obj.entity_type)
+            +PROPERTY_OF(query_obj, query_obj.entity_type)
+            +REFERENCES_QUERY_NAME(query_obj, query_obj.query_name)
         elif isinstance(query_obj, (SelectClause,)):
             +SELECT_CLAUSE(query_obj)
+            +HAS_NAME(query_obj, query_obj.name)
+            +DATA_SOURCE(query_obj.select_head.obj_name)
+            +DATA_SOURCE_IN_SELECT_CLAUSE(
+                query_obj.select_head.obj_name, query_obj
+            )
+            for (
+                selection
+            ) in (
+                query_obj.select_head.selection_list.selection_list
+            ):  # Redundant keypath?
+                +QUERY_HAS_SELECTION_NAME(query_obj, selection.label)
         else:
             pass
 
+    UNIQUE_PROPERTY_OF(X0, X1) <= (
+        PROPERTY(X0) & ENTITY(X1) & PROPERTY_OF(X0, X1) & UNIQUE(X0)
+    )
+
+    PROPERTY_IN_SELECT_CLAUSE(X0, X1) <= (
+        PROPERTY(X0)
+        & SELECT_CLAUSE(X1)
+        & HAS_NAME(X1, X2)
+        & REFERENCES_QUERY_NAME(X0, X2)
+    )
+
+    ENTITY_IN_SELECT_CLAUSE(X0, X1) <= (
+        ENTITY(X0)
+        & SELECT_CLAUSE(X1)
+        & PROPERTY_IN_SELECT_CLAUSE(X2, X1)
+        & PROPERTY_OF(X2, X0)
+    )
+
+    ENTITY_IN_DATA_SOURCE(X0, X1) <= (
+        ENTITY(X0)
+        & DATA_SOURCE(X1)
+        & ENTITY_IN_SELECT_CLAUSE(X0, X2)
+        & DATA_SOURCE_IN_SELECT_CLAUSE(X1, X2)
+    )
+
+    NON_UNIQUE_PROPERTY_OF(X0, X1) <= (
+        PROPERTY_OF(X0, X1) & ~UNIQUE_PROPERTY_OF(X0, X1)
+    )
+
     for select_clause in SELECT_CLAUSE(X):
         select_clause = select_clause[0]
+        query_name = select_clause.name
         for one_traversal_result in select_clause.traversal_chain(obj):
             print("----")
-            for selection in select_clause.select_head.selection_list.selection_list:
-                answer = evaluate_selection_function(selection, one_traversal_result)
+            for (
+                selection
+            ) in select_clause.select_head.selection_list.selection_list:
+                answer = evaluate_selection_function(
+                    selection, one_traversal_result
+                )
                 print("answer: ", selection.label, answer)
+                unique_property_instances = (
+                    PROPERTY_IN_SELECT_CLAUSE(X0, select_clause)
+                    & UNIQUE_PROPERTY_OF(X0, X1)
+                    & HAS_NAME(X0, X2)
+                    & (X0.property_selection_name == selection.label)
+                )
+                # Find all the unique property instances in this set of answers
+                for (
+                    property_assertion,
+                    entity_type,
+                    unique_property_name,
+                ) in unique_property_instances:
+                    d = UniquePropertyInsertion(
+                        entity_type=entity_type,
+                        property_type=unique_property_name,
+                        property_value=answer,
+                    )
+                    print(d.to_cypher())
+                # Find non-unique property_instances in this set of answers
+                non_unique_property_instances = PROPERTY_IN_SELECT_CLAUSE(
+                    X0, select_clause
+                ) & NON_UNIQUE_PROPERTY_OF(X0, X1)
