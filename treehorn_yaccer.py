@@ -387,6 +387,7 @@ class RelationshipAssertion:
         self.query_name = query_name
         self.entity_type_1 = entity_type_1
         self.entity_type_2 = entity_type_2
+        self.relationship_name = relationship_name
 
 
 def p_function_definition(p):
@@ -572,6 +573,8 @@ if __name__ == "__main__":
         "QUERY",
         "NON_UNIQUE_PROPERTY_OF",
         "PROPERTY_REFERENCES_ENTITY_BY",
+        "QUERY_HAS_RELATIONSHIP",
+        "RELATIONSHIP_BETWEEN_ENTITIES",
         "ENTITY_IN_DATA_SOURCE",
         "QUERY_HAS_SELECTION_NAME",
         "ENTITY_IN_SELECT_CLAUSE",
@@ -646,8 +649,26 @@ if __name__ == "__main__":
                 query_obj.select_head.selection_list.selection_list
             ):  # Redundant keypath?
                 +QUERY_HAS_SELECTION_NAME(query_obj, selection.label)
+        elif isinstance(query_obj, (RelationshipAssertion,)):
+            +RELATIONSHIP(query_obj)
+            +HAS_NAME(query_obj, query_obj.relationship_name)
         else:
             pass
+
+    QUERY_HAS_RELATIONSHIP(X0, X1) <= (
+        SELECT_CLAUSE(X0) &
+        RELATIONSHIP(X1) &
+        HAS_NAME(X0, X2) &
+        (X1.query_name == X2)
+    )
+
+    RELATIONSHIP_BETWEEN_ENTITIES(X0, X1, X2) <= (
+        RELATIONSHIP(X0) &
+        ENTITY(X1) &
+        ENTITY(X2) &
+        (X0.entity_type_1 == X1) &
+        (X0.entity_type_2 == X2)
+    )
 
     UNIQUE_PROPERTY_OF(X0, X1) <= (
         PROPERTY(X0) & ENTITY(X1) & PROPERTY_OF(X0, X1) & UNIQUE(X0)
@@ -682,6 +703,7 @@ if __name__ == "__main__":
         select_clause = select_clause[0]
         query_name = select_clause.name
         for one_traversal_result in select_clause.traversal_chain(obj):
+            all_selections_dict = {}
             print("----")
             for (
                 selection
@@ -690,6 +712,14 @@ if __name__ == "__main__":
                     selection, one_traversal_result
                 )
                 print("answer: ", selection.label, answer)
+                all_selections_dict[selection.label] = answer
+
+
+
+
+
+
+
                 unique_property_instances = (
                     PROPERTY_IN_SELECT_CLAUSE(X0, select_clause)
                     & UNIQUE_PROPERTY_OF(X0, X1)
@@ -708,7 +738,42 @@ if __name__ == "__main__":
                         property_value=answer,
                     )
                     print(d.to_cypher())
+
+
+
+
+
                 # Find non-unique property_instances in this set of answers
                 non_unique_property_instances = PROPERTY_IN_SELECT_CLAUSE(
                     X0, select_clause
                 ) & NON_UNIQUE_PROPERTY_OF(X0, X1)
+                for non_unique_property_instance in non_unique_property_instances:
+                    non_unique_property_instance = non_unique_property_instance[0]
+                    property_name = non_unique_property_instance.property_name
+                    query_name = non_unique_property_instance.query_name
+                    property_selection_name = non_unique_property_instance.property_selection_name
+                    entity_type = non_unique_property_instance.entity_type
+                    entity_selection_name = non_unique_property_instance.entity_selection_name
+                    print(
+                        ('property: {property_name},'
+                        'property_selection_name: {property_selection_name}, '
+                        'entity_type: {entity_type}, '
+                        'entity_selection_name: {entity_selection_name}').format(
+                            property_name=property_name,
+                            property_selection_name=property_selection_name,
+                            entity_type=entity_type,
+                            entity_selection_name=entity_selection_name))
+            print(all_selections_dict)
+
+            for relationship in QUERY_HAS_RELATIONSHIP(select_clause, X0):
+                relationship = relationship[0]
+                cypher = (
+                    'MERGE (e1: {entity_type_1}) WHERE e1.{property_name_1} = {property_value_1}, MERGE (e2: {entity_type_2}) WHERE e2.{property_name_2} = {property_value_2} WITH e1, e2 MERGE (e1)-[:{relationship_type}]->(e2);').format(
+                            entity_type_1=relationship.entity_type_1,
+                            property_name_1=relationship.property_name_1,
+                            property_value_1=all_selections_dict[relationship.property_name_1],
+                            entity_type_2=relationship.entity_type_2,
+                            property_name_2=relationship.property_name_2,
+                            property_value_2=all_selections_dict[relationship.property_name_2],
+                            relationship_type=relationship.relationship_name)
+                print(cypher)
