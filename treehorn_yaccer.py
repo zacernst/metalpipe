@@ -714,19 +714,13 @@ if __name__ == "__main__":
                 print("answer: ", selection.label, answer)
                 all_selections_dict[selection.label] = answer
 
-
-
-
-
-
-
+                # Find all the unique property instances in this set of answers
                 unique_property_instances = (
                     PROPERTY_IN_SELECT_CLAUSE(X0, select_clause)
                     & UNIQUE_PROPERTY_OF(X0, X1)
                     & HAS_NAME(X0, X2)
                     & (X0.property_selection_name == selection.label)
                 )
-                # Find all the unique property instances in this set of answers
                 for (
                     property_assertion,
                     entity_type,
@@ -738,10 +732,6 @@ if __name__ == "__main__":
                         property_value=answer,
                     )
                     print(d.to_cypher())
-
-
-
-
 
                 # Find non-unique property_instances in this set of answers
                 non_unique_property_instances = PROPERTY_IN_SELECT_CLAUSE(
