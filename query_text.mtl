@@ -8,3 +8,4 @@ IN QUERY myquery name IS A UNIQUE PROPERTY name OF ENTITY user;
 IN QUERY myquery emailaddress IS A PROPERTY emailthingy OF ENTITY user NAMED BY name;
 
 IN QUERY myquery city NAMED BY cityname IS RELATED TO user NAMED BY name AS livesin;
+
