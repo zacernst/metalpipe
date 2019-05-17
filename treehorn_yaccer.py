@@ -24,6 +24,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+
 def p_multi_statement(p):
     """
     multi_statement : statement SEMICOLON
@@ -174,8 +175,7 @@ class SelectHead(pyDatalog.Mixin):
 
     def __repr__(self):
         out = "Selecting: {selection_list} from {obj_name}".format(
-            selection_list=str(self.selection_list),
-            obj_name=str(self.obj_name),
+            selection_list=str(self.selection_list), obj_name=str(self.obj_name)
         )
         return out
 
@@ -242,9 +242,7 @@ class Query:
         # self.relation.traversal = self.query_obj.traversal_chain
 
     def __repr__(self):
-        return "\n".join(
-            [str(query_obj) for query_obj in self.query_obj_list]
-        )
+        return "\n".join([str(query_obj) for query_obj in self.query_obj_list])
 
 
 def p_query_reference(p):
@@ -332,9 +330,7 @@ def p_coreference_assertion(p):
 
 
 class CoreferenceAssertion:
-    def __init__(
-        self, property_name_1=None, property_name_2=None, query_name=None
-    ):
+    def __init__(self, property_name_1=None, property_name_2=None, query_name=None):
         self.property_name_1 = property_name_1
         self.property_name_2 = property_name_2
         self.query_name = query_name
@@ -400,9 +396,7 @@ def p_function_definition(p):
         # We're importing a Python function
         p[0] = PythonFunction(name=p[1], pathname=p[8])
     else:
-        raise Exception(
-            "This should never ever happen under any circumstances."
-        )
+        raise Exception("This should never ever happen under any circumstances.")
 
 
 class UserDefinedFunction(pyDatalog.Mixin):
@@ -427,8 +421,10 @@ class PythonFunction(UserDefinedFunction):
         for function in self.pathname[1:]:
             self.function = getattr(self.function, function)
 
-    def __call__(self, *args):
-        return self.function(*args)
+    def __call__(self, *myargs):
+        print('in __call__')
+        myargs = tuple(i if not isinstance(i, (treehorn.TracedPrimitive,)) else i.thing for i in myargs)
+        return self.function(*myargs)
 
 
 class FunctionArguments:
@@ -456,9 +452,7 @@ def p_function_arguments(p):
 
 
 class FunctionApplication:
-    def __init__(
-        self, label=None, function_name=None, function_arguments=None
-    ):
+    def __init__(self, label=None, function_name=None, function_arguments=None):
         self.function_name = function_name
         self.function_arguments = function_arguments
         self.label = label
@@ -485,10 +479,13 @@ class SelectionList:
 
 
 def p_selection_list(p):
+    # TODO: Check last rule of this grammar. Not sure if cases in yacc handle it.
+    # womp womp.
     """
     selection_list : function_application AS LABEL
                    | keypath AS LABEL
                    | selection_list COMMA function_application AS LABEL
+                   | selection_list COMMA keypath AS LABEL
     """
     if len(p) == 4 and isinstance(p[1], (treehorn.KeyPath,)):
         p[0] = SelectionList(
@@ -504,7 +501,16 @@ def p_selection_list(p):
         function_application = p[1]
         function_application.label = p[3]
         p[0] = SelectionList(selection_list=[function_application])
-    elif len(p) == 6:
+    elif len(p) == 6 and isinstance(p[3], (treehorn.KeyPath,)):
+        function_application = FunctionApplication(
+            function_name="identity",
+            function_arguments=FunctionArguments(arg_list=[p[3]]),
+            label=p[5],
+        )
+        p[0] = p[1]
+        p[0].selection_list.append(function_application)
+        import pdb; pdb.set_trace()
+    elif len(p) == 6 and not isinstance(p[3], (treehorn.KeyPath,)):
         function_application = p[3]
         function_application.label = p[5]
         p[0] = p[1]
@@ -528,6 +534,7 @@ def evaluate_selection_function(selection_task, one_traversal_result):
             evaluate_selection_function(argument, one_traversal_result)
             for argument in selection_task.function_arguments.arg_list
         ]
+        print('in evaluate_selection_function')
         out = function_dict[selection_task.function_name](*args)
     else:
         raise Exception()
@@ -543,20 +550,23 @@ class DataSource(pyDatalog.Mixin):
         self.name = name or uuid.uuid4().hex
         super(DataSource, self).__init__()
 
+def _de_trace(obj):
+    '''
+    Remove the ``TracedPrimitive`` wrapper from the object, if necessary.
+    '''
+    return obj if not isinstance(obj, (treehorn.TracedPrimitive,)) else obj.thing
 
 class UniquePropertyInsertion:
-    def __init__(
-        self, entity_type=None, property_type=None, property_value=None
-    ):
-        self.entity_type = entity_type
-        self.property_type = property_type
-        self.property_value = property_value
+    def __init__(self, entity_type=None, property_type=None, property_value=None):
+        self.entity_type = _de_trace(entity_type)
+        self.property_type = _de_trace(property_type)
+        self.property_value = _de_trace(property_value)
 
     def to_cypher(self, transaction):
         insertion_string = """MERGE (x:{entity_type} {{ {property_type}: $property_value }});""".format(
             entity_type=self.entity_type,
             property_type=self.property_type,
-            #property_value=self.property_value,
+            # property_value=self.property_value,
         )
         transaction.run(insertion_string, property_value=self.property_value)
         return insertion_string
@@ -578,6 +588,7 @@ if __name__ == "__main__":
         "PROPERTY_REFERENCES_ENTITY_BY",
         "QUERY_HAS_RELATIONSHIP",
         "RELATIONSHIP_SOURCE_ENTITY_PROPERTY",
+        "RELATIONSHIP_TARGET_ENTITY_PROPERTY",
         "RELATIONSHIP_BETWEEN_ENTITIES",
         "ENTITY_IN_DATA_SOURCE",
         "SELECTION",
@@ -585,6 +596,7 @@ if __name__ == "__main__":
         "QUERY_CONTAINS_SELECTION",
         "QUERY_HAS_SELECTION_NAME",
         "ENTITY_IN_SELECT_CLAUSE",
+        "RELATIONSHIP_SOURCE_TARGET_PROPERTIES",
         "REFERENCES_QUERY_NAME",
         "PROPERTY_OF",
         "HAS_NAME",
@@ -600,8 +612,7 @@ if __name__ == "__main__":
     VARIABLE_NAMES = ["X", "Y", "Z", "W", "V", "U"]
     VARIABLE_INDEXES = [str(i) for i in range(10)]
     VARIABLES = VARIABLE_NAMES + [
-        "".join(i)
-        for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
+        "".join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
     ]
 
     pyDatalog.create_terms(",".join(TERMS + VARIABLES))
@@ -647,9 +658,7 @@ if __name__ == "__main__":
             +SELECT_CLAUSE(query_obj)
             +HAS_NAME(query_obj, query_obj.name)
             +DATA_SOURCE(query_obj.select_head.obj_name)
-            +DATA_SOURCE_IN_SELECT_CLAUSE(
-                query_obj.select_head.obj_name, query_obj
-            )
+            +DATA_SOURCE_IN_SELECT_CLAUSE(query_obj.select_head.obj_name, query_obj)
             for (
                 selection
             ) in (
@@ -666,18 +675,15 @@ if __name__ == "__main__":
             pass
 
     QUERY_HAS_RELATIONSHIP(X0, X1) <= (
-        SELECT_CLAUSE(X0) &
-        RELATIONSHIP(X1) &
-        HAS_NAME(X0, X2) &
-        (X1.query_name == X2)
+        SELECT_CLAUSE(X0) & RELATIONSHIP(X1) & HAS_NAME(X0, X2) & (X1.query_name == X2)
     )
 
     RELATIONSHIP_BETWEEN_ENTITIES(X0, X1, X2) <= (
-        RELATIONSHIP(X0) &
-        ENTITY(X1) &
-        ENTITY(X2) &
-        (X0.entity_type_1 == X1) &
-        (X0.entity_type_2 == X2)
+        RELATIONSHIP(X0)
+        & ENTITY(X1)
+        & ENTITY(X2)
+        & (X0.entity_type_1 == X1)
+        & (X0.entity_type_2 == X2)
     )
 
     UNIQUE_PROPERTY_OF(X0, X1) <= (
@@ -709,6 +715,42 @@ if __name__ == "__main__":
         PROPERTY_OF(X0, X1) & ~UNIQUE_PROPERTY_OF(X0, X1)
     )
 
+    SELECTION_HAS_LABEL(X0, X1) <= (SELECTION(X0) & (X1 == X0.label))
+
+    RELATIONSHIP_SOURCE_ENTITY_PROPERTY(X6, X5) <= (
+        RELATIONSHIP(X6)
+        & (X0 == X6.property_name_1)
+        & SELECT_CLAUSE(X1)
+        & HAS_NAME(X1, X2)
+        & (X2 == X6.query_name)
+        & QUERY_CONTAINS_SELECTION(X1, X3)
+        & SELECTION_HAS_LABEL(X3, X0)
+        & PROPERTY(X4)
+        & UNIQUE(X4)
+        & (X4.query_name == X2)
+        & (X4.entity_selection_name == X3.label)
+        & (X4.property_name == X5)
+    )
+
+    RELATIONSHIP_TARGET_ENTITY_PROPERTY(X6, X5) <= (
+        RELATIONSHIP(X6)
+        & (X0 == X6.property_name_2)
+        & SELECT_CLAUSE(X1)
+        & HAS_NAME(X1, X2)
+        & (X2 == X6.query_name)
+        & QUERY_CONTAINS_SELECTION(X1, X3)
+        & SELECTION_HAS_LABEL(X3, X0)
+        & PROPERTY(X4)
+        & UNIQUE(X4)
+        & (X4.query_name == X2)
+        & (X4.entity_selection_name == X3.label)
+        & (X4.property_name == X5)
+    )
+
+    RELATIONSHIP_SOURCE_TARGET_PROPERTIES(X0, X1, X2) <= (
+        RELATIONSHIP_SOURCE_ENTITY_PROPERTY(X0, X1)
+        & RELATIONSHIP_TARGET_ENTITY_PROPERTY(X0, X2)
+    )
 
     from neo4j import GraphDatabase
 
@@ -751,25 +793,38 @@ if __name__ == "__main__":
                     )
                     d.to_cypher(transaction)
 
-
             print(all_selections_dict)
 
             for relationship in QUERY_HAS_RELATIONSHIP(select_clause, X0):
                 relationship = relationship[0]
+                source_property, target_property = RELATIONSHIP_SOURCE_TARGET_PROPERTIES(
+                    relationship, X1, X2
+                )[
+                    0
+                ]
                 cypher = (
-                    'MERGE (e1: {entity_type_1} {{ {property_name_1}: $property_value_1 }}) WITH e1 '
-                    'MERGE (e2: {entity_type_2} {{ {property_name_2}: $property_value_2 }}) WITH e1, e2 '
-                    'MERGE (e1)-[:{relationship_type}]->(e2);').format(
-                        entity_type_1=relationship.entity_type_1,
-                        property_name_1=relationship.property_name_1,
+                    "MERGE (e1: {entity_type_1} {{ {property_name_1}: $property_value_1 }}) WITH e1 "
+                    "MERGE (e2: {entity_type_2} {{ {property_name_2}: $property_value_2 }}) WITH e1, e2 "
+                    "MERGE (e1)-[:{relationship_type}]->(e2);"
+                ).format(
+                    entity_type_1=relationship.entity_type_1,
+                    property_name_1=source_property,
+                    entity_type_2=relationship.entity_type_2,
+                    property_name_2=target_property,
+                    relationship_type=relationship.relationship_name,
+                )
+                print('>>>>>', cypher, all_selections_dict[relationship.property_name_1])
 
-                        entity_type_2=relationship.entity_type_2,
-                        property_name_2=relationship.property_name_2,
-
-                        relationship_type=relationship.relationship_name)
-                transaction.run(cypher,
-                    property_value_1=all_selections_dict[relationship.property_name_1],
-                    property_value_2=all_selections_dict[relationship.property_name_2])
+                tmp = all_selections_dict[relationship.property_name_1]
+                transaction.run(
+                    cypher,
+                    property_value_1=all_selections_dict[
+                        relationship.property_name_1
+                    ],
+                    property_value_2=all_selections_dict[
+                        relationship.property_name_2
+                    ],
+                )
 
             # Find non-unique property_instances in this set of answers
             non_unique_property_instances = PROPERTY_IN_SELECT_CLAUSE(
@@ -780,48 +835,46 @@ if __name__ == "__main__":
                 non_unique_property_instance = non_unique_property_instance[0]
                 property_name = non_unique_property_instance.property_name
                 query_name = non_unique_property_instance.query_name
-                property_selection_name = non_unique_property_instance.property_selection_name
+                property_selection_name = (
+                    non_unique_property_instance.property_selection_name
+                )
                 entity_type = non_unique_property_instance.entity_type
-                entity_selection_name = non_unique_property_instance.entity_selection_name
+                entity_selection_name = (
+                    non_unique_property_instance.entity_selection_name
+                )
                 cypher_query = (
-                        '''MERGE (e: {entity_type} {{ {entity_selection_name}: $entity_selection_value }}) WITH e '''
-                        '''SET e.{property_selection_name} = $property_selection_value;''')
+                    """MERGE (e: {entity_type} {{ {entity_selection_name}: $entity_selection_value }}) WITH e """
+                    """SET e.{property_selection_name} = $property_selection_value;"""
+                )
                 cypher_query = cypher_query.format(
                     entity_type=entity_type,
                     entity_selection_name=entity_selection_name,
-                    property_selection_name=property_name)
+                    property_selection_name=property_name,
+                )
                 logging.debug(
-                    ('property: {property_name},'
-                    'property_selection_name: {property_selection_name}, '
-                    'entity_type: {entity_type}, '
-                    'entity_selection_name: {entity_selection_name}').format(
+                    (
+                        "property: {property_name},"
+                        "property_selection_name: {property_selection_name}, "
+                        "entity_type: {entity_type}, "
+                        "entity_selection_name: {entity_selection_name}"
+                    ).format(
                         property_name=property_name,
                         property_selection_name=property_selection_name,
                         entity_type=entity_type,
-                        entity_selection_name=entity_selection_name))
+                        entity_selection_name=entity_selection_name,
+                    )
+                )
                 print(cypher_query)
-                transaction.run(cypher_query, entity_selection_value=all_selections_dict[entity_selection_name], property_selection_value=all_selections_dict[property_selection_name])
+                transaction.run(
+                    cypher_query,
+                    entity_selection_value=all_selections_dict[
+                        entity_selection_name
+                    ],
+                    property_selection_value=all_selections_dict[
+                        property_selection_name
+                    ],
+                )
                 # session.run(cypher_query, entity_selection_value=entity_selection_value)
     transaction.commit()
 
-    SELECTION_HAS_LABEL(X0, X1) <= (
-        SELECTION(X0) &
-        (X1 == X0.label)
-            )
 
-
-
-
-    RELATIONSHIP_SOURCE_ENTITY_PROPERTY(X6, X5) <= (
-        RELATIONSHIP(X6) &
-        (X0 == X6.property_name_1) &
-        SELECT_CLAUSE(X1) &
-        HAS_NAME(X1, X2) &
-        (X2 == X6.query_name) &
-        QUERY_CONTAINS_SELECTION(X1, X3) &
-        SELECTION_HAS_LABEL(X3, X0) &
-        PROPERTY(X4) &
-        (X4.query_name == X2) &
-        (X4.entity_selection_name == X3.label) &
-        (X4.property_name == X5)
-        )
