@@ -10,13 +10,13 @@ You could type, for example:
 
 """
 
-from pyDatalog import pyDatalog
 
 import uuid
 import sys
 import importlib
 import itertools
 import ply.yacc as yacc
+from pyDatalog import pyDatalog
 
 from treehorn_tokenizer import tokens
 from metalpipe.utils import treehorn as treehorn
@@ -509,7 +509,6 @@ def p_selection_list(p):
         )
         p[0] = p[1]
         p[0].selection_list.append(function_application)
-        import pdb; pdb.set_trace()
     elif len(p) == 6 and not isinstance(p[3], (treehorn.KeyPath,)):
         function_application = p[3]
         function_application.label = p[5]
@@ -522,7 +521,7 @@ def p_selection_list(p):
 parser = yacc.yacc()
 
 
-def evaluate_selection_function(selection_task, one_traversal_result):
+def evaluate_selection_function(selection_task, one_traversal_result, function_dict):
     if isinstance(selection_task, (treehorn.KeyPath,)):
         full_path = [selection_task.traversal_label] + selection_task.keypath
         obj = one_traversal_result
@@ -531,7 +530,7 @@ def evaluate_selection_function(selection_task, one_traversal_result):
         out = obj
     elif isinstance(selection_task, (FunctionApplication,)):
         args = [
-            evaluate_selection_function(argument, one_traversal_result)
+            evaluate_selection_function(argument, one_traversal_result, function_dict)
             for argument in selection_task.function_arguments.arg_list
         ]
         print('in evaluate_selection_function')
@@ -550,11 +549,13 @@ class DataSource(pyDatalog.Mixin):
         self.name = name or uuid.uuid4().hex
         super(DataSource, self).__init__()
 
+
 def _de_trace(obj):
     '''
     Remove the ``TracedPrimitive`` wrapper from the object, if necessary.
     '''
     return obj if not isinstance(obj, (treehorn.TracedPrimitive,)) else obj.thing
+
 
 class UniquePropertyInsertion:
     def __init__(self, entity_type=None, property_type=None, property_value=None):
@@ -572,53 +573,7 @@ class UniquePropertyInsertion:
         return insertion_string
 
 
-if __name__ == "__main__":
-    import json
-    import pprint
-
-    TERMS = [
-        "PROPERTY",
-        "ENTITY",
-        "RELATIONSHIP",
-        "SELECT_CLAUSE",
-        "FUNCTION",
-        "DATA_SOURCE_IN_SELECT_CLAUSE",
-        "QUERY",
-        "NON_UNIQUE_PROPERTY_OF",
-        "PROPERTY_REFERENCES_ENTITY_BY",
-        "QUERY_HAS_RELATIONSHIP",
-        "RELATIONSHIP_SOURCE_ENTITY_PROPERTY",
-        "RELATIONSHIP_TARGET_ENTITY_PROPERTY",
-        "RELATIONSHIP_BETWEEN_ENTITIES",
-        "ENTITY_IN_DATA_SOURCE",
-        "SELECTION",
-        "SELECTION_HAS_LABEL",
-        "QUERY_CONTAINS_SELECTION",
-        "QUERY_HAS_SELECTION_NAME",
-        "ENTITY_IN_SELECT_CLAUSE",
-        "RELATIONSHIP_SOURCE_TARGET_PROPERTIES",
-        "REFERENCES_QUERY_NAME",
-        "PROPERTY_OF",
-        "HAS_NAME",
-        "UNIQUE",
-        "COLUMN",
-        "DATA_SOURCE",
-        "UNIQUE_PROPERTY_OF",
-        "TABLE",
-        "PROPERTY_IN_SELECT_CLAUSE",
-        "COLUMN_IN_TABLE",
-    ]
-
-    VARIABLE_NAMES = ["X", "Y", "Z", "W", "V", "U"]
-    VARIABLE_INDEXES = [str(i) for i in range(10)]
-    VARIABLES = VARIABLE_NAMES + [
-        "".join(i) for i in itertools.product(VARIABLE_NAMES, VARIABLE_INDEXES)
-    ]
-
-    pyDatalog.create_terms(",".join(TERMS + VARIABLES))
-
-    obj = json.load(open("./tests/sample_data/sample_treehorn_1.json"))
-
+def load_query_text_to_logic(query_text):
     identity = PythonFunction(name="identity")
 
     def hi(*args):
@@ -626,21 +581,9 @@ if __name__ == "__main__":
 
     identity.function = hi
 
-    # Order to evaluate query statements:
-    # 1. Function assertions
-    # 2. Entity unique property assertions
-    # 3. Entity non-unique property assertions
-    # 4. Relationship assertions
-    # 5. Traversals
-
-    with open("./query_text.mtl", "r") as f:
-        q = f.read()
-
-    # query = Query(q)
-
     function_dict = {"identity": identity}
     unique_property_dict = {}
-    parsed_query = parser.parse(q)
+    parsed_query = parser.parse(query_text)
     for query_obj in parsed_query:
         if isinstance(query_obj, (PythonFunction,)):
             +FUNCTION(query_obj)
@@ -674,83 +617,28 @@ if __name__ == "__main__":
         else:
             pass
 
-    QUERY_HAS_RELATIONSHIP(X0, X1) <= (
-        SELECT_CLAUSE(X0) & RELATIONSHIP(X1) & HAS_NAME(X0, X2) & (X1.query_name == X2)
-    )
+    return function_dict, unique_property_dict
 
-    RELATIONSHIP_BETWEEN_ENTITIES(X0, X1, X2) <= (
-        RELATIONSHIP(X0)
-        & ENTITY(X1)
-        & ENTITY(X2)
-        & (X0.entity_type_1 == X1)
-        & (X0.entity_type_2 == X2)
-    )
 
-    UNIQUE_PROPERTY_OF(X0, X1) <= (
-        PROPERTY(X0) & ENTITY(X1) & PROPERTY_OF(X0, X1) & UNIQUE(X0)
-    )
+if __name__ == "__main__":
+    import json
+    import pprint
 
-    PROPERTY_IN_SELECT_CLAUSE(X0, X1) <= (
-        PROPERTY(X0)
-        & SELECT_CLAUSE(X1)
-        & HAS_NAME(X1, X2)
-        & REFERENCES_QUERY_NAME(X0, X2)
-    )
+    from logic import *
+    obj = json.load(open("./tests/sample_data/sample_treehorn_1.json"))
 
-    ENTITY_IN_SELECT_CLAUSE(X0, X1) <= (
-        ENTITY(X0)
-        & SELECT_CLAUSE(X1)
-        & PROPERTY_IN_SELECT_CLAUSE(X2, X1)
-        & PROPERTY_OF(X2, X0)
-    )
+    # Order to evaluate query statements:
+    # 1. Function assertions
+    # 2. Entity unique property assertions
+    # 3. Entity non-unique property assertions
+    # 4. Relationship assertions
+    # 5. Traversals
 
-    ENTITY_IN_DATA_SOURCE(X0, X1) <= (
-        ENTITY(X0)
-        & DATA_SOURCE(X1)
-        & ENTITY_IN_SELECT_CLAUSE(X0, X2)
-        & DATA_SOURCE_IN_SELECT_CLAUSE(X1, X2)
-    )
+    with open("./query_text.mtl", "r") as f:
+        q = f.read()
 
-    NON_UNIQUE_PROPERTY_OF(X0, X1) <= (
-        PROPERTY_OF(X0, X1) & ~UNIQUE_PROPERTY_OF(X0, X1)
-    )
+    function_dict, unique_property_dict = load_query_text_to_logic(q)
 
-    SELECTION_HAS_LABEL(X0, X1) <= (SELECTION(X0) & (X1 == X0.label))
-
-    RELATIONSHIP_SOURCE_ENTITY_PROPERTY(X6, X5) <= (
-        RELATIONSHIP(X6)
-        & (X0 == X6.property_name_1)
-        & SELECT_CLAUSE(X1)
-        & HAS_NAME(X1, X2)
-        & (X2 == X6.query_name)
-        & QUERY_CONTAINS_SELECTION(X1, X3)
-        & SELECTION_HAS_LABEL(X3, X0)
-        & PROPERTY(X4)
-        & UNIQUE(X4)
-        & (X4.query_name == X2)
-        & (X4.entity_selection_name == X3.label)
-        & (X4.property_name == X5)
-    )
-
-    RELATIONSHIP_TARGET_ENTITY_PROPERTY(X6, X5) <= (
-        RELATIONSHIP(X6)
-        & (X0 == X6.property_name_2)
-        & SELECT_CLAUSE(X1)
-        & HAS_NAME(X1, X2)
-        & (X2 == X6.query_name)
-        & QUERY_CONTAINS_SELECTION(X1, X3)
-        & SELECTION_HAS_LABEL(X3, X0)
-        & PROPERTY(X4)
-        & UNIQUE(X4)
-        & (X4.query_name == X2)
-        & (X4.entity_selection_name == X3.label)
-        & (X4.property_name == X5)
-    )
-
-    RELATIONSHIP_SOURCE_TARGET_PROPERTIES(X0, X1, X2) <= (
-        RELATIONSHIP_SOURCE_ENTITY_PROPERTY(X0, X1)
-        & RELATIONSHIP_TARGET_ENTITY_PROPERTY(X0, X2)
-    )
 
     from neo4j import GraphDatabase
 
@@ -769,7 +657,7 @@ if __name__ == "__main__":
                 selection
             ) in select_clause.select_head.selection_list.selection_list:
                 answer = evaluate_selection_function(
-                    selection, one_traversal_result
+                    selection, one_traversal_result, function_dict
                 )
                 print("answer: ", selection.label, answer)
                 all_selections_dict[selection.label] = answer
@@ -799,9 +687,7 @@ if __name__ == "__main__":
                 relationship = relationship[0]
                 source_property, target_property = RELATIONSHIP_SOURCE_TARGET_PROPERTIES(
                     relationship, X1, X2
-                )[
-                    0
-                ]
+                )[0]
                 cypher = (
                     "MERGE (e1: {entity_type_1} {{ {property_name_1}: $property_value_1 }}) WITH e1 "
                     "MERGE (e2: {entity_type_2} {{ {property_name_2}: $property_value_2 }}) WITH e1, e2 "
@@ -843,8 +729,8 @@ if __name__ == "__main__":
                     non_unique_property_instance.entity_selection_name
                 )
                 cypher_query = (
-                    """MERGE (e: {entity_type} {{ {entity_selection_name}: $entity_selection_value }}) WITH e """
-                    """SET e.{property_selection_name} = $property_selection_value;"""
+                        """MERGE (e: {entity_type} {{ {entity_selection_name}: $entity_selection_value }}) """
+                        """WITH e SET e.{property_selection_name} = $property_selection_value;"""
                 )
                 cypher_query = cypher_query.format(
                     entity_type=entity_type,
