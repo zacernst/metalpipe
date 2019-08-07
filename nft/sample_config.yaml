@@ -1,0 +1,45 @@
+test_table_row:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Customer
+        property_column: customer_id
+        property_type: IdentificationNumber
+        function: noop
+        alias: Customer
+    - name:
+        entity_type: OtherCustomer
+        property_column: referring_customer_id
+        function: noop
+        property_type: IdentificationNumber
+        alias: ReferringCustomer
+    - property:
+        function: whatever
+        entity_type: ThingsThatDoNotExist
+    - property:
+        # entity_type: WeirdoCustomer
+        property_type: HeightInFeet
+        entity_name_property: IdentificationNumber
+        entity_name_column: customer_id
+        property_column: height
+        function: noop
+        entity_alias: CustomerHeight
+        alias: AkaCustomerHeight
+    - relationship:
+        relationship_type: Referred
+        source_entity_alias: ReferringCustomer
+        target_entity_alias: Customer
+        source_entity_type: Customer
+        target_entity_type: Customer
+        source_entity_name_column: referring_customer_id
+        target_entity_name_column: customer_id
+        # source_name_property: IdentificationNumber
+        target_name_property: IdentificationNumber
+        alias: WordOfMouth
+    - coreference:
+        source_entity_alias: some_entity_alias
+        target_entity_alias: some_other_alias
+        source_column: some_source_column
+        target_column: some_target_column
+        source_entity_type: some_other_entity_type
+        target_entity_type: some_entity_type

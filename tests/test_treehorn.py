@@ -7,6 +7,8 @@ import time
 import pytest
 import metalpipe.utils.treehorn as treehorn
 
+from metalpipe.modelling.logic import *
+from metalpipe.modelling import treehorn_yaccer
 
 os.environ["PYTHONPATH"] = "."
 SAMPLE_DATA_DIR = 'tests/sample_data/'
@@ -37,12 +39,12 @@ def test_assert_generates_false_not_enough():
     with pytest.raises(expected_exception=Exception):
         assert_generates(range(3), [1, 2])
 
+
 @pytest.fixture(scope='function')
 def sample_json_dict():
     with open(SAMPLE_DATA_DIR + 'sample_treehorn_1.json') as f:
         d = json.load(f)
     return d
-
 
 
 @pytest.fixture(scope="function")
@@ -84,6 +86,7 @@ def test_splitter_generates_traced_list(sample_traced_object):
 
 def test_find_root(sample_traced_object):
     assert sample_traced_object["qux"][3]["goo"].root is sample_traced_object
+
 
 @pytest.mark.skip()
 def test_has_descendant_dictionary(sample_traced_object):
@@ -247,7 +250,7 @@ def test_link_traverals(email_condition, city_condition):
     assert city_condition._previous_traversal is email_condition
 
 
-
+@pytest.fixture(scope='function')
 def full_relation():
     has_email = treehorn.GoDown(condition=treehorn.HasKey('email'))
     has_city = treehorn.GoDown(condition=treehorn.HasKey('city'))
@@ -259,16 +262,21 @@ def full_relation():
 
 
 @pytest.fixture(scope='function')
-def test_iterate_relation(full_relation, sample_json_dict):
-    out = [
-        {'email': 'Sincere@april.biz', 'city': 'Gwenborough'},
-        {'email': 'Shanna@melissa.tv', 'city': 'Wisokyburgh'},
-        {'email': 'Nathan@yesenia.net', 'city': 'McKenziehaven'},
-        {'email': 'Julianne.OConner@kory.org', 'city': 'South Elvis'},
-        {'email': 'Lucio_Hettinger@annie.ca', 'city': 'Roscoeview'},
-        {'email': 'Karley_Dach@jasper.info', 'city': 'South Christy'}
-        ]
-    out = treehorn.splitter(out)
-    sample_json_dict = treehorn.splitter(sample_json_dict)
-    actual = list(full_relation(sample_json_dict))
-    assert actual == out
+def treehorn_json_sample():
+    filename = '/'.join([SAMPLE_DATA_DIR, 'sample_treehorn_1.json'])
+    obj = json.load(open(filename))
+    return obj
+
+
+@pytest.fixture(scope='function')
+def treehorn_metalpipe_query():
+    filename = '/'.join([SAMPLE_DATA_DIR, 'query_text.mtl'])
+    return open(filename).read()
+
+
+def test_parse_query_text(treehorn_metalpipe_query):
+    '''
+    Parse the query file without raising an exception.
+    '''
+    treehorn_yaccer.load_query_text_to_logic(treehorn_metalpipe_query)
+    assert len(SELECT_CLAUSE(X)) > 0

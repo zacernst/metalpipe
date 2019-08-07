@@ -9,4 +9,3 @@ IN QUERY myquery name IS A UNIQUE PROPERTY personname OF ENTITY user;
 IN QUERY myquery emailaddress IS A PROPERTY email OF ENTITY user NAMED BY name;
 
 IN QUERY myquery user NAMED BY name IS RELATED TO city NAMED BY cityname AS livesin;
-
