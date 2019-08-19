@@ -68,10 +68,140 @@ import logging
 import itertools
 import pprint
 import yaml
-from pyDatalog import pyDatalog
+
+from metalpipe.node import MetalNode, NothingToSeeHere
+
+from pyDatalog import pyDatalog, Logic
 
 
 logging.basicConfig(level=logging.INFO)
+
+
+variable_bases = ["X", "Y", "Z", "W", "V", "U"]
+variable_range = 10
+variable_names = list(
+    "".join([x, y])
+    for x, y in itertools.product(
+        variable_bases, [str(digit) for digit in range(variable_range)]
+    )
+)
+
+test_row = {
+    "customer_id": 10,
+    "email": "bob@bob.com",
+    "height": "3 feet",
+    "referring_customer_id": 11,
+}
+
+vocabulary = [
+    "assertion_in_table",
+    "assertion_has_column",
+    "assertion_without_entity_type",
+    "column_has_property_type",
+    "contains_assertion",
+    "property_of_entity_type",
+    "entity_has_property",
+    "is_entity_type",
+    "is_column",
+    "is_property",
+    "is_assertion",
+    "is_relationship_assertion",
+    "is_property_assertion",
+    "is_table_data_source",
+    "assertion_has_property_column",
+    "assertion_has_parent_table",
+    "assertion_without_column",
+    "inferred_entity_type",
+    "assertion_has_entity_name_column",
+    "is_name_assertion",
+    "is_coreference_assertion",
+    "assertion_has_entity_type",
+    "assertion_has_property_type",
+    "assertion_has_source_entity_name_column",
+    "assertion_has_target_entity_name_column",
+    "relationship_has_source_entity_type",
+    "relationship_has_source_name_property",
+    "table_has_column",
+] + variable_names
+
+pyDatalog.create_terms(",".join(vocabulary))
+
+# No entity type for NameAssertion
+# See if a property with a named entity type is using that NameAssertion's column
+
++is_coreference_assertion("_")
+
+assertion_has_entity_type(X0, X1) <= (
+    is_name_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
+)
+assertion_has_entity_type(X0, X1) <= (
+    is_property_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
+)
+assertion_has_entity_type(X0, X1) <= (
+    is_property_assertion(X0)
+    & is_name_assertion(Y0)
+    & (Y0._property_column == X0._entity_name_column)
+    & assertion_has_entity_type(Y0, X1)
+)
+
+# Start inferring things about the model
+
+entity_has_property(X0, X1) <= (
+    is_entity_type(X0)
+    & is_property(X1)
+    & is_property_assertion(Y0)
+    & assertion_has_entity_type(Y0, X0)
+    & assertion_has_property_type(Y0, X1)
+)
+
+
+is_assertion(X0) <= is_name_assertion(X0)
+is_assertion(X0) <= is_property_assertion(X0)
+is_assertion(X0) <= is_relationship_assertion(X0)
+is_assertion(X0) <= is_coreference_assertion(X0)
+
+assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(X0, X1)
+assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(X0, X1)
+assertion_has_column(X0, X1) <= assertion_has_entity_name_column(X0, X1)
+assertion_has_column(X0, X1) <= assertion_has_property_column(X0, X1)
+
+# infer about tables having columns
+table_has_column(X0, X1) <= (
+    is_table_data_source(X0)
+    & is_assertion(Y0)
+    & assertion_in_table(Y0, X0)
+    & is_column(X1)
+    & assertion_has_column(Y0, X1)
+)
+
+assertion_has_parent_table(X0, X1) <= (
+    assertion_has_column(X0, Y0) & table_has_column(X1, Y0)
+)
+
+assertion_has_property_type(X0, X1) <= (
+    assertion_has_property_column(X0, Y0) & column_has_property_type(Y0, X1)
+)
+
+# Pierre is not in the cafe
+assertion_without_column(X0) <= (
+    is_property_assertion(X0) & ~assertion_has_column(X0, Y0)
+)
+assertion_without_entity_type(X0) <= (
+    is_assertion(X0) & ~assertion_has_entity_type(X0, Y0)
+)
+
+# relationship source name and target name properties
+relationship_has_source_name_property(X0, X1) <= (
+    is_relationship_assertion(X0)
+    & is_property(X1)
+    & is_column(Y0)
+    & assertion_has_source_entity_name_column(X0, Y0)
+    & is_name_assertion(Y1)
+    & assertion_has_property_column(Y1, Y0)
+    & column_has_property_type(Y0, X1)
+)
+
+logic_engine = Logic(True)
 
 
 class AmbiguityException(Exception):
@@ -135,16 +265,12 @@ class Assertion(pyDatalog.Mixin):
     def inferred(self, attr):
         if not hasattr(self, attr):
             raise Exception(
-                "Tested {attr} inferred, but no such attribute.".format(
-                    attr=attr
-                )
+                "Tested {attr} inferred, but no such attribute.".format(attr=attr)
             )
         if hasattr(self, attr) and not hasattr(self, "_" + attr):
             raise Exception(
                 "Tested {attr} inferred; the attribute exists, "
-                "but it not hooked up to the inference enigne.".format(
-                    attr=attr
-                )
+                "but it not hooked up to the inference enigne.".format(attr=attr)
             )
         if getattr(self, "_" + attr, None) is not None:
             return False
@@ -162,9 +288,7 @@ class TableDataSource(pyDatalog.Mixin):
     A configuration for a specific table.
     """
 
-    def __init__(
-        self, config_dict=None, assertion_list=None, config_file=None
-    ):
+    def __init__(self, config_dict=None, assertion_list=None, config_file=None):
         super(TableDataSource, self).__init__()
         self.config_dict = config_dict
         self.config_file = config_file
@@ -193,9 +317,7 @@ class TableDataSource(pyDatalog.Mixin):
                 config_dict = yaml.load(raw_config_file)
             self.config_dict = config_dict
             self.name = top_key(self.config_dict)
-            self.data_config = self.config_dict[self.name].get(
-                "data_config", None
-            )
+            self.data_config = self.config_dict[self.name].get("data_config", None)
         else:
             raise NotImplementedError("Provide a string.")
 
@@ -205,9 +327,7 @@ class TableDataSource(pyDatalog.Mixin):
             if assertion_type == "name":
                 assertion = NameAssertion(parent_table=self, **item["name"])
             elif assertion_type == "property":
-                assertion = PropertyAssertion(
-                    parent_table=self, **item["property"]
-                )
+                assertion = PropertyAssertion(parent_table=self, **item["property"])
             elif assertion_type == "relationship":
                 assertion = RelationshipAssertion(
                     parent_table=self, **item["relationship"]
@@ -232,9 +352,7 @@ class TableDataSource(pyDatalog.Mixin):
         for the table.
         """
         if self.config_dict is None:
-            raise Exception(
-                "Need a configuration for the ``TableDataSource``"
-            )
+            raise Exception("Need a configuration for the ``TableDataSource``")
         self.name = self.config_dict.get("name", None)
 
 
@@ -324,13 +442,8 @@ class PropertyAssertion(Assertion):
         if self._entity_name_column is not None:
             +is_column(self._entity_name_column)
             +assertion_has_entity_name_column(self, self._entity_name_column)
-        if (
-            self._property_column is not None
-            and self._property_type is not None
-        ):
-            +column_has_property_type(
-                self._property_column, self._property_type
-            )
+        if self._property_column is not None and self._property_type is not None:
+            +column_has_property_type(self._property_column, self._property_type)
 
     def cypher(self, row):
         query = self.merge_schema.format(
@@ -377,9 +490,7 @@ class PropertyAssertion(Assertion):
     @property
     @inferred_attribute
     def property_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``property_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``property_type`` yet")
 
 
 def flatten(nested_thing):
@@ -393,7 +504,9 @@ def flatten(nested_thing):
 
 class NameAssertion(PropertyAssertion):
 
-    merge_schema = """MERGE (X0: {entity_type} {{ {property_type}: {property_value} }};"""
+    merge_schema = (
+        """MERGE (X0: {entity_type} {{ {property_type}: {property_value} }};"""
+    )
 
     def __init__(self, **kwargs):
         super(NameAssertion, self).__init__(**kwargs)
@@ -455,9 +568,7 @@ class RelationshipAssertion(Assertion):
             +assertion_in_table(self, self._parent_table)
         if self._source_entity_type is not None:
             +is_entity_type(self._source_entity_type)
-            +relationship_has_source_entity_type(
-                self, self._source_entity_type
-            )
+            +relationship_has_source_entity_type(self, self._source_entity_type)
         if self._target_entity_type is not None:
             +is_entity_type(self._target_entity_type)
         if self._source_name_property is not None:
@@ -476,16 +587,12 @@ class RelationshipAssertion(Assertion):
     @property
     @inferred_attribute
     def source_entity_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``source_entity_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``source_entity_type`` yet")
 
     @property
     @inferred_attribute
     def target_entity_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``target_entity_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``target_entity_type`` yet")
 
     @property
     @inferred_attribute
@@ -536,6 +643,7 @@ class RelationshipAssertion(Assertion):
 def top_key(some_dict):
     key_list = list(some_dict.keys())
     if len(key_list) != 1:
+        print(some_dict)
         raise Exception(
             "top_key called on dictionary without exactly one top-level key."
         )
@@ -543,133 +651,46 @@ def top_key(some_dict):
     return top_key
 
 
+class GraphNode(MetalNode):
+    _import_pydatalog = True
+
+    def __init__(self, config_file=None, input_table=None, **kwargs):
+
+        self.table_config = TableDataSource(config_file=config_file)
+        self.input_table = input_table
+        self.logic_engine = logic_engine
+        Logic(self.logic_engine)
+
+        super(GraphNode, self).__init__()
+
+    def process_item(self):
+        for name_assertion in (
+            is_name_assertion(X0)
+            & assertion_in_table(X0, X1)
+            & (X1.name == self.input_table)
+        ):
+            name_assertion = name_assertion[0]
+            cypher_query = name_assertion.cypher(self.__message__)
+            yield {"cypher": cypher_query}
+        for property_assertion in (
+            is_property_assertion(X0)
+            & assertion_in_table(X0, X1)
+            & (X1.name == self.input_table)
+        ):
+            property_assertion = property_assertion[0]
+            cypher_query = property_assertion.cypher(self.__message__)
+            yield {"cypher": cypher_query}
+        for relationship_assertion in (
+            is_relationship_assertion(X0)
+            & assertion_in_table(X0, X1)
+            & (X1.name == self.input_table)
+        ):
+            relationship_assertion = relationship_assertion[0]
+            cypher_query = relationship_assertion.cypher(self.__message__)
+            yield {"cypher": cypher_query}
+
+
 if __name__ == "__main__":
-    variable_bases = ["X", "Y", "Z", "W", "V", "U"]
-    variable_range = 10
-    variable_names = list(
-        "".join([x, y])
-        for x, y in itertools.product(
-            variable_bases, [str(digit) for digit in range(variable_range)]
-        )
-    )
+    import pdb
 
-    test_row = {
-        "customer_id": 10,
-        "email": "bob@bob.com",
-        "height": "3 feet",
-        "referring_customer_id": 11,
-    }
-
-    vocabulary = [
-        "assertion_in_table",
-        "assertion_has_column",
-        "assertion_without_entity_type",
-        "column_has_property_type",
-        "contains_assertion",
-        "property_of_entity_type",
-        "entity_has_property",
-        "is_entity_type",
-        "is_column",
-        "is_property",
-        "is_assertion",
-        "is_relationship_assertion",
-        "is_property_assertion",
-        "is_table_data_source",
-        "assertion_has_property_column",
-        "assertion_has_parent_table",
-        "assertion_without_column",
-        "inferred_entity_type",
-        "assertion_has_entity_name_column",
-        "is_name_assertion",
-        "is_coreference_assertion",
-        "assertion_has_entity_type",
-        "assertion_has_property_type",
-        "assertion_has_source_entity_name_column",
-        "assertion_has_target_entity_name_column",
-        "relationship_has_source_entity_type",
-        "relationship_has_source_name_property",
-        "table_has_column",
-    ] + variable_names
-    pyDatalog.create_terms(",".join(vocabulary))
-    config_file = "./sample_config.yaml"
-    t = TableDataSource(config_file=config_file)
-
-    # No entity type for NameAssertion
-    # See if a property with a named entity type is using that NameAssertion's column
-
-    assertion_has_entity_type(X0, X1) <= (
-        is_name_assertion(X0)
-        & (X0._entity_type != None)
-        & (X1 == X0._entity_type)
-    )
-    assertion_has_entity_type(X0, X1) <= (
-        is_property_assertion(X0)
-        & (X0._entity_type != None)
-        & (X1 == X0._entity_type)
-    )
-    assertion_has_entity_type(X0, X1) <= (
-        is_property_assertion(X0)
-        & is_name_assertion(Y0)
-        & (Y0._property_column == X0._entity_name_column)
-        & assertion_has_entity_type(Y0, X1)
-    )
-
-    # Start inferring things about the model
-
-    entity_has_property(X0, X1) <= (
-        is_entity_type(X0)
-        & is_property(X1)
-        & is_property_assertion(Y0)
-        & assertion_has_entity_type(Y0, X0)
-        & assertion_has_property_type(Y0, X1)
-    )
-
-    is_assertion(X0) <= is_name_assertion(X0)
-    is_assertion(X0) <= is_property_assertion(X0)
-    is_assertion(X0) <= is_relationship_assertion(X0)
-    is_assertion(X0) <= is_coreference_assertion(X0)
-
-    assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(
-        X0, X1
-    )
-    assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(
-        X0, X1
-    )
-    assertion_has_column(X0, X1) <= assertion_has_entity_name_column(X0, X1)
-    assertion_has_column(X0, X1) <= assertion_has_property_column(X0, X1)
-
-    # infer about tables having columns
-    table_has_column(X0, X1) <= (
-        is_table_data_source(X0)
-        & is_assertion(Y0)
-        & assertion_in_table(Y0, X0)
-        & is_column(X1)
-        & assertion_has_column(Y0, X1)
-    )
-
-    assertion_has_parent_table(X0, X1) <= (
-        assertion_has_column(X0, Y0) & table_has_column(X1, Y0)
-    )
-
-    assertion_has_property_type(X0, X1) <= (
-        assertion_has_property_column(X0, Y0)
-        & column_has_property_type(Y0, X1)
-    )
-
-    # Pierre is not in the cafe
-    assertion_without_column(X0) <= (
-        is_property_assertion(X0) & ~assertion_has_column(X0, Y0)
-    )
-    assertion_without_entity_type(X0) <= (
-        is_assertion(X0) & ~assertion_has_entity_type(X0, Y0)
-    )
-
-    # relationship source name and target name properties
-    relationship_has_source_name_property(X0, X1) <= (
-        is_relationship_assertion(X0) &
-        is_property(X1) &
-        is_column(Y0) &
-        assertion_has_source_entity_name_column(X0, Y0) &
-        is_name_assertion(Y1) &
-        assertion_has_property_column(Y1, Y0) &
-        column_has_property_type(Y0, X1))
+    pdb.set_trace()

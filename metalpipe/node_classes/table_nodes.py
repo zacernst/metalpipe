@@ -12,6 +12,8 @@ import json
 import time
 import random
 import logging
+import itertools
+
 from metalpipe.node import MetalNode, NothingToSeeHere
 from bloom_filter import BloomFilter
 from metalpipe.utils.data_structures import make_types
