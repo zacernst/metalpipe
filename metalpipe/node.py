@@ -675,8 +675,9 @@ class MetalNode:
         Called in each ``MetalNode`` thread.
         """
         self.status = "running"
-        if getattr(self, '_import_pydatalog', False):
+        if getattr(self, "_import_pydatalog", False):
             from pyDatalog import pyDatalog, Logic
+
             Logic(self.logic_engine)
 
         try:
@@ -1438,19 +1439,19 @@ class StreamMySQLTable(MetalNode):
             """WHERE table_name='{table}';""".format(table=self.table)
         )
 
-        #self.table_schema = self.get_schema()
+        # self.table_schema = self.get_schema()
         # Need a mapping from header to MYSQL TYPE
-        #for mapping in self.table_schema:
+        # for mapping in self.table_schema:
         #    column = mapping["column_name"]
         #    type_string = mapping["column_type"]
         #    this_type = ds.MySQLTypeSystem.type_mapping(type_string)
-            # Unfinished experimental code
-            # Start here:
-            #    store the type_mapping
-            #    use it to cast the data into the MySQLTypeSchema
-            #    ensure that the generator is emitting MySQLTypeSchema objects
+        # Unfinished experimental code
+        # Start here:
+        #    store the type_mapping
+        #    use it to cast the data into the MySQLTypeSchema
+        #    ensure that the generator is emitting MySQLTypeSchema objects
 
-    #def get_schema(self):
+    # def get_schema(self):
     #   self.cursor.execute(self.table_schema_query)
     #   table_schema = self.cursor.fetchall()
     #   return table_schema
