@@ -12,7 +12,7 @@ import argparse
 from metalpipe.node import *
 from metalpipe.node_classes.network_nodes import *
 from metalpipe.node_classes.civis_nodes import *
-
+from metalpipe.node_classes.nft_nodes import *
 
 logging.basicConfig(level=logging.DEBUG)
 # logging.disable(logging.CRITICAL)
