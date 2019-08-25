@@ -107,9 +107,7 @@ if __name__ == "__main__":
         key="file_name",
         output_key="contents",
     )
-    csv_reader = CSVReader(
-        name="csv_reader", key="contents", output_key="row"
-    )
+    csv_reader = CSVReader(name="csv_reader", key="contents", output_key="row")
     printer = PrinterOfThings(
         pretty=True, disable=False, prepend=">>>>>", name="printer"
     )

@@ -43,9 +43,7 @@ class required_arguments:
             if len(missing_kwargs) > 0:
                 raise MissingRequiredArgument(
                     "Missing required argument(s): "
-                    "{kwarg_list}".format(
-                        kwarg_list=", ".join(missing_kwargs)
-                    )
+                    "{kwarg_list}".format(kwarg_list=", ".join(missing_kwargs))
                 )
             out = f(*args, **kwargs)
             return out

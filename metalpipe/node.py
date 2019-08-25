@@ -1065,11 +1065,7 @@ class MockNode(MetalNode):
 
 class InsertData(MetalNode):
     def __init__(
-        self,
-        overwrite=True,
-        overwrite_if_null=True,
-        value_dict=None,
-        **kwargs
+        self, overwrite=True, overwrite_if_null=True, value_dict=None, **kwargs
     ):
         self.overwrite = overwrite
         self.overwrite_if_null = overwrite_if_null
@@ -1395,9 +1391,7 @@ class Filter(MetalNode):
                 == self.value
             )
         else:
-            raise Exception(
-                "Unknown test: {test_name}".format(test_name=test)
-            )
+            raise Exception("Unknown test: {test_name}".format(test_name=test))
         if result:
             logging.debug("Sending message through")
             yield self.message
@@ -1806,9 +1800,7 @@ class BatchMessages(MetalNode):
         yield out
 
     def cleanup(self):
-        self.log_info(
-            self.name + " in cleanup, sending remainder of batch..."
-        )
+        self.log_info(self.name + " in cleanup, sending remainder of batch...")
         yield self.batch_list
 
 

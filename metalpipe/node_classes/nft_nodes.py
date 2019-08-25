@@ -95,6 +95,7 @@ test_row = {
 
 vocabulary = [
     "assertion_in_table",
+    "assertion_has_relationship_property_column",
     "assertion_has_column",
     "assertion_without_entity_type",
     "column_has_property_type",
@@ -106,10 +107,14 @@ vocabulary = [
     "is_property",
     "is_assertion",
     "is_relationship_assertion",
+    "is_relationship_property_assertion",
+    "is_relationship_property",
+    "relationship_property_type",
     "is_property_assertion",
     "is_table_data_source",
     "assertion_has_property_column",
     "assertion_has_parent_table",
+    "assertion_has_relationship_property_type",
     "assertion_without_column",
     "inferred_entity_type",
     "assertion_has_entity_name_column",
@@ -132,9 +137,7 @@ pyDatalog.create_terms(",".join(vocabulary))
 +is_coreference_assertion("_")
 
 assertion_has_entity_type(X0, X1) <= (
-    is_name_assertion(X0)
-    & (X0._entity_type != None)
-    & (X1 == X0._entity_type)
+    is_name_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
 )
 assertion_has_entity_type(X0, X1) <= (
     is_property_assertion(X0)
@@ -160,16 +163,13 @@ entity_has_property(X0, X1) <= (
 
 +is_relationship_assertion("_")
 is_assertion(X0) <= is_name_assertion(X0)
+is_assertion(X0) <= is_relationship_property_assertion(X0)
 is_assertion(X0) <= is_property_assertion(X0)
 is_assertion(X0) <= is_relationship_assertion(X0)
 is_assertion(X0) <= is_coreference_assertion(X0)
 
-assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(
-    X0, X1
-)
-assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(
-    X0, X1
-)
+assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(X0, X1)
+assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(X0, X1)
 assertion_has_column(X0, X1) <= assertion_has_entity_name_column(X0, X1)
 assertion_has_column(X0, X1) <= assertion_has_property_column(X0, X1)
 
@@ -354,6 +354,10 @@ class TableDataSource(pyDatalog.Mixin):
                 assertion = CoreferenceAssertion(
                     parent_table=self, **item["coreference"]
                 )
+            elif assertion_type == "relationship_property":
+                assertion = RelationshipPropertyAssertion(
+                    parent_table=self, **item["relationship_property"]
+                )
             else:
                 raise Exception(
                     "Unknown Assertion type: {assertion}".format(
@@ -370,9 +374,7 @@ class TableDataSource(pyDatalog.Mixin):
         for the table.
         """
         if self.config_dict is None:
-            raise Exception(
-                "Need a configuration for the ``TableDataSource``"
-            )
+            raise Exception("Need a configuration for the ``TableDataSource``")
         self.name = self.config_dict.get("name", None)
 
 
@@ -718,33 +720,149 @@ class GraphNode(MetalNode):
     def process_item(self):
         +is_name_assertion("_")
         +is_property_assertion("_")
-        for name_assertion in (
-            is_name_assertion(X0)
+        for assertion in (
+            is_assertion(X0)
             & assertion_in_table(X0, X1)
             & (X1.name == self.input_table)
         ):
-            name_assertion = name_assertion[0]
-            cypher_query = name_assertion.cypher(self.__message__)
+            assertion = assertion[0]
+            cypher_query = assertion.cypher(self.__message__)
             print(cypher_query)
             yield {"cypher": cypher_query}
-        for property_assertion in (
-            is_property_assertion(X0)
-            & assertion_in_table(X0, X1)
-            & (X1.name == self.input_table)
-        ):
-            property_assertion = property_assertion[0]
-            cypher_query = property_assertion.cypher(self.__message__)
-            print(cypher_query)
-            yield {"cypher": cypher_query}
-        for relationship_assertion in (
-            is_relationship_assertion(X0)
-            & assertion_in_table(X0, X1)
-            & (X1.name == self.input_table)
-        ):
-            relationship_assertion = relationship_assertion[0]
-            cypher_query = relationship_assertion.cypher(self.__message__)
-            print(cypher_query)
-            yield {"cypher": cypher_query}
+
+
+class RelationshipPropertyAssertion(Assertion):
+
+    merge_schema = (
+        "MERGE (X0: {source_entity_type} {{ {source_entity_name_property}: $source_entity_name_value }}) "
+        "WITH X0 "
+        "MERGE (X1: {target_entity_type} {{ {target_entity_name_property}: $target_entity_name_value }}) "
+        "WITH X0, X1 "
+        "MERGE (X0)-[r:{relationship_type}]->(X1) "
+        "WITH r "
+        "SET r.{relationship_property_type} = $relationship_property_value;"
+    )
+
+    QUERIED_ATTRIBUTES = []  # TODO: Revisit whether this is necessary
+
+    def __init__(
+        self,
+        parent_table=None,
+        function=None,
+        relationship_property_column=None,
+        relationship_property_type=None,
+        relationship_alias=None,
+        relationship_type=None,
+        source_entity_name_column=None,
+        source_entity_name_property=None,
+        target_entity_name_column=None,
+        target_entity_name_property=None,
+        source_entity_type=None,
+        target_entity_type=None,
+        alias=None,
+        # TODO ? Not sure if we need to add more
+    ):
+        super(RelationshipPropertyAssertion, self).__init__()
+        self._parent_table = parent_table
+        self.function = function
+        self._relationship_property_column = relationship_property_column
+        self._relationship_property_type = relationship_property_type
+        self._relationship_type = relationship_type
+        self._relationship_alias = relationship_alias
+        self._source_entity_name_column = source_entity_name_column
+        self._source_entity_name_property = source_entity_name_property
+        self._target_entity_name_column = target_entity_name_column
+        self._target_entity_name_property = target_entity_name_property
+        self._source_entity_type = source_entity_type
+        self._target_entity_type = target_entity_type
+        self._alias = alias
+
+        +is_relationship_property_assertion(self)
+
+        if self._parent_table is not None:
+            +is_table_data_source(self._parent_table)
+            +assertion_in_table(self, self._parent_table)
+        if self._source_entity_type is not None:
+            +is_entity_type(self._entity_type)
+        if self._target_entity_type is not None:
+            +is_entity_type(self._entity_type)
+        if self._relationship_property_type is not None:
+            +is_relationship_property(self._relationship_property_type)
+            +assertion_has_relationship_property_type(self, self._relationship_property_type)
+        if self._relationship_property_column is not None:
+            +is_column(self._relationship_property_column)
+            +assertion_has_relationship_property_column(self, self._relationship_property_column)
+        if self._relationship_property_column is not None:
+            +is_column(self._relationship_property_column)
+            +assertion_has_relationship_property_column(self, self._relationship_property_column)
+
+
+    def cypher(self, row):
+        cypher_query = self.merge_schema.format(
+            source_entity_type=self._source_entity_type,
+            source_entity_name_property=self._source_entity_name_property,
+            target_entity_type=self._target_entity_type,
+            target_entity_name_property=self._target_entity_name_property,
+            relationship_type = self._relationship_type,
+            relationship_property_type = self._relationship_property_type,
+        )
+        output_query = {
+            "cypher_query": cypher_query,
+            "cypher_query_parameters": {
+                "source_entity_name_value": row[self._source_entity_name_column],
+                "target_entity_name_value": row[self._target_entity_name_column],
+                "relationship_property_value": row[self._relationship_property_column],
+            },
+        }
+        print(output_query)
+        return output_query
+
+    @property
+    @inferred_attribute
+    def target_entity_name_property(self):
+        raise AmbiguityException("Haven't got the logic for ``target_entity_name_property`` yet")
+
+    @property
+    @inferred_attribute
+    def target_entity_name_column(self):
+        raise AmbiguityException("Haven't got the logic for ``target_entity_name_column`` yet")
+
+    @property
+    @inferred_attribute
+    def source_entity_name_property(self):
+        raise AmbiguityException("Haven't got the logic for ``source_entity_name_property`` yet")
+
+    @property
+    @inferred_attribute
+    def source_entity_name_column(self):
+        raise AmbiguityException("Haven't got the logic for ``source_entty_name_column`` yet")
+
+    @property
+    @inferred_attribute
+    def relationship_alias(self):
+        raise AmbiguityException("Haven't got the logic for ``relationship_alias`` yet")
+
+    @property
+    @inferred_attribute
+    def relationship_type(self):
+        raise AmbiguityException("Haven't got the logic for ``relationship_type`` yet")
+
+    @property
+    @inferred_attribute
+    def relationship_property_type(self):
+        raise AmbiguityException("Haven't got the logic for ``relationship_property_type`` yet")
+
+    @property
+    @inferred_attribute
+    def relationship_property_columns(self):
+        raise AmbiguityException("Haven't got the logic for ``relationship_property_column`` yet")
+
+    @property
+    @inferred_attribute
+    def parent_table(self):
+        raise AmbiguityException(
+            "Haven't got the logic for ``parent_table`` yet"
+        )
 
 
 if __name__ == "__main__":
