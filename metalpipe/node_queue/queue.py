@@ -69,7 +69,12 @@ class MetalPipeQueue:
             self.get()
 
     def put(
-        self, message, *args, queue_event=None, previous_message=None, **kwargs
+        self,
+        message,
+        *args,
+        queue_event=None,
+        previous_message=None,
+        **kwargs
     ):
         """
         Places a message on the output queues. If the message is ``None``,

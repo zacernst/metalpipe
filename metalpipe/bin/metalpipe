@@ -13,6 +13,8 @@ from metalpipe.node import *
 from metalpipe.node_classes.network_nodes import *
 from metalpipe.node_classes.civis_nodes import *
 from metalpipe.node_classes.nft_nodes import *
+from metalpipe.node_classes.cypher_neo4j import Neo4JExecutor
+
 
 logging.basicConfig(level=logging.DEBUG)
 # logging.disable(logging.CRITICAL)

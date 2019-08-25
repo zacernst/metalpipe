@@ -380,7 +380,9 @@ class HttpGetRequestPaginator(MetalNode):
                 + str(self.requestor.endpoint_template)
             )
             logging.debug(
-                "::".join([self.name, "events", str(len(i.get("events", "")))])
+                "::".join(
+                    [self.name, "events", str(len(i.get("events", "")))]
+                )
             )
             yield i
             if self.finished:

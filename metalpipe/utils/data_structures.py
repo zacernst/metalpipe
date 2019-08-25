@@ -340,7 +340,10 @@ class Row:
         return Row(*record_list)
 
     def concat(self, other, fail_on_duplicate=True):
-        if len(set(self.keys()) & set(other.keys())) > 0 and fail_on_duplicate:
+        if (
+            len(set(self.keys()) & set(other.keys())) > 0
+            and fail_on_duplicate
+        ):
             raise Exception(
                 "Overlapping records during concatenation of `Row`."
             )

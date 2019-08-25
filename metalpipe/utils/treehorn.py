@@ -30,7 +30,9 @@ class Label:
         if isinstance(other, (TreeHorn,)):
             self.treehorns.append(other)
         else:
-            raise Exception("Right side of Label assignment must be TreeHorn.")
+            raise Exception(
+                "Right side of Label assignment must be TreeHorn."
+            )
 
     def __repr__(self):
         return "Label({label})".format(label=self.label)
@@ -290,7 +292,9 @@ class HasKey(MeetsCondition):
         self.key = key
 
         def _condition(thing):
-            return isinstance(thing, (TracedDictionary,)) and self.key in thing
+            return (
+                isinstance(thing, (TracedDictionary,)) and self.key in thing
+            )
 
         super(HasKey, self).__init__(test_function=_condition, **kwargs)
 

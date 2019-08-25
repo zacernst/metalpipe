@@ -46,7 +46,9 @@ class SendToCivis(MetalNode):
         recorded_tables=TimedDict(timeout=30),
         **kwargs
     ):
-        self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
+        self.civis_api_key = (
+            civis_api_key or os.environ[civis_api_key_env_var]
+        )
         self.include_columns = include_columns
         self.table = table
         self.dummy_run = dummy_run
@@ -284,7 +286,9 @@ class SendToCivis(MetalNode):
                         while not fut.done():
                             time.sleep(1)
                 else:
-                    logging.debug("Not sending to Redshift due to `dummy run`")
+                    logging.debug(
+                        "Not sending to Redshift due to `dummy run`"
+                    )
             yield self.message
 
 
@@ -326,7 +330,9 @@ class EnsureCivisRedshiftTableExists(MetalNode):
         create_statement = (
             """CREATE TABLE IF NOT EXISTS "{schema}"."{table}" """
             """({columns_spec});""".format(
-                schema=self.schema, table=self.table, columns_spec=columns_spec
+                schema=self.schema,
+                table=self.table,
+                columns_spec=columns_spec,
             )
         )
         logging.debug("Ensuring table exists -- " + create_statement)
@@ -407,7 +413,9 @@ class CivisSQLExecute(MetalNode):
     ):
         self.sql = sql
         self.query_dict = query_dict or {}
-        self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
+        self.civis_api_key = (
+            civis_api_key or os.environ[civis_api_key_env_var]
+        )
         self.dummy_run = dummy_run
         self.api_client = civis.APIClient()
         self.database = database
@@ -436,7 +444,8 @@ class CivisSQLExecute(MetalNode):
         result_rows = result["result_rows"]
         if self.returned_columns is not None:
             result_rows = [
-                list_to_dict(row, self.returned_columns) for row in result_rows
+                list_to_dict(row, self.returned_columns)
+                for row in result_rows
             ]
         else:
             result_rows = result["result_rows"]
@@ -464,7 +473,9 @@ class CivisToCSV(MetalNode):
     ):
         self.sql = sql
         self.query_dict = query_dict or {}
-        self.civis_api_key = civis_api_key or os.environ[civis_api_key_env_var]
+        self.civis_api_key = (
+            civis_api_key or os.environ[civis_api_key_env_var]
+        )
         self.dummy_run = dummy_run
         self.database = database
         self.returned_columns = returned_columns

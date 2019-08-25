@@ -132,7 +132,9 @@ pyDatalog.create_terms(",".join(vocabulary))
 +is_coreference_assertion("_")
 
 assertion_has_entity_type(X0, X1) <= (
-    is_name_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
+    is_name_assertion(X0)
+    & (X0._entity_type != None)
+    & (X1 == X0._entity_type)
 )
 assertion_has_entity_type(X0, X1) <= (
     is_property_assertion(X0)
@@ -156,14 +158,18 @@ entity_has_property(X0, X1) <= (
     & assertion_has_property_type(Y0, X1)
 )
 
-
++is_relationship_assertion("_")
 is_assertion(X0) <= is_name_assertion(X0)
 is_assertion(X0) <= is_property_assertion(X0)
 is_assertion(X0) <= is_relationship_assertion(X0)
 is_assertion(X0) <= is_coreference_assertion(X0)
 
-assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(X0, X1)
-assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(X0, X1)
+assertion_has_column(X0, X1) <= assertion_has_source_entity_name_column(
+    X0, X1
+)
+assertion_has_column(X0, X1) <= assertion_has_target_entity_name_column(
+    X0, X1
+)
 assertion_has_column(X0, X1) <= assertion_has_entity_name_column(X0, X1)
 assertion_has_column(X0, X1) <= assertion_has_property_column(X0, X1)
 
@@ -364,7 +370,9 @@ class TableDataSource(pyDatalog.Mixin):
         for the table.
         """
         if self.config_dict is None:
-            raise Exception("Need a configuration for the ``TableDataSource``")
+            raise Exception(
+                "Need a configuration for the ``TableDataSource``"
+            )
         self.name = self.config_dict.get("name", None)
 
 
@@ -400,8 +408,8 @@ class CoreferenceAssertion(Assertion):
 class PropertyAssertion(Assertion):
 
     merge_schema = (
-        """MERGE (X0: {entity_type} {{ {entity_name_property}: {entity_name_value} }}) """
-        """WITH X0 SET X0.{property_type} = {property_value};"""
+        """MERGE (X0: {entity_type} {{ {entity_name_property}: $entity_name_value }}) """
+        """WITH X0 SET X0.{property_type} = $property_value ;"""
     )
 
     QUERIED_ATTRIBUTES = [
@@ -463,14 +471,22 @@ class PropertyAssertion(Assertion):
             )
 
     def cypher(self, row):
-        query = self.merge_schema.format(
+        cypher_query = self.merge_schema.format(
             entity_type=self._entity_type,
             entity_name_property=self._entity_name_property,
-            entity_name_value=row[self._entity_name_column],
-            property_type=self._property_type,
-            property_value=row[self._property_column],
+            # entity_name_value=row[self._entity_name_column],
+            property_type=self._property_type
+            # property_value=row[self._property_column],
         )
-        return query
+        output_query = {
+            "cypher_query": cypher_query,
+            "cypher_query_parameters": {
+                "entity_name_value": row[self._entity_name_column],
+                "property_value": row[self._property_column],
+            },
+        }
+        print(output_query)
+        return output_query
 
     @property
     @inferred_attribute
@@ -523,9 +539,7 @@ def flatten(nested_thing):
 
 class NameAssertion(PropertyAssertion):
 
-    merge_schema = (
-        """MERGE (X0: {entity_type} {{ {property_type}: {property_value} }};"""
-    )
+    merge_schema = """MERGE (X0: {entity_type} {{ {property_type}: $property_value }} );"""
 
     def __init__(self, **kwargs):
         super(NameAssertion, self).__init__(**kwargs)
@@ -536,22 +550,27 @@ class NameAssertion(PropertyAssertion):
         ``row`` is a dictionary where each key is a column name.
         """
         property_value = row[self._property_column]
-        query = self.merge_schema.format(
+        cypher_query = self.merge_schema.format(
             entity_type=self._entity_type,
             property_type=self._property_type,
-            property_value=property_value,
+            # property_value=property_value,
         )
-        return query
+        output_query = {
+            "cypher_query": cypher_query,
+            "cypher_query_parameters": {"property_value": property_value},
+        }
+        print(output_query)
+        return output_query
 
 
 class RelationshipAssertion(Assertion):
 
     merge_schema = (
-        "MERGE (X0: {source_entity_type} {{ {source_name_property}: {source_name_value} }}) "
+        "MERGE (X0: {source_entity_type} {{ {source_name_property}: $source_name_value }}) "
         "WITH X0 "
-        "MERGE (X1: {target_entity_type} {{ {target_name_property}: {target_name_value} }}) "
+        "MERGE (X1: {target_entity_type} {{ {target_name_property}: $target_name_value }}) "
         "WITH X0, X1 "
-        "MERGE (X0)-[{relationship_type}]->(X1);"
+        "MERGE (X0)-[:{relationship_type}]->(X1);"
     )
 
     def __init__(
@@ -582,6 +601,7 @@ class RelationshipAssertion(Assertion):
         self._target_name_property = target_name_property
         self._relationship_type = relationship_type
         +is_relationship_assertion(self)
+
         if self._parent_table is not None:
             +is_table_data_source(self._parent_table)
             +assertion_in_table(self, self._parent_table)
@@ -653,16 +673,23 @@ class RelationshipAssertion(Assertion):
         )
 
     def cypher(self, row):
-        query = self.merge_schema.format(
+        cypher_query = self.merge_schema.format(
             source_entity_type=self._source_entity_type,
             source_name_property=self._source_name_property,
-            source_name_value=row[self._source_entity_name_column],
+            # source_name_value=row[self._source_entity_name_column],
             target_entity_type=self._target_entity_type,
             target_name_property=self._target_name_property,
-            target_name_value=row[self._target_entity_name_column],
+            # target_name_value=row[self._target_entity_name_column],
             relationship_type=self._relationship_type,
         )
-        return query
+        output_query = {
+            "cypher_query": cypher_query,
+            "cypher_query_parameters": {
+                "source_name_value": row[self._source_entity_name_column],
+                "target_name_value": row[self._target_entity_name_column],
+            },
+        }
+        return output_query
 
 
 def top_key(some_dict):
@@ -689,6 +716,8 @@ class GraphNode(MetalNode):
         super(GraphNode, self).__init__()
 
     def process_item(self):
+        +is_name_assertion("_")
+        +is_property_assertion("_")
         for name_assertion in (
             is_name_assertion(X0)
             & assertion_in_table(X0, X1)
@@ -696,6 +725,7 @@ class GraphNode(MetalNode):
         ):
             name_assertion = name_assertion[0]
             cypher_query = name_assertion.cypher(self.__message__)
+            print(cypher_query)
             yield {"cypher": cypher_query}
         for property_assertion in (
             is_property_assertion(X0)
@@ -704,6 +734,7 @@ class GraphNode(MetalNode):
         ):
             property_assertion = property_assertion[0]
             cypher_query = property_assertion.cypher(self.__message__)
+            print(cypher_query)
             yield {"cypher": cypher_query}
         for relationship_assertion in (
             is_relationship_assertion(X0)
@@ -712,6 +743,7 @@ class GraphNode(MetalNode):
         ):
             relationship_assertion = relationship_assertion[0]
             cypher_query = relationship_assertion.cypher(self.__message__)
+            print(cypher_query)
             yield {"cypher": cypher_query}
 
 
