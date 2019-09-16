@@ -65,6 +65,7 @@ to test for ambiguities and contradictions within the data model.
 """
 
 import logging
+import uuid
 import itertools
 import pprint
 import yaml
@@ -265,6 +266,7 @@ class Assertion(pyDatalog.Mixin):
     QUERIED_ATTRIBUTES = []
 
     def __init__(self):
+        self.uuid = uuid.uuid4()
         super(Assertion, self).__init__()
 
     def __repr__(self):

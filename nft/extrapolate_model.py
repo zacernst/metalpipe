@@ -61,7 +61,6 @@ for entity in is_entity_type(X0):
 for relationship_assertion, source_entity, target_entity in (
     relationship_has_source_entity_type(X0, X1)
 ) & relationship_has_target_entity_type(X0, X2):
-    #relationship_name = relationship.__class__.__name__
     model_graph.add_edge(
         source_entity, target_entity, relationship=relationship_assertion, metatype='Relationship'
     )
