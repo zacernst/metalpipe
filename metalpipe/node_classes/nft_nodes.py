@@ -125,6 +125,7 @@ vocabulary = [
     "assertion_has_source_entity_name_column",
     "assertion_has_target_entity_name_column",
     "relationship_has_source_entity_type",
+    "relationship_has_target_entity_type",
     "relationship_has_source_name_property",
     "table_has_column",
 ] + variable_names
@@ -267,8 +268,8 @@ class Assertion(pyDatalog.Mixin):
         super(Assertion, self).__init__()
 
     def __repr__(self):
-        out = [self.__class__.__name__, "-" * len(self.__class__.__name__)]
-        return "\n".join(out)
+        out = self.__class__.__name__
+        return out
 
     def inferred(self, attr):
         if not hasattr(self, attr):
@@ -487,7 +488,6 @@ class PropertyAssertion(Assertion):
                 "property_value": row[self._property_column],
             },
         }
-        print(output_query)
         return output_query
 
     @property
@@ -561,7 +561,6 @@ class NameAssertion(PropertyAssertion):
             "cypher_query": cypher_query,
             "cypher_query_parameters": {"property_value": property_value},
         }
-        print(output_query)
         return output_query
 
 
@@ -614,6 +613,9 @@ class RelationshipAssertion(Assertion):
             )
         if self._target_entity_type is not None:
             +is_entity_type(self._target_entity_type)
+            +relationship_has_target_entity_type(
+                self, self._target_entity_type
+            )
         if self._source_name_property is not None:
             +is_property(self._source_name_property)
         if self._target_name_property is not None:
@@ -697,7 +699,6 @@ class RelationshipAssertion(Assertion):
 def top_key(some_dict):
     key_list = list(some_dict.keys())
     if len(key_list) != 1:
-        print(some_dict)
         raise Exception(
             "top_key called on dictionary without exactly one top-level key."
         )
@@ -714,7 +715,6 @@ class GraphNode(MetalNode):
         self.input_table = input_table
         self.logic_engine = logic_engine
         Logic(self.logic_engine)
-
         super(GraphNode, self).__init__()
 
     def process_item(self):
@@ -727,7 +727,6 @@ class GraphNode(MetalNode):
         ):
             assertion = assertion[0]
             cypher_query = assertion.cypher(self.__message__)
-            print(cypher_query)
             yield {"cypher": cypher_query}
 
 
@@ -783,19 +782,24 @@ class RelationshipPropertyAssertion(Assertion):
             +is_table_data_source(self._parent_table)
             +assertion_in_table(self, self._parent_table)
         if self._source_entity_type is not None:
-            +is_entity_type(self._entity_type)
+            +is_entity_type(self._source_entity_type)
         if self._target_entity_type is not None:
-            +is_entity_type(self._entity_type)
+            +is_entity_type(self._target_entity_type)
         if self._relationship_property_type is not None:
             +is_relationship_property(self._relationship_property_type)
-            +assertion_has_relationship_property_type(self, self._relationship_property_type)
+            +assertion_has_relationship_property_type(
+                self, self._relationship_property_type
+            )
         if self._relationship_property_column is not None:
             +is_column(self._relationship_property_column)
-            +assertion_has_relationship_property_column(self, self._relationship_property_column)
+            +assertion_has_relationship_property_column(
+                self, self._relationship_property_column
+            )
         if self._relationship_property_column is not None:
             +is_column(self._relationship_property_column)
-            +assertion_has_relationship_property_column(self, self._relationship_property_column)
-
+            +assertion_has_relationship_property_column(
+                self, self._relationship_property_column
+            )
 
     def cypher(self, row):
         cypher_query = self.merge_schema.format(
@@ -803,59 +807,80 @@ class RelationshipPropertyAssertion(Assertion):
             source_entity_name_property=self._source_entity_name_property,
             target_entity_type=self._target_entity_type,
             target_entity_name_property=self._target_entity_name_property,
-            relationship_type = self._relationship_type,
-            relationship_property_type = self._relationship_property_type,
+            relationship_type=self._relationship_type,
+            relationship_property_type=self._relationship_property_type,
         )
         output_query = {
             "cypher_query": cypher_query,
             "cypher_query_parameters": {
-                "source_entity_name_value": row[self._source_entity_name_column],
-                "target_entity_name_value": row[self._target_entity_name_column],
-                "relationship_property_value": row[self._relationship_property_column],
+                "source_entity_name_value": row[
+                    self._source_entity_name_column
+                ],
+                "target_entity_name_value": row[
+                    self._target_entity_name_column
+                ],
+                "relationship_property_value": row[
+                    self._relationship_property_column
+                ],
             },
         }
-        print(output_query)
         return output_query
 
     @property
     @inferred_attribute
     def target_entity_name_property(self):
-        raise AmbiguityException("Haven't got the logic for ``target_entity_name_property`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``target_entity_name_property`` yet"
+        )
 
     @property
     @inferred_attribute
     def target_entity_name_column(self):
-        raise AmbiguityException("Haven't got the logic for ``target_entity_name_column`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``target_entity_name_column`` yet"
+        )
 
     @property
     @inferred_attribute
     def source_entity_name_property(self):
-        raise AmbiguityException("Haven't got the logic for ``source_entity_name_property`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``source_entity_name_property`` yet"
+        )
 
     @property
     @inferred_attribute
     def source_entity_name_column(self):
-        raise AmbiguityException("Haven't got the logic for ``source_entty_name_column`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``source_entty_name_column`` yet"
+        )
 
     @property
     @inferred_attribute
     def relationship_alias(self):
-        raise AmbiguityException("Haven't got the logic for ``relationship_alias`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``relationship_alias`` yet"
+        )
 
     @property
     @inferred_attribute
     def relationship_type(self):
-        raise AmbiguityException("Haven't got the logic for ``relationship_type`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``relationship_type`` yet"
+        )
 
     @property
     @inferred_attribute
     def relationship_property_type(self):
-        raise AmbiguityException("Haven't got the logic for ``relationship_property_type`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``relationship_property_type`` yet"
+        )
 
     @property
     @inferred_attribute
     def relationship_property_columns(self):
-        raise AmbiguityException("Haven't got the logic for ``relationship_property_column`` yet")
+        raise AmbiguityException(
+            "Haven't got the logic for ``relationship_property_column`` yet"
+        )
 
     @property
     @inferred_attribute

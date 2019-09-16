@@ -24,7 +24,6 @@ class Neo4JExecutor(MetalNode):
         super(Neo4JExecutor, self).__init__(**kwargs)
 
     def process_item(self):
-        print(self.__message__)
         cypher = self.__message__["cypher"]
         cypher_query = cypher["cypher_query"]
         logging.info(">>>>" + str(cypher_query))
@@ -33,5 +32,4 @@ class Neo4JExecutor(MetalNode):
         self.transaction.commit()
         self.transaction = self.session.begin_transaction()
         # self.session.sync()
-        print("committed...")
         yield NothingToSeeHere()
