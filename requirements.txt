@@ -77,7 +77,7 @@ toml==0.10.0
 tqdm==4.23.4
 transaction==2.4.0
 twine==1.11.0
-urllib3==1.23
+urllib3==1.24.2
 watchdog==0.8.3
 yapf==0.24.0
 zc.lockfile==1.4

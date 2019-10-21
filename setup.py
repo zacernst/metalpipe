@@ -95,7 +95,7 @@ setuptools.setup(
       'timeddictionary==0.1.1',
       'tqdm==4.23.4',
       'twine==1.11.0',
-      'urllib3==1.23',
+      'urllib3==1.24.2',
       'watchdog==0.8.3',
       'yapf==0.24.0']
 
