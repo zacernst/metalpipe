@@ -7,11 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 class Neo4JExecutor(MetalNode):
     def __init__(
-        self,
-        uri="bolt://localhost:7687",
-        username=None,
-        password=None,
-        **kwargs
+        self, uri="bolt://localhost:7687", username=None, password=None, **kwargs
     ):
         self.uri = uri
         self.username = username

@@ -95,6 +95,7 @@ test_row = {
 }
 
 vocabulary = [
+    "table_and_name_column_has_variable",
     "assertion_in_table",
     "assertion_has_relationship_property_column",
     "assertion_has_column",
@@ -119,6 +120,7 @@ vocabulary = [
     "assertion_without_column",
     "inferred_entity_type",
     "assertion_has_entity_name_column",
+    "has_name",
     "is_name_assertion",
     "is_coreference_assertion",
     "assertion_has_entity_type",
@@ -142,9 +144,7 @@ assertion_has_entity_type(X0, X1) <= (
     is_name_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
 )
 assertion_has_entity_type(X0, X1) <= (
-    is_property_assertion(X0)
-    & (X0._entity_type != None)
-    & (X1 == X0._entity_type)
+    is_property_assertion(X0) & (X0._entity_type != None) & (X1 == X0._entity_type)
 )
 assertion_has_entity_type(X0, X1) <= (
     is_property_assertion(X0)
@@ -276,16 +276,12 @@ class Assertion(pyDatalog.Mixin):
     def inferred(self, attr):
         if not hasattr(self, attr):
             raise Exception(
-                "Tested {attr} inferred, but no such attribute.".format(
-                    attr=attr
-                )
+                "Tested {attr} inferred, but no such attribute.".format(attr=attr)
             )
         if hasattr(self, attr) and not hasattr(self, "_" + attr):
             raise Exception(
                 "Tested {attr} inferred; the attribute exists, "
-                "but it not hooked up to the inference enigne.".format(
-                    attr=attr
-                )
+                "but it not hooked up to the inference enigne.".format(attr=attr)
             )
         if getattr(self, "_" + attr, None) is not None:
             return False
@@ -303,9 +299,7 @@ class TableDataSource(pyDatalog.Mixin):
     A configuration for a specific table.
     """
 
-    def __init__(
-        self, config_dict=None, assertion_list=None, config_file=None
-    ):
+    def __init__(self, config_dict=None, assertion_list=None, config_file=None):
         super(TableDataSource, self).__init__()
         self.config_dict = config_dict
         self.config_file = config_file
@@ -334,9 +328,7 @@ class TableDataSource(pyDatalog.Mixin):
                 config_dict = yaml.load(raw_config_file)
             self.config_dict = config_dict
             self.name = top_key(self.config_dict)
-            self.data_config = self.config_dict[self.name].get(
-                "data_config", None
-            )
+            self.data_config = self.config_dict[self.name].get("data_config", None)
         else:
             raise NotImplementedError("Provide a string.")
 
@@ -346,9 +338,7 @@ class TableDataSource(pyDatalog.Mixin):
             if assertion_type == "name":
                 assertion = NameAssertion(parent_table=self, **item["name"])
             elif assertion_type == "property":
-                assertion = PropertyAssertion(
-                    parent_table=self, **item["property"]
-                )
+                assertion = PropertyAssertion(parent_table=self, **item["property"])
             elif assertion_type == "relationship":
                 assertion = RelationshipAssertion(
                     parent_table=self, **item["relationship"]
@@ -467,13 +457,8 @@ class PropertyAssertion(Assertion):
         if self._entity_name_column is not None:
             +is_column(self._entity_name_column)
             +assertion_has_entity_name_column(self, self._entity_name_column)
-        if (
-            self._property_column is not None
-            and self._property_type is not None
-        ):
-            +column_has_property_type(
-                self._property_column, self._property_type
-            )
+        if self._property_column is not None and self._property_type is not None:
+            +column_has_property_type(self._property_column, self._property_type)
 
     def cypher(self, row):
         cypher_query = self.merge_schema.format(
@@ -527,9 +512,7 @@ class PropertyAssertion(Assertion):
     @property
     @inferred_attribute
     def property_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``property_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``property_type`` yet")
 
 
 def flatten(nested_thing):
@@ -543,7 +526,9 @@ def flatten(nested_thing):
 
 class NameAssertion(PropertyAssertion):
 
-    merge_schema = """MERGE (X0: {entity_type} {{ {property_type}: $property_value }} );"""
+    merge_schema = (
+        """MERGE (X0: {entity_type} {{ {property_type}: $property_value }} );"""
+    )
 
     def __init__(self, **kwargs):
         super(NameAssertion, self).__init__(**kwargs)
@@ -610,14 +595,10 @@ class RelationshipAssertion(Assertion):
             +assertion_in_table(self, self._parent_table)
         if self._source_entity_type is not None:
             +is_entity_type(self._source_entity_type)
-            +relationship_has_source_entity_type(
-                self, self._source_entity_type
-            )
+            +relationship_has_source_entity_type(self, self._source_entity_type)
         if self._target_entity_type is not None:
             +is_entity_type(self._target_entity_type)
-            +relationship_has_target_entity_type(
-                self, self._target_entity_type
-            )
+            +relationship_has_target_entity_type(self, self._target_entity_type)
         if self._source_name_property is not None:
             +is_property(self._source_name_property)
         if self._target_name_property is not None:
@@ -634,16 +615,12 @@ class RelationshipAssertion(Assertion):
     @property
     @inferred_attribute
     def source_entity_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``source_entity_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``source_entity_type`` yet")
 
     @property
     @inferred_attribute
     def target_entity_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``target_entity_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``target_entity_type`` yet")
 
     @property
     @inferred_attribute
@@ -815,15 +792,9 @@ class RelationshipPropertyAssertion(Assertion):
         output_query = {
             "cypher_query": cypher_query,
             "cypher_query_parameters": {
-                "source_entity_name_value": row[
-                    self._source_entity_name_column
-                ],
-                "target_entity_name_value": row[
-                    self._target_entity_name_column
-                ],
-                "relationship_property_value": row[
-                    self._relationship_property_column
-                ],
+                "source_entity_name_value": row[self._source_entity_name_column],
+                "target_entity_name_value": row[self._target_entity_name_column],
+                "relationship_property_value": row[self._relationship_property_column],
             },
         }
         return output_query
@@ -859,16 +830,12 @@ class RelationshipPropertyAssertion(Assertion):
     @property
     @inferred_attribute
     def relationship_alias(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``relationship_alias`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``relationship_alias`` yet")
 
     @property
     @inferred_attribute
     def relationship_type(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``relationship_type`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``relationship_type`` yet")
 
     @property
     @inferred_attribute
@@ -887,9 +854,7 @@ class RelationshipPropertyAssertion(Assertion):
     @property
     @inferred_attribute
     def parent_table(self):
-        raise AmbiguityException(
-            "Haven't got the logic for ``parent_table`` yet"
-        )
+        raise AmbiguityException("Haven't got the logic for ``parent_table`` yet")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+dept_emp:
+  data_type: table
+  data_config:
+    - relationship:
+        relationship_type: WorksIn
+        source_entity_alias: EmployeeNumber
+        target_entity_alias: DepartmentNumber
+        source_entity_type: Employee
+        target_entity_type: Department
+        source_entity_name_column: emp_no
+        target_entity_name_column: dept_no
+        source_name_property: EmployeeNumber
+        target_name_property: DepartmentNumber
+        alias: WorkaIn

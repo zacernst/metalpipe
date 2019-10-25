@@ -1,0 +1,145 @@
+_mysql: &mysql
+  class: StreamMySQLTable
+  summary: Stream rows from the MySQL table
+  options: &options
+    database: sakila
+    user: zac
+    host: localhost
+    port: 1500
+    password: fake_local_password
+
+nodes:
+  read_actor_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: actor
+  actor_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: actor_table.yaml
+      input_table: actor
+  read_store_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: store
+  store_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: store_table.yaml
+      input_table: store
+  to_neo4j:
+    class: Neo4JExecutor
+    options:
+      uri: bolt://localhost:7687
+      user: neo4j
+      password: imadfs618
+  read_film_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: film
+  film_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: film_table.yaml
+      input_table: film
+  read_film_actor_table:
+    <<: *mysql
+    options:
+      <<: *options 
+      table: film_actor
+  film_actor_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: film_actor_table.yaml
+      input_table: film_actor
+  read_film_category_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: film_category
+  film_category_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: film_category_table.yaml
+      input_table: film_category
+  read_customer_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: customer
+  customer_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: customer_table.yaml
+      input_table: customer
+  read_inventory_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: inventory
+  inventory_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: inventory_table.yaml
+      input_table: inventory
+  read_rental_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: rental
+  rental_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: rental_table.yaml
+      input_table: rental
+  read_customer_list_table:
+    <<: *mysql
+    options:
+      <<: *options
+      table: customer_list
+  customer_list_table_to_graph:
+    class: GraphNode
+    options:
+      config_file: customer_list_table.yaml
+      input_table: customer_list
+
+paths:
+  -
+    - read_actor_table
+    - actor_table_to_graph
+    - to_neo4j
+  -
+    - read_store_table
+    - store_table_to_graph
+    - to_neo4j
+  -
+    - read_film_table
+    - film_table_to_graph
+    - to_neo4j
+  -
+    - read_film_actor_table
+    - film_actor_table_to_graph
+    - to_neo4j
+  -
+    - read_film_category_table
+    - film_category_table_to_graph
+    - to_neo4j
+  -
+    - read_customer_table
+    - customer_table_to_graph
+    - to_neo4j
+  -
+    - read_inventory_table
+    - inventory_table_to_graph
+    - to_neo4j
+  -
+    - read_rental_table
+    - rental_table_to_graph
+    - to_neo4j
+  -
+    - read_customer_list_table
+    - customer_list_table_to_graph
+    - to_neo4j

@@ -1,0 +1,26 @@
+film_actor:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Actor
+        property_column: actor_id
+        function: noop
+        property_type: ActorID
+        alias: ActorID
+    - name:
+        entity_type: Film
+        property_column: film_id
+        function: noop
+        property_type: FilmID
+        alias: FilmID
+    - relationship:
+        relationship_type: ActedIn
+        source_entity_alias: ActorID
+        target_entity_alias: FilmID
+        source_entity_type: Actor
+        target_entity_type: Film
+        source_entity_name_column: actor_id
+        target_entity_name_column: film_id
+        source_name_property: ActorID
+        target_name_property: FilmID
+        alias: ActedIn
