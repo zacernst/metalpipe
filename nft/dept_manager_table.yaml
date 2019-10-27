@@ -1,0 +1,26 @@
+dept_manager:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Department
+        property_column: dept_no
+        function: noop
+        property_type: DepartmentNumber
+        alias: DepartmentNumber
+    - name:
+        entity_type: Employee
+        property_column: emp_no
+        function: noop
+        property_type: EmployeeNumber
+        alias: EmployeeNumber
+    - relationship:
+        relationship_type: ManagesDepartment
+        source_entity_alias: EmployeeNumber
+        target_entity_alias: DepartmentNumber
+        source_entity_type: Employee
+        target_entity_type: Department
+        source_entity_name_column: emp_no
+        target_entity_name_column: dept_no
+        source_name_property: EmployeeNumber
+        target_name_property: DepartmentNumber
+        alias: ManagesDepartment

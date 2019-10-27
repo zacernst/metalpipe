@@ -89,6 +89,16 @@ class NothingToSeeHere:
     pass
 
 
+class Terminated:
+    """
+    Class sent optionally when a node is done processing messages (i.e. when its
+    upstream nodes have finished.)
+    """
+
+    def __init__(self, node):
+        self.node = node
+
+
 class MetalNode:
     """
     The foundational class of `MetalPipe`. This class is inherited by all
@@ -171,6 +181,7 @@ class MetalNode:
         post_process_function_kwargs=None,
         output_key=None,
         break_test=None,
+        send_termination_message=False,
         **kwargs
     ):
         self.name = name or uuid.uuid4().hex
@@ -220,6 +231,7 @@ class MetalNode:
         self.summary = summary
         self.prometheus_objects = None
         self.logjam_score = {"polled": 0.0, "logjam": 0.0}
+        self.send_termination_message = send_termination_message
 
         # Get post process function if one is named
         if self.post_process_function_name is not None:
@@ -498,6 +510,12 @@ class MetalNode:
                 yield i, None
 
     @property
+    def upstream_nodes_finished(self):
+        return all(
+            input_node.cleanup_called for input_node in self.input_node_list
+        )
+
+    @property
     def finished(self):
         """
         A node is considered "finished" if:
@@ -513,12 +531,9 @@ class MetalNode:
         attribute to be set to ``True``.
         """
 
-        upstream_nodes_finished = all(
-            input_node.cleanup_called for input_node in self.input_node_list
-        )
         input_queues_empty = self.is_source or self.input_queues_empty()
         return (
-            upstream_nodes_finished
+            self.upstream_nodes_finished
             and input_queues_empty
             and self.cleanup_called
         ) or self.terminate
@@ -546,10 +561,13 @@ class MetalNode:
         self.log_info("Cleanup called after shutdown.")
         for i in self.cleanup():
             yield i
+        # Send termination message here
+        if self.send_termination_message:
+            yield Terminated(self)
         for q in self.output_queue_list:
             while not q.empty:
                 pass
-        self.log_info("seting cleanup_called to True")
+        self.log_info("setting cleanup_called to True")
         self.cleanup_called = True
 
     def log_info(self, message=""):
@@ -1438,7 +1456,7 @@ class StreamMySQLTable(MetalNode):
             """FROM information_schema.columns """
             """WHERE table_name='{table}';""".format(table=self.table)
         )
-
+        print(self.table_schema_query)
         # self.table_schema = self.get_schema()
         # Need a mapping from header to MYSQL TYPE
         # for mapping in self.table_schema:
@@ -1462,6 +1480,7 @@ class StreamMySQLTable(MetalNode):
         self.cursor.execute(
             """SELECT * FROM {table};""".format(table=self.table)
         )
+
         result = self.cursor.fetchone()
         while result is not None:
             yield result
@@ -1775,6 +1794,32 @@ class Remapper(MetalNode):
         )
         out = remap_dictionary(self.__message__, self.remapping_dict)
         yield out
+
+
+class BlackHole(MetalNode):
+    """
+    Accepts any incoming message and promptly ignores it. Returns ``NothingToSeeHere``.
+    """
+
+    def __init__(self, **kwargs):
+        super(BlackHole, self).__init__(**kwargs)
+
+    def process_item(self):
+        logging.debug(
+            "BlackHole {node}:".format(node=self.name) + str(self.__message__)
+        )
+        yield NothingToSeeHere()
+
+
+class Blocker(BlackHole):
+    """
+    Class that ignores all messages, but sends a message when all of its upstream
+    nodes have finished.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs.update({"send_termination_message": True})
+        super(Blocker, self).__init__(**kwargs)
 
 
 class BatchMessages(MetalNode):
