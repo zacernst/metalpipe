@@ -568,6 +568,31 @@ class NameAssertion(PropertyAssertion):
         return output_query
 
 
+class CompoundNameAssertion(PropertyAssertion):
+
+    merge_schema = """MERGE (X0: {entity_type_1} {{ {property_type}: $property_value }} );"""
+
+    def __init__(self, **kwargs):
+        super(NameAssertion, self).__init__(**kwargs)
+        +is_name_assertion(self)
+
+    def cypher(self, row):
+        """
+        ``row`` is a dictionary where each key is a column name.
+        """
+        property_value = row[self._property_column]
+        cypher_query = self.merge_schema.format(
+            entity_type=self._entity_type,
+            property_type=self._property_type,
+            # property_value=property_value,
+        )
+        output_query = {
+            "cypher_query": cypher_query,
+            "cypher_query_parameters": {"property_value": property_value},
+        }
+        return output_query
+
+
 class RelationshipAssertion(Assertion):
 
     merge_schema = (
