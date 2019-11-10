@@ -6,7 +6,7 @@ _mysql: &mysql
     user: zac
     host: localhost
     port: 1500
-    password: imadfs618
+    password: fake_local_password
 
 nodes:
   read_actor_table:
