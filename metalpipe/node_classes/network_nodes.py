@@ -74,7 +74,9 @@ class PaginatedHttpGetRequest:
                 logging.info("Paginator request to {url}".format(url=url))
                 output = requests.get(url)
                 if output is None:
-                    logging.info("Request to {url} returned None".format(url=url))
+                    logging.info(
+                        "Request to {url} returned None".format(url=url)
+                    )
                 elif output.status_code >= 300:
                     logging.info(
                         "Request to {url} returned {code} status code".format(
@@ -137,7 +139,9 @@ class PaginatedHttpGetRequest:
 
         # Check if successful
         if not successful:
-            logging.info("Unsuccessful request to {url}".format(url=endpoint_url))
+            logging.info(
+                "Unsuccessful request to {url}".format(url=endpoint_url)
+            )
             raise Exception("Unsuccessful GET request")
 
         # out = out.json()
@@ -148,7 +152,9 @@ class PaginatedHttpGetRequest:
         while self.additional_data_key in out and additional_data_test(
             out[self.additional_data_key]
         ):
-            logging.debug("starting pagination loop" + str(get_request_parameters))
+            logging.debug(
+                "starting pagination loop" + str(get_request_parameters)
+            )
             try:
                 offset = out[self.pagination_key]
                 offset_set.add(offset)
@@ -156,7 +162,9 @@ class PaginatedHttpGetRequest:
                 logging.info("No offset key. Assuming this is normal.")
                 break
             get_request_parameters = {self.pagination_get_request_key: offset}
-            endpoint_url = self.endpoint_template.format(**get_request_parameters)
+            endpoint_url = self.endpoint_template.format(
+                **get_request_parameters
+            )
             # response = session.get(endpoint_url)
 
             if GET_ONLY:
@@ -236,7 +244,10 @@ class HttpGetRequest(MetalNode):
         except json.JSONDecodeError:
             output = get_response.text
         logging.debug(
-            formatted_endpoint + " GET RESPONSE: " + str(output) + str(type(output))
+            formatted_endpoint
+            + " GET RESPONSE: "
+            + str(output)
+            + str(type(output))
         )
         yield output
 
