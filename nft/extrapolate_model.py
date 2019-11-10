@@ -12,6 +12,7 @@ t7 = TableDataSource(config_file="inventory_table.yaml")
 t8 = TableDataSource(config_file="rental_table.yaml")
 t9 = TableDataSource(config_file="customer_list_table.yaml")
 
+
 entity_dict = {}
 property_dict = {}
 relationship_dict = {}
@@ -226,3 +227,18 @@ for return_property in all_return_properties:
 return_properties_syntax = f'RETURN {", ".join(deduped_return_properties)}'
 master_table_cypher_query = f'MATCH {match_clause_chains} {return_properties_syntax};'
 
+### Cypher query written
+
+with open('./property_types.yaml', 'r') as f:
+    property_types = yaml.load(f.read())
+
+from neo4j import GraphDatabase
+uri = 'bolt://localhost:7687'
+username='neo4j'
+password='imadfs618'
+driver = GraphDatabase.driver(uri, auth=(username, password), encrypted=False)
+session = driver.session()
+transaction = session.begin_transaction()
+result = transaction.run(master_table_cypher_query)
+for one_record in result:
+    print(one_record)
