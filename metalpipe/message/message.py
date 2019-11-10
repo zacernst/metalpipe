@@ -25,9 +25,7 @@ class MetalPipeMessage(object):
                 "`output_keypath` must be specified."
             )
         self.message_content = message_content
-        self.message_hash = hashlib.md5(
-            bytes(str(message_content), encoding="utf8")
-        )
+        self.message_hash = hashlib.md5(bytes(str(message_content), encoding="utf8"))
         self.history = []
         self.time_created = time.time()
         self.time_queued = None
