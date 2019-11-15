@@ -99,6 +99,7 @@ vocabulary = [
     "assertion_in_table",
     "assertion_has_relationship_property_column",
     "assertion_has_column",
+    "assertion_has_compound_name_component",
     "assertion_without_entity_type",
     "column_has_property_type",
     "contains_assertion",
@@ -110,6 +111,7 @@ vocabulary = [
     "is_assertion",
     "is_relationship_assertion",
     "is_relationship_property_assertion",
+    "is_compound_name_component",
     "is_relationship_property",
     "relationship_property_type",
     "is_property_assertion",
@@ -127,6 +129,8 @@ vocabulary = [
     "is_coreference_assertion",
     "assertion_has_entity_type",
     "assertion_has_property_type",
+    "compound_name_component_has_column_name",
+    "compound_name_component_has_component_type",
     "assertion_has_source_entity_name_column",
     "assertion_has_target_entity_name_column",
     "relationship_has_source_entity_type",
@@ -217,6 +221,15 @@ relationship_has_source_name_property(X0, X1) <= (
 )
 
 logic_engine = Logic(True)
+
+
+def flatten(nested_thing):
+    if not isinstance(nested_thing, (list, tuple, set)):
+        yield nested_thing
+    else:
+        for thing in nested_thing:
+            for i in flatten(thing):
+                yield i
 
 
 class AmbiguityException(Exception):
@@ -319,17 +332,9 @@ class TableDataSource(pyDatalog.Mixin):
             self.load_configuration(self.config_file)
 
     def __repr__(self):  # Causes a recursion error
-        out = [
-            """TableDataSource: {config_file}""".format(
+        out = """TableDataSource: {config_file}""".format(
                 config_file=str(self.config_file)
-            ),
-            """-----------------""" + ("-" * len(str(self.config_file))),
-            # pprint.pformat(self.config_dict),
-            """Assertions:""",
-            """-----------""",
-        ]
-
-        out = "\n".join(out)
+        )
         return out
 
     def load_configuration(self, config_file):
@@ -541,15 +546,6 @@ class PropertyAssertion(Assertion):
         )
 
 
-def flatten(nested_thing):
-    if not isinstance(nested_thing, (list, tuple, set)):
-        yield nested_thing
-    else:
-        for thing in nested_thing:
-            for i in flatten(thing):
-                yield i
-
-
 class NameAssertion(PropertyAssertion):
 
     merge_schema = """MERGE (X0: {entity_type} {{ {property_type}: $property_value }} );"""
@@ -575,6 +571,36 @@ class NameAssertion(PropertyAssertion):
         return output_query
 
 
+class CompoundNameComponent(pyDatalog.Mixin):
+    def __init__(self, component_type=None, column_name=None, entity_name_property=None, entity_type=None):
+        super(CompoundNameComponent, self).__init__()
+        self.component_type = component_type
+        self.column_name = column_name
+        self._entity_type = entity_type
+        self._entity_name_property = entity_name_property
+        +is_compound_name_component(self)
+        +compound_name_component_has_column_name(self, self.column_name)
+        +compound_name_component_has_component_type(self, self.component_type)
+
+    def __repr__(self):
+        out = f'CompoundNameComponent({self.component_type})'
+        return out
+
+    @property
+    @inferred_attribute
+    def entity_type(self):
+        raise AmbiguityException(
+            "Haven't got the logic for ``entity_type`` yet"
+        )
+
+    @property
+    @inferred_attribute
+    def entity_name_property(self):
+        raise AmbiguityException(
+            "Haven't got the logic for ``entity_name_property`` yet"
+        )
+
+
 class CompoundNameAssertion(Assertion):
     """
     When the unit of analysis for a row is more than one column.
@@ -582,14 +608,22 @@ class CompoundNameAssertion(Assertion):
 
     merge_schema = None
 
-    def __init__(self, entity_name_columns=None, parent_table=None, **kwargs):
+    def __init__(self, components=None, entity_type=None, parent_table=None, **kwargs):
         super(CompoundNameAssertion, self).__init__()
-        self._entity_name_columns = entity_name_columns or []
+        self.components = components
         self._parent_table = parent_table
+        self._entity_type = entity_type
         +assertion_in_table(self, self._parent_table)
         +is_compound_name_assertion(self)
-        for column in self._entity_name_columns:
-            +assertion_includes_name_column(self, column)
+        for compound_name_component in components:
+            component = CompoundNameComponent(
+                component_type=compound_name_component['type'],
+                column_name=compound_name_component['column_name'],
+                entity_type=compound_name_component['entity_type'],
+                entity_name_property=compound_name_component['entity_name_property'],
+            )
+            +assertion_has_compound_name_component(self, component)
+        import pdb; pdb.set_trace()
 
     def cypher(self, row):
         """
@@ -599,40 +633,39 @@ class CompoundNameAssertion(Assertion):
         counter = 0
         output_value_dict = {}
         cypher_list = []
-        for name_assertion, name_column, entity_type in (
-            is_name_assertion(X0)
-            & assertion_in_table(X0, self._parent_table)
-            & assertion_has_property_column(X0, X2)
-            & assertion_includes_name_column(self, X2)
-            & assertion_has_entity_type(X0, X1)
+        for compound_name_assertion, table_data_source, compound_name_component, column_name in (
+            is_compound_name_assertion(X0) &
+            assertion_in_table(X0, X1) &
+            assertion_has_compound_name_component(X0, X2) &
+            compound_name_component_has_column_name(X2, X3)
         ):
-            print(
-                "==========",
-                name_assertion,
-                name_column,
-                entity_type,
-                self._parent_table,
+            # Start here -- make consistent with loop in line above
+            merge = (
+                f"MERGE (X{counter}: {compound_name_component.entity_type} "
+                f"{{ {compound_name_component.entity_name_property}: $property_value_{counter} }})"
             )
-            merge = f"MERGE (X{counter}: {entity_type} {{ {name_assertion.property_type}: $property_value_{counter} }})"
             with_bridge = "WITH " + ", ".join(
                 [f"X{sub_counter}" for sub_counter in range(counter + 1)]
             )
             cypher_list.append(merge)
             cypher_list.append(with_bridge)
-            cypher = " ".join(cypher_list)
-            print(cypher)
-            output_value_dict[f"property_value_{counter}"] = row[name_column]
-            print(output_value_dict)
-            print(row)
-            counter += 1
 
-        # for each name_assertion:
-        #     Merge new Xi
-        # Merge new Y as the compound entity
-        # for each Xi:
-        #     Merge Xi-[]->Y
-        raise Exception()
-        # CompoundNameAssertion will rely on order of entries in definition for determinism of properties.
+            output_value_dict[f"property_value_{counter}"] = row[column_name]
+            counter += 1
+        cypher = " ".join(cypher_list)
+
+        compound_name_entity_cypher = f'MERGE (Y: {self.entity_type} {{ uuid: $uuid }})'
+
+        cypher_list.append(compound_name_entity_cypher)
+
+        for variable_number in range(len(output_value_dict)):
+            cypher_list.append(with_bridge + ', Y')
+            cypher_list.append(f'MERGE (X{variable_number})-[X{variable_number}]->(Y)')
+
+        entity_uuid = uuid.uuid4().hex
+        output_value_dict['uuid'] = entity_uuid
+        print(' '.join(cypher_list))
+        raise Exception('Terminating on purpose.')
         property_value = row[self._property_column]
         cypher_query = self.merge_schema.format(
             entity_type=self._entity_type,
@@ -645,6 +678,19 @@ class CompoundNameAssertion(Assertion):
         }
         return output_query
 
+    @property
+    @inferred_attribute
+    def entity_name_columns(self):
+        raise AmbiguityException(
+            "Haven't got the logic for ``entity_name_columns`` yet"
+        )
+
+    @property
+    @inferred_attribute
+    def entity_type(self):
+        raise AmbiguityException(
+            "Haven't got the logic for ``entity_type`` yet"
+        )
 
 class RelationshipAssertion(Assertion):
 
