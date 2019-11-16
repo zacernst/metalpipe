@@ -2,3 +2,5 @@ secretfile filter=git-crypt diff=git-crypt
 
 *.key filter=git-crypt diff=git-crypt
 secretdir/** filter=git-crypt diff=git-crypt
+examples/sakila/credentials.yaml filter=git-crypt diff=git-crypt
+
