@@ -284,12 +284,12 @@ class Assertion(pyDatalog.Mixin):
 
     def __init__(self, **kwargs):  # All kwargs are passed from subclass
         self.uuid = uuid.uuid4()
-        self._parent_table = kwargs['parent_table']
+        self._parent_table = kwargs["parent_table"]
         if self._parent_table is not None:
             +is_table_data_source(self._parent_table)
             +assertion_in_table(self, self._parent_table)
         else:
-            raise YouAreDumbException('This should not be the case.')
+            raise YouAreDumbException("This should not be the case.")
         super(Assertion, self).__init__()
 
     def __repr__(self):
@@ -458,7 +458,6 @@ class PropertyAssertion(Assertion):
         self._entity_name_column = entity_name_column
 
         +is_property_assertion(self)
-
 
         if self._entity_type is not None:
             +is_entity_type(self._entity_type)
@@ -725,7 +724,7 @@ class RelationshipAssertion(Assertion):
         target_name_property=None,
     ):
         super(RelationshipAssertion, self).__init__(parent_table=parent_table)
-        #self._parent_table = parent_table
+        # self._parent_table = parent_table
         self._source_entity_alias = source_entity_alias
         self._target_entity_alias = target_entity_alias
         self._source_entity_type = source_entity_type
@@ -881,7 +880,6 @@ class RelationshipPropertyAssertion(Assertion):
         "SET r.{relationship_property_type} = $relationship_property_value;"
     )
 
-
     def __init__(
         self,
         parent_table=None,
@@ -899,7 +897,9 @@ class RelationshipPropertyAssertion(Assertion):
         alias=None,
         # TODO ? Not sure if we need to add more
     ):
-        super(RelationshipPropertyAssertion, self).__init__(parent_table=parent_table)
+        super(RelationshipPropertyAssertion, self).__init__(
+            parent_table=parent_table
+        )
         self.function = function
         self._relationship_property_column = relationship_property_column
         self._relationship_property_type = relationship_property_type

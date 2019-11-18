@@ -1,0 +1,9 @@
+store:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Store
+        property_column: store_id
+        function: noop
+        property_type: StoreID
+        alias: StoreID

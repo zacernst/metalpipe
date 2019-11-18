@@ -1,0 +1,38 @@
+staff_table:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Manager
+        property_column: ID
+        function: noop
+        property_type: ManagerID
+        alias: ManagerID
+    - relationship:
+        relationship_type: Manages
+        source_entity_alias: Manager
+        target_entity_alias: Store
+        source_entity_type: Manager
+        target_entity_type: Store
+        source_entity_name_column: ID
+        target_entity_name_column: SID
+        source_name_property: ManagerID
+        target_name_property: StoreID
+        alias: ManagesStore
+    - property:
+        entity_type: Manager
+        property_column: address
+        function: noop
+        property_type: Address
+        alias: ManagerAddress
+        entity_name_property: ManagerID
+        entity_name_column: ID
+    - property:
+        entity_type: Manager
+        property_column: phone
+        function: noop
+        property_type: PhoneNumber
+        alias: ManagerPhoneNumber
+        entity_name_property: ManagerID
+        entity_name_column: ID
+
+

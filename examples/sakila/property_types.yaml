@@ -1,0 +1,25 @@
+property_types:
+  ActorID: Integer
+  Address: String
+  Birthday: DateTime
+  CategoryID: String
+  City: String
+  Country: String
+  CustomerID: Integer
+  DepartmentName: String
+  DepartmentNumber: String
+  Description: String
+  DVDID: String
+  EmployeeNumber: String
+  FilmID: String
+  FirstName: String
+  Gender: String
+  HireDate: String
+  LastName: String
+  ManagerID: String
+  PhoneNumber: String
+  ReleaseYear: String
+  StoreID: String
+  Title: String
+  RentalDate: DateTime
+  ReturnDate: DateTime

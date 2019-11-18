@@ -1,0 +1,25 @@
+actor:
+  data_type: table
+  data_config:
+    - name:
+        entity_type: Actor
+        property_column: actor_id
+        function: noop
+        property_type: ActorID
+        alias: ActorID
+    - property:
+        entity_type: Actor
+        property_column: first_name
+        function: noop
+        property_type: FirstName
+        alias: ActorFirstName
+        entity_name_property: ActorID
+        entity_name_column: actor_id
+    - property:
+        entity_type: Actor
+        property_column: last_name
+        function: noop
+        property_type: LastName
+        alias: ActorLastName
+        entity_name_property: ActorID
+        entity_name_column: actor_id
