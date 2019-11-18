@@ -282,10 +282,14 @@ class Assertion(pyDatalog.Mixin):
     In case we find we need some stuff for all assertions to have.
     """
 
-    QUERIED_ATTRIBUTES = []
-
-    def __init__(self):
+    def __init__(self, **kwargs):  # All kwargs are passed from subclass
         self.uuid = uuid.uuid4()
+        self._parent_table = kwargs['parent_table']
+        if self._parent_table is not None:
+            +is_table_data_source(self._parent_table)
+            +assertion_in_table(self, self._parent_table)
+        else:
+            raise YouAreDumbException('This should not be the case.')
         super(Assertion, self).__init__()
 
     def __repr__(self):
@@ -416,12 +420,11 @@ class CoreferenceAssertion(Assertion):
         source_entity_type=None,
         target_entity_type=None,
     ):
-        super(CoreferenceAssertion, self).__init__()
+        super(CoreferenceAssertion, self).__init__(parent_table=parent_table)
         self._source_entity_alias = source_entity_alias
         self._target_entity_alias = target_entity_alias
         self._source_column = source_column
         self._target_column = target_column
-        self._parent_table = parent_table
         +is_coreference_assertion(self)
 
 
@@ -431,17 +434,6 @@ class PropertyAssertion(Assertion):
         """MERGE (X0: {entity_type} {{ {entity_name_property}: $entity_name_value }}) """
         """WITH X0 SET X0.{property_type} = $property_value ;"""
     )
-
-    QUERIED_ATTRIBUTES = [
-        "parent_table",
-        "property_column",
-        "property_type",
-        "entity_type",
-        "entity_alias",
-        "alias",
-        "entity_name_property",
-        "entity_name_column",
-    ]
 
     def __init__(
         self,
@@ -455,8 +447,7 @@ class PropertyAssertion(Assertion):
         entity_name_property=None,
         entity_name_column=None,
     ):
-        super(PropertyAssertion, self).__init__()
-        self._parent_table = parent_table
+        super(PropertyAssertion, self).__init__(parent_table=parent_table)
         self.function = function
         self._property_column = property_column
         self._property_type = property_type
@@ -468,9 +459,7 @@ class PropertyAssertion(Assertion):
 
         +is_property_assertion(self)
 
-        if self._parent_table is not None:
-            +is_table_data_source(self._parent_table)
-            +assertion_in_table(self, self._parent_table)
+
         if self._entity_type is not None:
             +is_entity_type(self._entity_type)
         if self._property_type is not None:
@@ -618,7 +607,7 @@ class CompoundNameAssertion(Assertion):
     def __init__(
         self, components=None, entity_type=None, parent_table=None, **kwargs
     ):
-        super(CompoundNameAssertion, self).__init__()
+        super(CompoundNameAssertion, self).__init__(parent_table=parent_table)
         self.components = components
         self._parent_table = parent_table
         self._entity_type = entity_type
@@ -735,8 +724,8 @@ class RelationshipAssertion(Assertion):
         source_name_property=None,
         target_name_property=None,
     ):
-        super(RelationshipAssertion, self).__init__()
-        self._parent_table = parent_table
+        super(RelationshipAssertion, self).__init__(parent_table=parent_table)
+        #self._parent_table = parent_table
         self._source_entity_alias = source_entity_alias
         self._target_entity_alias = target_entity_alias
         self._source_entity_type = source_entity_type
@@ -892,7 +881,6 @@ class RelationshipPropertyAssertion(Assertion):
         "SET r.{relationship_property_type} = $relationship_property_value;"
     )
 
-    QUERIED_ATTRIBUTES = []  # TODO: Revisit whether this is necessary
 
     def __init__(
         self,
@@ -911,8 +899,7 @@ class RelationshipPropertyAssertion(Assertion):
         alias=None,
         # TODO ? Not sure if we need to add more
     ):
-        super(RelationshipPropertyAssertion, self).__init__()
-        self._parent_table = parent_table
+        super(RelationshipPropertyAssertion, self).__init__(parent_table=parent_table)
         self.function = function
         self._relationship_property_column = relationship_property_column
         self._relationship_property_type = relationship_property_type
