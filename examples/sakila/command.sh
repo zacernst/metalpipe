@@ -1,0 +1,1 @@
+PATH=/home/vagrant/github/metalpipe/metalpipe/bin/:/home/vagrant/github/metalpipe/dev/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/vagrant/.dotnet/tools:/home/vagrant/.dotnet/tools PYTHONPATH=/home/vagrant/github/metalpipe/ metalpipe run --filename ./pipeline_config.yaml

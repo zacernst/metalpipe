@@ -20,6 +20,23 @@ logging.basicConfig(level=logging.DEBUG)
 # logging.disable(logging.CRITICAL)
 
 
+def seek_and_replace(some_struct, value_to_replace, replacement):
+    if isinstance(some_struct, (dict,)):
+        for key, value in some_struct.items():
+            if isinstance(value, (str,)):
+                if value == value_to_replace:
+                    some_struct[key] = replacement
+            elif isinstance(value, (dict, list,)):
+                seek_and_replace(value, value_to_replace, replacement)
+    elif isinstance(some_struct, (list,)):
+        for index, value in enumerate(some_struct):
+            if isinstance(value, (str,)):
+                if value == value_to_replace:
+                    some_struct[index] = replacement
+            elif isinstance(value, (dict, list,)):
+                seek_and_replace(value, value_to_replace, replacement)
+
+
 def load_pipeline(config_file, module_paths=None):
 
     if module_paths is not None:
@@ -56,6 +73,15 @@ def load_pipeline(config_file, module_paths=None):
 
     post_func_config = template_obj.render(**functions_dict)
     pipeline_config_dict = yaml.load(post_func_config)
+
+    # Replace secrets here
+    for secret_cache_name, secret_filename in pipeline_config_dict.get('secrets_files', {}).items():
+        with open(secret_filename, 'r') as f:
+            secrets_dict = yaml.load(f.read())
+            for secret_token, replacement in secrets_dict.items():
+                to_replace = f'{secret_cache_name}.{secret_token}'
+                seek_and_replace(pipeline_config_dict, to_replace, replacement)
+
     pipeline_name = pipeline_config_dict.get('pipeline_name', None)
 
     node_dict = {}

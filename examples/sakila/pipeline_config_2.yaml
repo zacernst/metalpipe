@@ -1,0 +1,31 @@
+nodes:
+  read_dept_emp:
+    class: StreamMySQLTable
+    summary: Stream rows from the MySQL table
+    options:
+      database: employees
+      user: zac
+      host: localhost
+      port: 1500
+      password: imadfs618
+      table: dept_emp
+  dept_emp_to_graph:
+    class: GraphNode
+    options:
+      config_file: dept_emp_table.yaml
+      input_table: dept_emp
+  printer:
+    class: PrinterOfThings
+  to_neo4j:
+    class: Neo4JExecutor
+    options:
+      uri: bolt://localhost:7687
+      user: neo4j
+      password: imadfs618
+
+paths:
+  -
+    - read_dept_emp
+    - printer
+    - dept_emp_to_graph
+    - to_neo4j

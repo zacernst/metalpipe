@@ -11,6 +11,7 @@ class Neo4JExecutor(MetalNode):
         uri="bolt://localhost:7687",
         username=None,
         password=None,
+        batch_size=100,
         **kwargs
     ):
         self.uri = uri
@@ -21,6 +22,7 @@ class Neo4JExecutor(MetalNode):
         )
         self.session = self.driver.session()
         self.transaction = self.session.begin_transaction()
+        self.batch_size = batch_size
         super(Neo4JExecutor, self).__init__(**kwargs)
 
     def process_item(self):
