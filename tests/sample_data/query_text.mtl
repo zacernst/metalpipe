@@ -1,0 +1,11 @@
+foo IS A PYTHON FUNCTION IMPORTED FROM metalpipe.utils.helpers.iterate;
+
+QUERY myquery IS SELECT emaildict.email AS emailaddress,
+identity(emaildict.username) AS name, address.city AS cityname 
+FROM obj START AT TOP GO DOWN UNTIL HAS KEY email AS emaildict GO DOWN UNTIL HAS KEY city AS address; 
+
+IN QUERY myquery cityname IS A UNIQUE PROPERTY name OF ENTITY city;
+IN QUERY myquery name IS A UNIQUE PROPERTY personname OF ENTITY user;
+IN QUERY myquery emailaddress IS A PROPERTY email OF ENTITY user NAMED BY name;
+
+IN QUERY myquery user NAMED BY name IS RELATED TO city NAMED BY cityname AS livesin;

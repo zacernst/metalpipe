@@ -24,7 +24,7 @@ def mock_node():
     return obj
 
 
-@pytest.mark.skipif(TRAVIS, reason="will not run on TravisCI")
+@pytest.mark.skip
 def test_http_get_request(mock_node):
     emitter = node.ConstantEmitter(
         thing={'user_number': '1'},
