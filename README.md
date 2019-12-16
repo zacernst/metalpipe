@@ -5,7 +5,7 @@
 
 # MetalPipe: Modules for ETL Pipelines
 
-MetalPipe is a lightweight, multithreaded framework for building ETL pipelines. It utilizes a design pattern similar to stream-processing frameworks such as Spark or Storm. But unlike those heavyweight systems, MetalPipe is designed for ETL, not data analytics.
+MetalPipe is a great lightweight, multithreaded framework for building ETL pipelines. It utilizes a design pattern similar to stream-processing frameworks such as Spark or Storm. But unlike those heavyweight systems, MetalPipe is designed for ETL, not data analytics.
 
 The goals of MetalPipe are:
 
