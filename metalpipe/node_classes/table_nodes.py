@@ -64,9 +64,7 @@ class RowStatCollector(MetalNode):
         for row in rows:
             if self.first_row:
                 for column, _ in row.items():
-                    self.uniqueness_dict[
-                        column
-                    ] = True  # Default unique to True
+                    self.uniqueness_dict[column] = True  # Default unique to True
                     self.null_dict[column] = False  # NULL to False
                 self.first_row = False
             for column, value in row.items():
@@ -96,10 +94,7 @@ if __name__ == "__main__":
     )
 
     file_name_emitter = ConstantEmitter(
-        name="filename",
-        thing="customers.csv",
-        max_loops=1,
-        output_key="file_name",
+        name="filename", thing="customers.csv", max_loops=1, output_key="file_name",
     )
     file_reader = LocalFileReader(
         name="file_reader",

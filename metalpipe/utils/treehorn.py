@@ -109,10 +109,7 @@ class Traversal(TreeHorn, dict):
 
             for inner_node in _inner_generator():
                 _traversal._current_result = inner_node
-                if (
-                    _traversal.condition(inner_node)
-                    == _traversal.condition.truth_value
-                ):
+                if _traversal.condition(inner_node) == _traversal.condition.truth_value:
                     yield inner_node
 
         for node in _nodes_meeting_condition(self, thing):
@@ -346,9 +343,7 @@ class IsDictionary(MeetsCondition):
 
 
 class TracedObject:
-    def __init__(
-        self, path=None, parent=None, parent_key=None, parent_list_index=None
-    ):
+    def __init__(self, path=None, parent=None, parent_key=None, parent_list_index=None):
         self.path = path or []
         self.parent = parent
         self.parent_key = parent_key
@@ -430,12 +425,7 @@ class ListIndex:
 
 class TracedList(TracedObject, list):
     def __init__(
-        self,
-        *args,
-        path=None,
-        parent=None,
-        parent_key=None,
-        parent_list_index=None
+        self, *args, path=None, parent=None, parent_key=None, parent_list_index=None
     ):
 
         super(TracedList, self).__init__(
@@ -463,27 +453,17 @@ class PathEndsIn(MeetsCondition):
     def __init__(self, path=None, **kwargs):
         self.path = path or []
         _test_function = lambda x: x.path[-1 * len(self.path) :] == self.path
-        super(PathEndsIn, self).__init__(
-            test_function=_test_function, **kwargs
-        )
+        super(PathEndsIn, self).__init__(test_function=_test_function, **kwargs)
 
 
-def splitter(
-    thing, path=None, parent=None, parent_key=None, parent_list_index=None
-):
+def splitter(thing, path=None, parent=None, parent_key=None, parent_list_index=None):
 
     if isinstance(thing, (dict,)):
-        return TracedDictionary(
-            thing, path=path, parent=parent, parent_key=parent_key
-        )
+        return TracedDictionary(thing, path=path, parent=parent, parent_key=parent_key)
     elif isinstance(thing, (list, tuple)):
-        return TracedList(
-            *thing, path=path, parent=parent, parent_key=parent_key
-        )
+        return TracedList(*thing, path=path, parent=parent, parent_key=parent_key)
     else:
-        return TracedPrimitive(
-            thing, path=path, parent=parent, parent_key=parent_key
-        )
+        return TracedPrimitive(thing, path=path, parent=parent, parent_key=parent_key)
 
 
 class TracedPrimitive(TracedObject):
@@ -497,12 +477,7 @@ class TracedPrimitive(TracedObject):
 
 class TracedDictionary(TracedObject, dict):
     def __init__(
-        self,
-        thing,
-        path=None,
-        parent=None,
-        parent_key=None,
-        parent_list_index=None,
+        self, thing, path=None, parent=None, parent_key=None, parent_list_index=None,
     ):
 
         self.thing = thing
@@ -510,9 +485,7 @@ class TracedDictionary(TracedObject, dict):
             path=path, parent=parent, parent_key=parent_key
         )
         for key, value in thing.items():
-            child = splitter(
-                value, parent=self, parent_key=key, path=self.path + [key]
-            )
+            child = splitter(value, parent=self, parent_key=key, path=self.path + [key])
             self[key] = child
             self.children.append(child)
 
@@ -565,7 +538,9 @@ class Relation:
 
 
 if __name__ == "__main__":
-    SAMPLE_FILE = "/home/vagrant/github/metalpipe/tests/sample_data/sample_treehorn_1.json"
+    SAMPLE_FILE = (
+        "/home/vagrant/github/metalpipe/tests/sample_data/sample_treehorn_1.json"
+    )
 
     with open(SAMPLE_FILE, "r") as infile:
         tree = json.load(infile)

@@ -35,16 +35,12 @@ class DataSourceTypeSystem:
 
     @staticmethod
     def type_mapping(*args, **kwargs):
-        raise NotImplemented(
-            "Class does not have a ``type_mapping`` function."
-        )
+        raise NotImplemented("Class does not have a ``type_mapping`` function.")
 
 
 def convert_to_type_system(obj, cls):
     members_of_type_system = [
-        i
-        for i in globals().values()
-        if hasattr(i, "__bases__") and cls in all_bases(i)
+        i for i in globals().values() if hasattr(i, "__bases__") and cls in all_bases(i)
     ]
     max_length = getattr(obj.original_type, "max_length", None)
     matching_max_length = [
@@ -341,9 +337,7 @@ class Row:
 
     def concat(self, other, fail_on_duplicate=True):
         if len(set(self.keys()) & set(other.keys())) > 0 and fail_on_duplicate:
-            raise Exception(
-                "Overlapping records during concatenation of `Row`."
-            )
+            raise Exception("Overlapping records during concatenation of `Row`.")
         self.records.update(other.records)
         return self
 
@@ -368,8 +362,7 @@ class Row:
             raise IncompatibleTypesException(
                 """Tried to concatenate `Row` objects with incompatible """
                 """type systems {type_1} and {type_2}.""".format(
-                    type_1=self.type_system.__name__,
-                    type_2=other.type_system.__name__,
+                    type_1=self.type_system.__name__, type_2=other.type_system.__name__,
                 )
             )
         concat(self, other, fail_on_duplicate=False)
@@ -394,9 +387,7 @@ def all_bases(obj):
 
 def get_type_system(obj):
     bases = all_bases(obj)
-    type_system_list = [
-        i for i in bases if DataSourceTypeSystem in i.__bases__
-    ]
+    type_system_list = [i for i in bases if DataSourceTypeSystem in i.__bases__]
     if len(type_system_list) > 1:
         raise Exception("Belongs to more than one type system?")
     elif len(type_system_list) == 0:

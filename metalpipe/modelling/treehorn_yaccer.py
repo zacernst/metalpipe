@@ -176,8 +176,7 @@ class SelectHead(pyDatalog.Mixin):
 
     def __repr__(self):
         out = "Selecting: {selection_list} from {obj_name}".format(
-            selection_list=str(self.selection_list),
-            obj_name=str(self.obj_name),
+            selection_list=str(self.selection_list), obj_name=str(self.obj_name),
         )
         return out
 
@@ -332,9 +331,7 @@ def p_coreference_assertion(p):
 
 
 class CoreferenceAssertion:
-    def __init__(
-        self, property_name_1=None, property_name_2=None, query_name=None
-    ):
+    def __init__(self, property_name_1=None, property_name_2=None, query_name=None):
         self.property_name_1 = property_name_1
         self.property_name_2 = property_name_2
         self.query_name = query_name
@@ -400,9 +397,7 @@ def p_function_definition(p):
         # We're importing a Python function
         p[0] = PythonFunction(name=p[1], pathname=p[8])
     else:
-        raise Exception(
-            "This should never ever happen under any circumstances."
-        )
+        raise Exception("This should never ever happen under any circumstances.")
 
 
 class UserDefinedFunction(pyDatalog.Mixin):
@@ -461,9 +456,7 @@ def p_function_arguments(p):
 
 
 class FunctionApplication:
-    def __init__(
-        self, label=None, function_name=None, function_arguments=None
-    ):
+    def __init__(self, label=None, function_name=None, function_arguments=None):
         self.function_name = function_name
         self.function_arguments = function_arguments
         self.label = label
@@ -532,9 +525,7 @@ def p_selection_list(p):
 parser = yacc.yacc()
 
 
-def evaluate_selection_function(
-    selection_task, one_traversal_result, function_dict
-):
+def evaluate_selection_function(selection_task, one_traversal_result, function_dict):
     if isinstance(selection_task, (treehorn.KeyPath,)):
         full_path = [selection_task.traversal_label] + selection_task.keypath
         obj = one_traversal_result
@@ -543,9 +534,7 @@ def evaluate_selection_function(
         out = obj
     elif isinstance(selection_task, (FunctionApplication,)):
         args = [
-            evaluate_selection_function(
-                argument, one_traversal_result, function_dict
-            )
+            evaluate_selection_function(argument, one_traversal_result, function_dict)
             for argument in selection_task.function_arguments.arg_list
         ]
         print("in evaluate_selection_function")
@@ -569,15 +558,11 @@ def _de_trace(obj):
     """
     Remove the ``TracedPrimitive`` wrapper from the object, if necessary.
     """
-    return (
-        obj if not isinstance(obj, (treehorn.TracedPrimitive,)) else obj.thing
-    )
+    return obj if not isinstance(obj, (treehorn.TracedPrimitive,)) else obj.thing
 
 
 class UniquePropertyInsertion:
-    def __init__(
-        self, entity_type=None, property_type=None, property_value=None
-    ):
+    def __init__(self, entity_type=None, property_type=None, property_value=None):
         self.entity_type = _de_trace(entity_type)
         self.property_type = _de_trace(property_type)
         self.property_value = _de_trace(property_value)
@@ -628,9 +613,7 @@ def load_query_text_to_logic(query_text):
             +SELECT_CLAUSE(query_obj)
             +HAS_NAME(query_obj, query_obj.name)
             +DATA_SOURCE(query_obj.select_head.obj_name)
-            +DATA_SOURCE_IN_SELECT_CLAUSE(
-                query_obj.select_head.obj_name, query_obj
-            )
+            +DATA_SOURCE_IN_SELECT_CLAUSE(query_obj.select_head.obj_name, query_obj)
             for (
                 selection
             ) in (
@@ -683,9 +666,7 @@ if __name__ == "__main__":
         for one_traversal_result in select_clause.traversal_chain(obj):
             all_selections_dict = {}
             print("----")
-            for (
-                selection
-            ) in select_clause.select_head.selection_list.selection_list:
+            for selection in select_clause.select_head.selection_list.selection_list:
                 answer = evaluate_selection_function(
                     selection, one_traversal_result, function_dict
                 )
@@ -715,11 +696,10 @@ if __name__ == "__main__":
 
             for relationship in QUERY_HAS_RELATIONSHIP(select_clause, X0):
                 relationship = relationship[0]
-                source_property, target_property = RELATIONSHIP_SOURCE_TARGET_PROPERTIES(
-                    relationship, X1, X2
-                )[
-                    0
-                ]
+                (
+                    source_property,
+                    target_property,
+                ) = RELATIONSHIP_SOURCE_TARGET_PROPERTIES(relationship, X1, X2)[0]
                 cypher = (
                     "MERGE (e1: {entity_type_1} {{ {property_name_1}: $property_value_1 }}) WITH e1 "
                     "MERGE (e2: {entity_type_2} {{ {property_name_2}: $property_value_2 }}) WITH e1, e2 "
@@ -732,20 +712,14 @@ if __name__ == "__main__":
                     relationship_type=relationship.relationship_name,
                 )
                 print(
-                    ">>>>>",
-                    cypher,
-                    all_selections_dict[relationship.property_name_1],
+                    ">>>>>", cypher, all_selections_dict[relationship.property_name_1],
                 )
 
                 tmp = all_selections_dict[relationship.property_name_1]
                 transaction.run(
                     cypher,
-                    property_value_1=all_selections_dict[
-                        relationship.property_name_1
-                    ],
-                    property_value_2=all_selections_dict[
-                        relationship.property_name_2
-                    ],
+                    property_value_1=all_selections_dict[relationship.property_name_1],
+                    property_value_2=all_selections_dict[relationship.property_name_2],
                 )
 
             # Find non-unique property_instances in this set of answers
@@ -789,9 +763,7 @@ if __name__ == "__main__":
                 print(cypher_query)
                 transaction.run(
                     cypher_query,
-                    entity_selection_value=all_selections_dict[
-                        entity_selection_name
-                    ],
+                    entity_selection_value=all_selections_dict[entity_selection_name],
                     property_selection_value=all_selections_dict[
                         property_selection_name
                     ],
