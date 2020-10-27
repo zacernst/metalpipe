@@ -38,7 +38,7 @@ setuptools.setup(
       'civis==1.7.2',
       'click==6.7',
       'cloudpickle==0.5.3',
-      'cryptography==2.3',
+      'cryptography==3.2',
       'datadog==0.26.0',
       'decorator==4.3.0',
       'docutils==0.14',
