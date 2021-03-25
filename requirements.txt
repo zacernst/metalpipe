@@ -24,7 +24,7 @@ pyDatalog==0.17.1
 pyparsing==2.4.5
 pytest==5.3.2
 pytz==2019.3
-PyYAML==5.2
+PyYAML==5.4
 redis==3.3.11
 requests==2.22.0
 six==1.13.0
