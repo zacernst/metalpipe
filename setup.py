@@ -71,7 +71,7 @@ setuptools.setup(
       'pyasn1==0.4.3',
       'pycparser==2.18',
       'pycryptodomex==3.6.4',
-      'Pygments==2.2.0',
+      'Pygments==2.7.4',
       'PyNaCl==1.2.1',
       'pyparsing==2.2.1',
       'pytest==3.8.1',
