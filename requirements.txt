@@ -18,7 +18,7 @@ packaging==19.2
 pluggy==0.13.1
 ply==3.11
 prettytable==0.7.2
-py==1.8.0
+py==1.10.0
 pycparser==2.18
 pyDatalog==0.17.1
 pyparsing==2.4.5

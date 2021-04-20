@@ -67,7 +67,7 @@ setuptools.setup(
       'pockets==0.6.2',
       'prettytable==0.7.2',
       'pubnub==4.1.0',
-      'py==1.6.0',
+      'py==1.10.0',
       'pyasn1==0.4.3',
       'pycparser==2.18',
       'pycryptodomex==3.6.4',
