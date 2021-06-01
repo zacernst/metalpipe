@@ -29,5 +29,5 @@ redis==3.3.11
 requests==2.22.0
 six==1.13.0
 timeddictionary==0.1.1
-urllib3==1.25.7
+urllib3==1.26.5
 wcwidth==0.1.7
