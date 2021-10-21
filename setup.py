@@ -27,7 +27,7 @@ setuptools.setup(
       'asn1crypto==0.24.0',
       'atomicwrites==1.2.1',
       'attrs==18.2.0',
-      'Babel==2.6.0',
+      'Babel==2.9.1',
       'bcrypt==3.1.4',
       'behave==1.2.6',
       'boto3==1.7.62',
