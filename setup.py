@@ -57,7 +57,7 @@ setuptools.setup(
       'more-itertools==4.3.0',
       'networkx==2.1',
       'packaging==18.0',
-      'paramiko==2.4.2',
+      'paramiko==2.10.1',
       'parse==1.8.4',
       'parse-type==0.4.2',
       'pathlib2==2.3.2',
