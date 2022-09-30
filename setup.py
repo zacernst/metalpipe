@@ -48,7 +48,7 @@ setuptools.setup(
       'imagesize==1.1.0',
       'Jinja2==2.10.1',
       'jmespath==0.9.3',
-      'joblib==0.11',
+      'joblib==1.2.0',
       'jsonref==0.1',
       'jsonschema==2.6.0',
       'kafka==1.3.1',
