@@ -32,7 +32,7 @@ setuptools.setup(
       'behave==1.2.6',
       'boto3==1.7.62',
       'botocore==1.10.62',
-      'certifi==2018.4.16',
+      'certifi==2022.12.7',
       'cffi==1.11.5',
       'chardet==3.0.4',
       'civis==1.7.2',
